@@ -1,0 +1,2144 @@
+openapi: 3.0.3
+info:
+  title: Cine Paradiso API - Proyecto Integrador IDS 2026
+  description: |
+    API REST para el sistema de venta de entradas y gestión de cines de Cine Paradiso.
+    Cátedra Lanzillotta - Introducción al Desarrollo de Software (2do cuatrimestre 2026).
+    Documentación generada en base a `Listado de endpoints.pdf`, `Proyecto integrador IDS 2026.pdf`
+    y el esquema relacional de base de datos MySQL (`init_db.sql`).
+
+    **Notas de diseño y convenciones REST:**
+    - Se utilizan identificadores de ruta sin tildes ni caracteres especiales (`/generos`, `/dashboard/ocupacion`, `/resenas`) para mantener compatibilidad universal con clientes HTTP.
+    - Las fechas y horas se manejan unificadas en formato ISO 8601 / DATETIME (`YYYY-MM-DDTHH:MM:SS`), cumpliendo con la restricción de diseño de base de datos.
+    - La estructura de error sigue el estándar unificado `construir_error_api` con un array `errors`.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:5000
+    description: Servidor de desarrollo local
+
+tags:
+  - name: Autenticación y Usuarios
+    description: Gestión de registro, inicio de sesión y perfil de usuarios (Clientes y Administradores).
+  - name: Películas y Géneros
+    description: Consulta y administración del catálogo de películas, géneros y búsqueda externa (OMDb / TMDb).
+  - name: Locales, Salas y Butacas
+    description: Complejos de cines, infraestructura de salas y distribución física de butacas.
+  - name: Funciones
+    description: Programación y consulta de funciones de cine, horarios y mapa de butacas en tiempo real.
+  - name: Servicios Adicionales
+    description: Venta y administración de servicios complementarios (comida, bebidas, etc.).
+  - name: Compras y Entradas
+    description: Proceso transaccional de compra, emisión de QR/comprobante, historial y cancelaciones.
+  - name: Validación de Ingreso
+    description: Control de acceso al cine mediante escaneo y auditoría de códigos QR.
+  - name: Backoffice Dashboard
+    description: Reportes y métricas de negocio para la administración del cine.
+
+paths:
+  # =========================================================================
+  # 1. Autenticación y Usuarios
+  # =========================================================================
+  /auth/register:
+    post:
+      tags:
+        - Autenticación y Usuarios
+      summary: Registra a un nuevo cliente
+      description: Permite a un nuevo visitante registrarse en el sistema con rol CLIENTE.
+      operationId: registrarCliente
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistroRequest'
+      responses:
+        '201':
+          description: Cliente registrado con éxito.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsuarioPerfil'
+        '400':
+          $ref: '#/components/responses/ErrorValidacion'
+        '409':
+          description: El email o número de socio ya se encuentra registrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuesta'
+
+  /auth/login:
+    post:
+      tags:
+        - Autenticación y Usuarios
+      summary: Autentica a un usuario
+      description: Verifica credenciales (email y contraseña) y retorna los datos de sesión y token de autenticación.
+      operationId: loginUsuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Autenticación exitosa.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginRespuesta'
+        '400':
+          $ref: '#/components/responses/ErrorValidacion'
+        '401':
+          description: Credenciales inválidas o usuario inactivo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuesta'
+
+  /auth/me:
+    get:
+      tags:
+        - Autenticación y Usuarios
+      summary: Perfil del usuario logueado
+      description: Retorna la información personal y rol del usuario actualmente autenticado.
+      operationId: obtenerPerfilActual
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Datos del perfil del usuario.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsuarioPerfil'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+
+    put:
+      tags:
+        - Autenticación y Usuarios
+      summary: Actualiza perfil o contraseña
+      description: Permite al usuario logueado modificar su nombre, email o contraseña actual.
+      operationId: actualizarPerfilActual
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActualizarPerfilRequest'
+      responses:
+        '200':
+          description: Perfil actualizado correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsuarioPerfil'
+        '400':
+          $ref: '#/components/responses/ErrorValidacion'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '409':
+          description: El nuevo email ya está en uso por otra cuenta.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuesta'
+
+  # =========================================================================
+  # 2. Películas y Géneros
+  # =========================================================================
+  /peliculas:
+    get:
+      tags:
+        - Películas y Géneros
+      summary: Lista la cartelera vigente
+      description: Obtiene el listado de películas que tienen funciones activas o programadas.
+      operationId: listarCartelera
+      parameters:
+        - name: id_genero
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: Filtrar películas por ID de género.
+        - name: titulo
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Búsqueda parcial por título.
+        - name: clasificacion
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filtrar por clasificación (ej. ATP, +13, +16, +18).
+      responses:
+        '200':
+          description: Listado de películas en cartelera.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PeliculaItem'
+
+    post:
+      tags:
+        - Películas y Géneros
+      summary: Guarda una película nueva (Solo Admin)
+      description: Registra una nueva película en la base local y asocia sus géneros.
+      operationId: crearPelicula
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PeliculaCrearRequest'
+      responses:
+        '201':
+          description: Película creada con éxito.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PeliculaDetalle'
+        '400':
+          $ref: '#/components/responses/ErrorValidacion'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '403':
+          $ref: '#/components/responses/ProhibidoAdmin'
+
+  /peliculas/{id}:
+    get:
+      tags:
+        - Películas y Géneros
+      summary: Muestra el detalle de una película y sus funciones vigentes
+      description: Retorna sinopsis, tráiler, póster, géneros y las funciones activas programadas para esta película.
+      operationId: obtenerPeliculaDetalle
+      parameters:
+        - $ref: '#/components/parameters/PeliculaId'
+      responses:
+        '200':
+          description: Detalle de la película con sus funciones.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PeliculaConFunciones'
+        '404':
+          $ref: '#/components/responses/RecursoNoEncontrado'
+
+    put:
+      tags:
+        - Películas y Géneros
+      summary: Modifica los datos de una película existente (Solo Admin)
+      description: Actualiza los campos de una película (título, sinopsis, URLs, duración, etc.).
+      operationId: actualizarPelicula
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PeliculaId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PeliculaActualizarRequest'
+      responses:
+        '200':
+          description: Película actualizada correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PeliculaDetalle'
+        '400':
+          $ref: '#/components/responses/ErrorValidacion'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '403':
+          $ref: '#/components/responses/ProhibidoAdmin'
+        '404':
+          $ref: '#/components/responses/RecursoNoEncontrado'
+
+    delete:
+      tags:
+        - Películas y Géneros
+      summary: Da de baja una película de la cartelera (Solo Admin)
+      description: Marca la película como inactiva (baja lógica).
+      operationId: eliminarPelicula
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PeliculaId'
+      responses:
+        '200':
+          description: Película dada de baja exitosamente.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mensaje:
+                    type: string
+                    example: Película dada de baja con éxito.
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '403':
+          $ref: '#/components/responses/ProhibidoAdmin'
+        '404':
+          $ref: '#/components/responses/RecursoNoEncontrado'
+
+  /peliculas/externas/buscar:
+    get:
+      tags:
+        - Películas y Géneros
+      summary: Busca películas clásicas en API externa (Solo Admin)
+      description: Consulta OMDb API o TMDb API por título para previsualizar datos antes de incorporarlos a la cartelera.
+      operationId: buscarPeliculasExternas
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Nombre o palabra clave de la película a buscar.
+      responses:
+        '200':
+          description: Resultados obtenidos desde la API externa.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PeliculaExternaItem'
+        '400':
+          $ref: '#/components/responses/ErrorValidacion'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '403':
+          $ref: '#/components/responses/ProhibidoAdmin'
+
+  /generos:
+    get:
+      tags:
+        - Películas y Géneros
+      summary: Lista todos los géneros cinematográficos disponibles
+      description: Devuelve la lista completa de géneros (Acción, Comedia, Drama, etc.).
+      operationId: listarGeneros
+      responses:
+        '200':
+          description: Lista de géneros.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Genero'
+
+  /peliculas/{id}/resenas:
+    get:
+      tags:
+        - Películas y Géneros
+      summary: Lista reseñas y puntuaciones de una película
+      description: Retorna las puntuaciones (1 a 5) y comentarios dejados por usuarios verificados para una película.
+      operationId: listarResenasPelicula
+      parameters:
+        - $ref: '#/components/parameters/PeliculaId'
+      responses:
+        '200':
+          description: Listado de reseñas de la película.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ResenaItem'
+        '404':
+          $ref: '#/components/responses/RecursoNoEncontrado'
+
+    post:
+      tags:
+        - Películas y Géneros
+      summary: Registra una puntuación y reseña
+      description: Permite registrar una puntuación (1 a 5) y comentario, validando que el usuario tenga una compra para esa película con el QR validado.
+      operationId: crearResenaPelicula
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PeliculaId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResenaCrearRequest'
+      responses:
+        '201':
+          description: Reseña publicada con éxito.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResenaItem'
+        '400':
+          $ref: '#/components/responses/ErrorValidacion'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '403':
+          description: El usuario no posee una compra con QR validado para esta película.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuesta'
+
+  # =========================================================================
+  # 3. Locales, Salas y Butacas
+  # =========================================================================
+  /locales:
+    get:
+      tags:
+        - Locales, Salas y Butacas
+      summary: Lista los 3 complejos de cine disponibles
+      description: Devuelve los centros de entretenimiento (locales) activos de Cine Paradiso.
+      operationId: listarLocales
+      responses:
+        '200':
+          description: Lista de complejos de cine.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Local'
+
+  /locales/{id}/salas:
+    get:
+      tags:
+        - Locales, Salas y Butacas
+      summary: Lista las salas de un complejo específico y su capacidad
+      description: Retorna todas las salas pertenecientes al complejo indicado, incluyendo cantidad de butacas activas.
+      operationId: listarSalasPorLocal
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID del complejo de cine.
+      responses:
+        '200':
+          description: Lista de salas del complejo.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SalaResumen'
+        '404':
+          $ref: '#/components/responses/RecursoNoEncontrado'
+
+  /salas/{id}:
+    get:
+      tags:
+        - Locales, Salas y Butacas
+      summary: Detalle de una sala y distribución física de butacas
+      description: Retorna el número de sala, estado y el mapa físico de filas y columnas de butacas.
+      operationId: obtenerDetalleSala
+      parameters:
+        - $ref: '#/components/parameters/SalaId'
+      responses:
+        '200':
+          description: Detalle de la sala y estructura de butacas.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalaConButacas'
+        '404':
+          $ref: '#/components/responses/RecursoNoEncontrado'
+
+    put:
+      tags:
+        - Locales, Salas y Butacas
+      summary: Habilita/deshabilita una sala o actualiza su configuración (Solo Admin)
+      description: Permite dar de baja lógica o actualizar los atributos de una sala.
+      operationId: actualizarSala
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/SalaId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SalaActualizarRequest'
+      responses:
+        '200':
+          description: Sala actualizada exitosamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalaResumen'
+        '400':
+          $ref: '#/components/responses/ErrorValidacion'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '403':
+          $ref: '#/components/responses/ProhibidoAdmin'
+        '404':
+          $ref: '#/components/responses/RecursoNoEncontrado'
+
+  # =========================================================================
+  # 4. Funciones
+  # =========================================================================
+  /funciones:
+    get:
+      tags:
+        - Funciones
+      summary: Lista las funciones programadas
+      description: Consulta el cronograma de funciones vigentes con filtros opcionales por fecha, película, local o formato.
+      operationId: listarFunciones
+      parameters:
+        - name: id_pelicula
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: Filtrar por ID de película.
+        - name: id_local
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: Filtrar por ID de complejo de cine.
+        - name: fecha
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+          example: '2026-11-15'
+          description: Filtrar funciones para un día específico (YYYY-MM-DD).
+        - name: formato
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: ['2D', '3D', '4D']
+      responses:
+        '200':
+          description: Cronograma de funciones.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FuncionItem'
+
+    post:
+      tags:
+        - Funciones
+      summary: Programa una nueva función (Solo Admin)
+      description: Programa una nueva función validando que el horario y la sala estén disponibles (sin superposiciones) y crea las entradas correspondientes.
+      operationId: crearFuncion
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FuncionCrearRequest'
+      responses:
+        '201':
+          description: Función programada con éxito.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FuncionItem'
+        '400':
+          $ref: '#/components/responses/ErrorValidacion'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '403':
+          $ref: '#/components/responses/ProhibidoAdmin'
+        '409':
+          description: Conflicto de horario. La sala ya tiene una función asignada en esa franja horaria.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuesta'
+
+  /funciones/{id}:
+    put:
+      tags:
+        - Funciones
+      summary: Modifica horario, precio o estado de una función (Solo Admin)
+      description: Actualiza los detalles de una función programada validando que no colisione con otras funciones de la sala.
+      operationId: actualizarFuncion
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/FuncionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FuncionActualizarRequest'
+      responses:
+        '200':
+          description: Función actualizada exitosamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FuncionItem'
+        '400':
+          $ref: '#/components/responses/ErrorValidacion'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '403':
+          $ref: '#/components/responses/ProhibidoAdmin'
+        '404':
+          $ref: '#/components/responses/RecursoNoEncontrado'
+        '409':
+          description: Conflicto de horario o cambio incompatible con entradas ya vendidas.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuesta'
+
+    delete:
+      tags:
+        - Funciones
+      summary: Cancela o da de baja una función programada (Solo Admin)
+      description: Cancela la función siempre y cuando no posea entradas activas vendidas.
+      operationId: eliminarFuncion
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/FuncionId'
+      responses:
+        '200':
+          description: Función cancelada o eliminada con éxito.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mensaje:
+                    type: string
+                    example: Función dada de baja con éxito.
+        '400':
+          description: No es posible dar de baja una función con entradas ya vendidas.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuesta'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '403':
+          $ref: '#/components/responses/ProhibidoAdmin'
+        '404':
+          $ref: '#/components/responses/RecursoNoEncontrado'
+
+  /funciones/{id}/butacas:
+    get:
+      tags:
+        - Funciones
+      summary: Mapa de butacas libres y ocupadas de la función
+      description: Devuelve la grilla completa de butacas de la sala asignada a la función, indicando el estado en tiempo real (DISPONIBLE, OCUPADA, RESERVADA).
+      operationId: obtenerMapaButacasFuncion
+      parameters:
+        - $ref: '#/components/parameters/FuncionId'
+      responses:
+        '200':
+          description: Mapa de butacas de la función.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MapaButacasFuncion'
+        '404':
+          $ref: '#/components/responses/RecursoNoEncontrado'
+
+  # =========================================================================
+  # 5. Servicios Adicionales
+  # =========================================================================
+  /servicios:
+    get:
+      tags:
+        - Servicios Adicionales
+      summary: Lista los servicios adicionales activos
+      description: Retorna servicios disponibles para todas las salas (comida, bebidas, combos de pochoclos, etc.).
+      operationId: listarServicios
+      responses:
+        '200':
+          description: Lista de servicios activos.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Servicio'
+
+    post:
+      tags:
+        - Servicios Adicionales
+      summary: Crea un nuevo servicio adicional (Solo Admin)
+      description: Registra un producto o servicio adicional (tipo COMIDA o BEBIDA).
+      operationId: crearServicio
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServicioCrearRequest'
+      responses:
+        '201':
+          description: Servicio creado con éxito.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Servicio'
+        '400':
+          $ref: '#/components/responses/ErrorValidacion'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '403':
+          $ref: '#/components/responses/ProhibidoAdmin'
+
+  /servicios/{id}:
+    put:
+      tags:
+        - Servicios Adicionales
+      summary: Modifica los datos o el precio de un servicio (Solo Admin)
+      description: Actualiza nombre, tipo o precio de un servicio adicional existente.
+      operationId: actualizarServicio
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ServicioId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServicioActualizarRequest'
+      responses:
+        '200':
+          description: Servicio actualizado correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Servicio'
+        '400':
+          $ref: '#/components/responses/ErrorValidacion'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '403':
+          $ref: '#/components/responses/ProhibidoAdmin'
+        '404':
+          $ref: '#/components/responses/RecursoNoEncontrado'
+
+    delete:
+      tags:
+        - Servicios Adicionales
+      summary: Da de baja un servicio (Solo Admin)
+      description: Marca el servicio como inactivo (baja lógica).
+      operationId: eliminarServicio
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ServicioId'
+      responses:
+        '200':
+          description: Servicio dado de baja con éxito.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mensaje:
+                    type: string
+                    example: Servicio dado de baja exitosamente.
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '403':
+          $ref: '#/components/responses/ProhibidoAdmin'
+        '404':
+          $ref: '#/components/responses/RecursoNoEncontrado'
+
+  # =========================================================================
+  # 6. Compras y Entradas
+  # =========================================================================
+  /compras:
+    post:
+      tags:
+        - Compras y Entradas
+      summary: Procesa una nueva compra de entradas y servicios
+      description: |
+        Realiza la transacción de compra:
+        1. Valida que las butacas seleccionadas sigan libres en la función.
+        2. Calcula el subtotal de entradas y servicios adicionales agregados.
+        3. Procesa el pago y registra la orden en estado `PAGADA`.
+        4. Genera el código QR (`qr_token`) y dispara el envío del email con la factura y el QR adjunto.
+      operationId: procesarCompra
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompraCrearRequest'
+      responses:
+        '201':
+          description: Compra procesada con éxito y comprobante/QR enviado al email.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompraConfirmadaRespuesta'
+        '400':
+          $ref: '#/components/responses/ErrorValidacion'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '409':
+          description: Una o más butacas seleccionadas ya fueron adquiridas o reservadas por otro usuario.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuesta'
+
+  /compras/mis-compras:
+    get:
+      tags:
+        - Compras y Entradas
+      summary: Historial de compras del cliente logueado
+      description: Retorna todas las compras realizadas por el usuario actual (entradas, funciones y estado).
+      operationId: listarMisCompras
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Historial de compras.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CompraResumen'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+
+  /compras/{id}:
+    get:
+      tags:
+        - Compras y Entradas
+      summary: Detalle completo de una compra
+      description: Retorna entradas compradas con su numeración de butaca, servicios asociados, desglose de importes y datos del QR emitido.
+      operationId: obtenerDetalleCompra
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CompraId'
+      responses:
+        '200':
+          description: Detalle completo de la compra.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompraDetalle'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '403':
+          description: No posee autorización para ver compras de otro usuario.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuesta'
+        '404':
+          $ref: '#/components/responses/RecursoNoEncontrado'
+
+  /compras/{id}/cancelar:
+    put:
+      tags:
+        - Compras y Entradas
+      summary: Cancela una compra y libera las butacas
+      description: Cancela la compra (pasa a estado CANCELADA), invalida el QR y libera las butacas para que vuelvan a estar disponibles, validando que se realice dentro del tiempo límite previo al inicio de la función.
+      operationId: cancelarCompra
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CompraId'
+      responses:
+        '200':
+          description: Compra cancelada exitosamente y butacas liberadas.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mensaje:
+                    type: string
+                    example: Compra cancelada con éxito. Las butacas han sido liberadas.
+                  id_compra:
+                    type: integer
+                    example: 1042
+                  estado:
+                    type: string
+                    example: CANCELADA
+        '400':
+          description: Tiempo límite de cancelación excedido o compra ya utilizada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuesta'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '404':
+          $ref: '#/components/responses/RecursoNoEncontrado'
+
+  # =========================================================================
+  # 7. Validación de Ingreso
+  # =========================================================================
+  /validaciones-qr:
+    post:
+      tags:
+        - Validación de Ingreso
+      summary: Escanea y valida un código QR en el acceso a sala (Solo Admin)
+      description: |
+        Endpoint utilizado en puerta por el personal del cine:
+        - Verifica que el QR exista y corresponda a la función y fecha actuales.
+        - Verifica que no haya sido cancelado ni utilizado previamente.
+        - Marca la compra como utilizada y registra la fecha de validación y auditoría.
+      operationId: procesarValidacionQR
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidarQRRequest'
+      responses:
+        '200':
+          description: QR validado exitosamente. Se autoriza el ingreso a la sala.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidarQRRespuesta'
+        '400':
+          description: Código QR rechazado (ya utilizado, cancelado, función incorrecta o expirado).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuesta'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '403':
+          $ref: '#/components/responses/ProhibidoAdmin'
+
+    get:
+      tags:
+        - Validación de Ingreso
+      summary: Historial de validaciones de QR realizadas en puerta (Solo Admin)
+      description: Retorna el registro de auditoría de accesos validados, compras asociadas, usuario validador y resultado (EXITO, FALLIDO, REUTILIZADO).
+      operationId: listarHistorialValidacionesQR
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id_compra
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: resultado
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: ['EXITO', 'FALLIDO', 'REUTILIZADO']
+      responses:
+        '200':
+          description: Lista de auditoría de validaciones QR.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ValidacionQRItem'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '403':
+          $ref: '#/components/responses/ProhibidoAdmin'
+
+  # =========================================================================
+  # 8. Backoffice Dashboard
+  # =========================================================================
+  /dashboard/ocupacion:
+    get:
+      tags:
+        - Backoffice Dashboard
+      summary: Métricas de porcentaje de ocupación (Solo Admin)
+      description: Estadísticas de butacas ocupadas vs. capacidad total agrupadas por función, sala y película.
+      operationId: obtenerOcupacionDashboard
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id_local
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: desde
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+          example: '2026-11-01'
+        - name: hasta
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+          example: '2026-11-30'
+      responses:
+        '200':
+          description: Métricas de ocupación.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MetricaOcupacion'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '403':
+          $ref: '#/components/responses/ProhibidoAdmin'
+
+  /dashboard/ventas-genero:
+    get:
+      tags:
+        - Backoffice Dashboard
+      summary: Estadísticas de recaudación y entradas por género (Solo Admin)
+      description: Reporte de volumen de entradas y monto total recaudado clasificado por género cinematográfico.
+      operationId: obtenerVentasPorGenero
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Recaudación y entradas por género.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VentaPorGenero'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '403':
+          $ref: '#/components/responses/ProhibidoAdmin'
+
+  /dashboard/franjas-horarias:
+    get:
+      tags:
+        - Backoffice Dashboard
+      summary: Reporte de horarios y turnos con mayor volumen de entradas (Solo Admin)
+      description: Identifica las franjas horarias más concurridas del cine (tarde, noche, trasnoche).
+      operationId: obtenerFranjasHorarias
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Reporte de volumen por turnos y horarios.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FranjaHorariaVenta'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '403':
+          $ref: '#/components/responses/ProhibidoAdmin'
+
+  /dashboard/cancelaciones:
+    get:
+      tags:
+        - Backoffice Dashboard
+      summary: Tasa y estadísticas de compras canceladas (Solo Admin)
+      description: Reporte de compras canceladas, porcentaje respecto al total de ventas y motivos temporales.
+      operationId: obtenerEstadisticasCancelaciones
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Estadísticas de cancelaciones.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstadisticasCancelacion'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '403':
+          $ref: '#/components/responses/ProhibidoAdmin'
+
+  /dashboard/reporte-ventas:
+    get:
+      tags:
+        - Backoffice Dashboard
+      summary: Consolidado de ventas por función y ranking de películas (Solo Admin)
+      description: Reporte consolidado de ventas, ranking de películas más taquilleras y opción de generación en formato PDF (deseable).
+      operationId: obtenerReporteVentasConsolidado
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: formato
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: ['json', 'pdf']
+            default: 'json'
+          description: Permite solicitar los datos en JSON o descargar el documento en formato PDF.
+      responses:
+        '200':
+          description: Reporte generado en JSON o archivo binario PDF.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReporteVentasConsolidado'
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '403':
+          $ref: '#/components/responses/ProhibidoAdmin'
+
+# =========================================================================
+# Componentes Reutilizables (Schemas, Parameters, Responses, Security)
+# =========================================================================
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token de sesión obtenido al autenticarse en `/auth/login`.
+
+  parameters:
+    PeliculaId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      description: ID único de la película.
+    SalaId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      description: ID único de la sala.
+    FuncionId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      description: ID único de la función.
+    ServicioId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      description: ID único del servicio.
+    CompraId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+      description: ID único de la compra.
+
+  responses:
+    ErrorValidacion:
+      description: Error de validación en los datos enviados en la solicitud (400 Bad Request).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorRespuesta'
+    NoAutorizado:
+      description: Se requiere autenticación para acceder a este recurso (401 Unauthorized).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorRespuesta'
+    ProhibidoAdmin:
+      description: El usuario no tiene rol ADMINISTRADOR para ejecutar esta acción (403 Forbidden).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorRespuesta'
+    RecursoNoEncontrado:
+      description: El recurso solicitado no existe (404 Not Found).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorRespuesta'
+
+  schemas:
+    # --- Estándar de Error de la API ---
+    ErrorRespuesta:
+      type: object
+      required:
+        - errors
+      properties:
+        errors:
+          type: array
+          items:
+            type: object
+            required:
+              - code
+              - message
+              - description
+            properties:
+              code:
+                type: string
+                example: 'error.validacion.parametro'
+              message:
+                type: string
+                example: 'Dato inválido'
+              level:
+                type: string
+                example: 'error'
+              description:
+                type: string
+                example: 'El campo fecha debe respetar el formato YYYY-MM-DD.'
+
+    # --- Autenticación y Perfil ---
+    RegistroRequest:
+      type: object
+      required:
+        - nombre
+        - email
+        - contrasena
+      properties:
+        nombre:
+          type: string
+          example: 'Carlos Bianchi'
+        email:
+          type: string
+          format: email
+          example: 'carlos.bianchi@gmail.com'
+        contrasena:
+          type: string
+          format: password
+          minLength: 6
+          example: 'Cine2026!'
+        numero_socio:
+          type: string
+          example: 'SOC-9821'
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - contrasena
+      properties:
+        email:
+          type: string
+          format: email
+          example: 'admin@cineparadiso.com'
+        contrasena:
+          type: string
+          format: password
+          example: 'AdminPass2026'
+
+    LoginRespuesta:
+      type: object
+      properties:
+        token:
+          type: string
+          example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+        usuario:
+          $ref: '#/components/schemas/UsuarioPerfil'
+
+    UsuarioPerfil:
+      type: object
+      properties:
+        id_usuario:
+          type: integer
+          example: 1
+        nombre:
+          type: string
+          example: 'Carlos Bianchi'
+        email:
+          type: string
+          example: 'carlos.bianchi@gmail.com'
+        numero_socio:
+          type: string
+          example: 'SOC-9821'
+        rol:
+          type: string
+          enum: ['CLIENTE', 'ADMINISTRADOR']
+          example: 'CLIENTE'
+        fecha_registro:
+          type: string
+          format: date-time
+          example: '2026-10-24T18:30:00'
+        activo:
+          type: boolean
+          example: true
+
+    ActualizarPerfilRequest:
+      type: object
+      properties:
+        nombre:
+          type: string
+          example: 'Carlos A. Bianchi'
+        email:
+          type: string
+          format: email
+          example: 'carlos.nuevo@gmail.com'
+        contrasena:
+          type: string
+          format: password
+          example: 'NuevaClaveSegura2026'
+
+    # --- Películas y Géneros ---
+    Genero:
+      type: object
+      properties:
+        id_genero:
+          type: integer
+          example: 3
+        nombre:
+          type: string
+          example: 'Ciencia Ficción'
+
+    PeliculaItem:
+      type: object
+      properties:
+        id_pelicula:
+          type: integer
+          example: 10
+        titulo:
+          type: string
+          example: 'Back to the Future'
+        sinopsis:
+          type: string
+          example: 'Marty McFly viaja al año 1955 en una máquina del tiempo construida por el Dr. Emmett Brown.'
+        poster_url:
+          type: string
+          format: uri
+          example: 'https://image.tmdb.org/t/p/w500/back_to_the_future.jpg'
+        trailer_url:
+          type: string
+          format: uri
+          example: 'https://youtube.com/watch?v=qvsgGtivCgs'
+        duracion_min:
+          type: integer
+          example: 116
+        clasificacion:
+          type: string
+          example: 'ATP'
+        anio_estreno:
+          type: integer
+          example: 1985
+        activa:
+          type: boolean
+          example: true
+        generos:
+          type: array
+          items:
+            $ref: '#/components/schemas/Genero'
+
+    PeliculaDetalle:
+      allOf:
+        - $ref: '#/components/schemas/PeliculaItem'
+        - type: object
+          properties:
+            origen_api:
+              type: string
+              enum: ['OMDB', 'TMDB', 'CUSTOM']
+              example: 'TMDB'
+            id_api:
+              type: string
+              example: 'tt0088763'
+
+    PeliculaConFunciones:
+      allOf:
+        - $ref: '#/components/schemas/PeliculaDetalle'
+        - type: object
+          properties:
+            funciones_vigentes:
+              type: array
+              items:
+                $ref: '#/components/schemas/FuncionItem'
+
+    PeliculaCrearRequest:
+      type: object
+      required:
+        - titulo
+        - origen_api
+        - generos_ids
+      properties:
+        titulo:
+          type: string
+          example: 'Pulp Fiction'
+        sinopsis:
+          type: string
+          example: 'Historias entrelazadas en los bajos fondos de Los Ángeles.'
+        poster_url:
+          type: string
+          example: 'https://image.tmdb.org/pulp_fiction.jpg'
+        trailer_url:
+          type: string
+          example: 'https://youtube.com/watch?v=s7EdQ4FqbhY'
+        duracion_min:
+          type: integer
+          example: 154
+        clasificacion:
+          type: string
+          example: '+18'
+        anio_estreno:
+          type: integer
+          example: 1994
+        origen_api:
+          type: string
+          enum: ['OMDB', 'TMDB', 'CUSTOM']
+          example: 'OMDB'
+        id_api:
+          type: string
+          example: 'tt0110912'
+        generos_ids:
+          type: array
+          items:
+            type: integer
+          example: [1, 4]
+
+    PeliculaActualizarRequest:
+      type: object
+      properties:
+        titulo:
+          type: string
+        sinopsis:
+          type: string
+        poster_url:
+          type: string
+        trailer_url:
+          type: string
+        duracion_min:
+          type: integer
+        clasificacion:
+          type: string
+        anio_estreno:
+          type: integer
+        activa:
+          type: boolean
+        generos_ids:
+          type: array
+          items:
+            type: integer
+
+    PeliculaExternaItem:
+      type: object
+      properties:
+        id_api:
+          type: string
+          example: 'tt0068646'
+        titulo:
+          type: string
+          example: 'The Godfather'
+        anio:
+          type: integer
+          example: 1972
+        poster:
+          type: string
+          example: 'https://m.media-amazon.com/images/M/godfather.jpg'
+        origen:
+          type: string
+          example: 'OMDB'
+
+    ResenaItem:
+      type: object
+      properties:
+        id_resena:
+          type: integer
+          example: 5
+        id_usuario:
+          type: integer
+          example: 12
+        nombre_usuario:
+          type: string
+          example: 'Martín Palermo'
+        puntuacion:
+          type: integer
+          minimum: 1
+          maximum: 5
+          example: 5
+        comentario:
+          type: string
+          example: 'Excelente calidad de imagen en la sala 2, película clásica imperdible.'
+        creada_en:
+          type: string
+          format: date-time
+          example: '2026-11-10T22:30:00'
+
+    ResenaCrearRequest:
+      type: object
+      required:
+        - puntuacion
+        - id_compra
+      properties:
+        id_compra:
+          type: integer
+          description: ID de la compra correspondiente donde ya se validó el QR.
+          example: 1042
+        puntuacion:
+          type: integer
+          minimum: 1
+          maximum: 5
+          example: 5
+        comentario:
+          type: string
+          example: 'Excelente sonido y butacas muy cómodas.'
+
+    # --- Locales y Salas ---
+    Local:
+      type: object
+      properties:
+        id_local:
+          type: integer
+          example: 1
+        nombre:
+          type: string
+          example: 'Cine Paradiso Abasto'
+        direccion:
+          type: string
+          example: 'Av. Corrientes 3247, CABA'
+        activo:
+          type: boolean
+          example: true
+
+    SalaResumen:
+      type: object
+      properties:
+        id_sala:
+          type: integer
+          example: 2
+        id_local:
+          type: integer
+          example: 1
+        numero:
+          type: integer
+          example: 2
+        capacidad:
+          type: integer
+          example: 80
+        activa:
+          type: boolean
+          example: true
+
+    SalaActualizarRequest:
+      type: object
+      properties:
+        numero:
+          type: integer
+          example: 2
+        activa:
+          type: boolean
+          example: true
+
+    Butaca:
+      type: object
+      properties:
+        id_butaca:
+          type: integer
+          example: 15
+        id_sala:
+          type: integer
+          example: 2
+        fila:
+          type: string
+          example: 'C'
+        numero:
+          type: integer
+          example: 4
+        activa:
+          type: boolean
+          example: true
+
+    SalaConButacas:
+      allOf:
+        - $ref: '#/components/schemas/SalaResumen'
+        - type: object
+          properties:
+            butacas:
+              type: array
+              items:
+                $ref: '#/components/schemas/Butaca'
+
+    # --- Funciones ---
+    FuncionItem:
+      type: object
+      properties:
+        id_funcion:
+          type: integer
+          example: 101
+        id_pelicula:
+          type: integer
+          example: 10
+        titulo_pelicula:
+          type: string
+          example: 'Back to the Future'
+        id_sala:
+          type: integer
+          example: 2
+        numero_sala:
+          type: integer
+          example: 2
+        nombre_local:
+          type: string
+          example: 'Cine Paradiso Abasto'
+        inicio:
+          type: string
+          format: date-time
+          example: '2026-11-15T20:00:00'
+        fin:
+          type: string
+          format: date-time
+          example: '2026-11-15T22:15:00'
+        formato:
+          type: string
+          enum: ['2D', '3D', '4D']
+          example: '2D'
+        idioma:
+          type: string
+          example: 'Inglés'
+        subtitulada:
+          type: boolean
+          example: true
+        precio_entrada:
+          type: number
+          format: float
+          example: 4500.00
+        estado:
+          type: string
+          enum: ['PROGRAMADA', 'EN_CURSO', 'CANCELADA', 'FINALIZADA']
+          example: 'PROGRAMADA'
+
+    FuncionCrearRequest:
+      type: object
+      required:
+        - id_pelicula
+        - id_sala
+        - inicio
+        - formato
+        - precio_entrada
+      properties:
+        id_pelicula:
+          type: integer
+          example: 10
+        id_sala:
+          type: integer
+          example: 2
+        inicio:
+          type: string
+          format: date-time
+          example: '2026-11-15T20:00:00'
+        formato:
+          type: string
+          enum: ['2D', '3D', '4D']
+          example: '2D'
+        idioma:
+          type: string
+          example: 'Inglés'
+        subtitulada:
+          type: boolean
+          example: true
+        precio_entrada:
+          type: number
+          format: float
+          example: 4500.00
+
+    FuncionActualizarRequest:
+      type: object
+      properties:
+        inicio:
+          type: string
+          format: date-time
+          example: '2026-11-15T20:30:00'
+        precio_entrada:
+          type: number
+          format: float
+          example: 4800.00
+        estado:
+          type: string
+          enum: ['PROGRAMADA', 'EN_CURSO', 'CANCELADA', 'FINALIZADA']
+
+    ButacaEstadoFuncion:
+      type: object
+      properties:
+        id_butaca:
+          type: integer
+          example: 15
+        fila:
+          type: string
+          example: 'B'
+        numero:
+          type: integer
+          example: 3
+        estado:
+          type: string
+          enum: ['DISPONIBLE', 'RESERVADA', 'OCUPADA']
+          example: 'DISPONIBLE'
+        id_entrada:
+          type: integer
+          nullable: true
+          example: 541
+
+    MapaButacasFuncion:
+      type: object
+      properties:
+        id_funcion:
+          type: integer
+          example: 101
+        id_sala:
+          type: integer
+          example: 2
+        total_butacas:
+          type: integer
+          example: 80
+        libres:
+          type: integer
+          example: 72
+        ocupadas:
+          type: integer
+          example: 8
+        butacas:
+          type: array
+          items:
+            $ref: '#/components/schemas/ButacaEstadoFuncion'
+
+    # --- Servicios ---
+    Servicio:
+      type: object
+      properties:
+        id_servicio:
+          type: integer
+          example: 1
+        nombre:
+          type: string
+          example: 'Combo Pochoclos Grande + Gaseosa'
+        tipo:
+          type: string
+          enum: ['COMIDA', 'BEBIDA']
+          example: 'COMIDA'
+        precio:
+          type: number
+          format: float
+          example: 3200.00
+        activo:
+          type: boolean
+          example: true
+
+    ServicioCrearRequest:
+      type: object
+      required:
+        - nombre
+        - tipo
+        - precio
+      properties:
+        nombre:
+          type: string
+          example: 'Estacionamiento 3 Horas'
+        tipo:
+          type: string
+          enum: ['COMIDA', 'BEBIDA']
+          example: 'COMIDA'
+        precio:
+          type: number
+          format: float
+          example: 2500.00
+
+    ServicioActualizarRequest:
+      type: object
+      properties:
+        nombre:
+          type: string
+        tipo:
+          type: string
+          enum: ['COMIDA', 'BEBIDA']
+        precio:
+          type: number
+          format: float
+        activo:
+          type: boolean
+
+    # --- Compras y Pagos ---
+    ItemServicioCompraRequest:
+      type: object
+      required:
+        - id_servicio
+        - cantidad
+      properties:
+        id_servicio:
+          type: integer
+          example: 1
+        cantidad:
+          type: integer
+          minimum: 1
+          example: 2
+
+    CompraCrearRequest:
+      type: object
+      required:
+        - id_funcion
+        - butacas_ids
+        - medio_pago
+      properties:
+        id_funcion:
+          type: integer
+          example: 101
+        butacas_ids:
+          type: array
+          items:
+            type: integer
+          minItems: 1
+          example: [15, 16]
+        servicios:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemServicioCompraRequest'
+          example:
+            - id_servicio: 1
+              cantidad: 2
+        medio_pago:
+          type: string
+          example: 'TARJETA_CREDITO'
+        email_comprobante:
+          type: string
+          format: email
+          example: 'comprador@gmail.com'
+
+    CompraConfirmadaRespuesta:
+      type: object
+      properties:
+        id_compra:
+          type: integer
+          example: 1042
+        codigo_reserva:
+          type: string
+          example: 'RES-2026-F101-B15'
+        estado:
+          type: string
+          example: 'PAGADA'
+        total:
+          type: number
+          format: float
+          example: 15400.00
+        qr_token:
+          type: string
+          example: 'c1f8e6a2-921b-4df2-a1f9-8c9e543b1234'
+        email_enviado_a:
+          type: string
+          example: 'comprador@gmail.com'
+
+    CompraResumen:
+      type: object
+      properties:
+        id_compra:
+          type: integer
+          example: 1042
+        codigo_reserva:
+          type: string
+          example: 'RES-2026-F101-B15'
+        pelicula:
+          type: string
+          example: 'Back to the Future'
+        fecha_funcion:
+          type: string
+          format: date-time
+          example: '2026-11-15T20:00:00'
+        cantidad_entradas:
+          type: integer
+          example: 2
+        total:
+          type: number
+          format: float
+          example: 15400.00
+        estado:
+          type: string
+          enum: ['PENDIENTE', 'PAGADA', 'CANCELADA']
+          example: 'PAGADA'
+        creada_en:
+          type: string
+          format: date-time
+          example: '2026-11-12T14:22:00'
+
+    ItemServicioDetalle:
+      type: object
+      properties:
+        nombre_servicio:
+          type: string
+          example: 'Combo Pochoclos Grande'
+        cantidad:
+          type: integer
+          example: 2
+        precio_unitario:
+          type: number
+          format: float
+          example: 3200.00
+        subtotal:
+          type: number
+          format: float
+          example: 6400.00
+
+    EntradaDetalle:
+      type: object
+      properties:
+        id_entrada:
+          type: integer
+          example: 541
+        fila:
+          type: string
+          example: 'B'
+        numero:
+          type: integer
+          example: 3
+        precio_unitario:
+          type: number
+          format: float
+          example: 4500.00
+
+    CompraDetalle:
+      type: object
+      properties:
+        id_compra:
+          type: integer
+          example: 1042
+        codigo_reserva:
+          type: string
+          example: 'RES-2026-F101-B15'
+        estado:
+          type: string
+          enum: ['PENDIENTE', 'PAGADA', 'CANCELADA']
+          example: 'PAGADA'
+        creada_en:
+          type: string
+          format: date-time
+          example: '2026-11-12T14:22:00'
+        funcion:
+          $ref: '#/components/schemas/FuncionItem'
+        entradas:
+          type: array
+          items:
+            $ref: '#/components/schemas/EntradaDetalle'
+        servicios:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemServicioDetalle'
+        subtotal_entradas:
+          type: number
+          format: float
+          example: 9000.00
+        subtotal_servicios:
+          type: number
+          format: float
+          example: 6400.00
+        cargo_servicio:
+          type: number
+          format: float
+          example: 0.00
+        total:
+          type: number
+          format: float
+          example: 15400.00
+        qr_token:
+          type: string
+          example: 'c1f8e6a2-921b-4df2-a1f9-8c9e543b1234'
+        qr_validado_en:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
+
+    # --- Validaciones QR ---
+    ValidarQRRequest:
+      type: object
+      required:
+        - qr_token
+      properties:
+        qr_token:
+          type: string
+          example: 'c1f8e6a2-921b-4df2-a1f9-8c9e543b1234'
+        id_sala:
+          type: integer
+          description: ID de la sala donde se está validando el acceso en puerta.
+          example: 2
+
+    ValidarQRRespuesta:
+      type: object
+      properties:
+        autorizado:
+          type: boolean
+          example: true
+        mensaje:
+          type: string
+          example: 'Ingreso autorizado. Compra validada con éxito.'
+        id_compra:
+          type: integer
+          example: 1042
+        pelicula:
+          type: string
+          example: 'Back to the Future'
+        entradas_validadas:
+          type: integer
+          example: 2
+        fecha_validacion:
+          type: string
+          format: date-time
+          example: '2026-11-15T19:50:22'
+
+    ValidacionQRItem:
+      type: object
+      properties:
+        id_validacion:
+          type: integer
+          example: 78
+        id_compra:
+          type: integer
+          example: 1042
+        id_administrador:
+          type: integer
+          example: 2
+        nombre_administrador:
+          type: string
+          example: 'Guardia Recepción'
+        fecha_validacion:
+          type: string
+          format: date-time
+          example: '2026-11-15T19:50:22'
+        resultado:
+          type: string
+          enum: ['EXITO', 'FALLIDO', 'REUTILIZADO']
+          example: 'EXITO'
+
+    # --- Backoffice Dashboard ---
+    MetricaOcupacion:
+      type: object
+      properties:
+        id_funcion:
+          type: integer
+          example: 101
+        pelicula:
+          type: string
+          example: 'Back to the Future'
+        sala:
+          type: integer
+          example: 2
+        local:
+          type: string
+          example: 'Cine Paradiso Abasto'
+        capacidad_total:
+          type: integer
+          example: 80
+        entradas_vendidas:
+          type: integer
+          example: 64
+        porcentaje_ocupacion:
+          type: number
+          format: float
+          example: 80.00
+
+    VentaPorGenero:
+      type: object
+      properties:
+        genero:
+          type: string
+          example: 'Ciencia Ficción'
+        entradas_vendidas:
+          type: integer
+          example: 412
+        total_recaudado:
+          type: number
+          format: float
+          example: 1854000.00
+
+    FranjaHorariaVenta:
+      type: object
+      properties:
+        turno:
+          type: string
+          example: 'Noche (19:00 - 22:00)'
+        entradas_vendidas:
+          type: integer
+          example: 820
+        total_recaudado:
+          type: number
+          format: float
+          example: 3690000.00
+
+    EstadisticasCancelacion:
+      type: object
+      properties:
+        total_compras:
+          type: integer
+          example: 1500
+        total_canceladas:
+          type: integer
+          example: 45
+        tasa_cancelacion_porcentaje:
+          type: number
+          format: float
+          example: 3.00
+        monto_devuelto:
+          type: number
+          format: float
+          example: 202500.00
+
+    ReporteVentasConsolidado:
+      type: object
+      properties:
+        periodo:
+          type: string
+          example: 'Noviembre 2026'
+        recaudacion_total:
+          type: number
+          format: float
+          example: 12500000.00
+        ranking_peliculas_mas_vistas:
+          type: array
+          items:
+            type: object
+            properties:
+              posicion:
+                type: integer
+                example: 1
+              titulo:
+                type: string
+                example: 'Back to the Future'
+              espectadores:
+                type: integer
+                example: 950
+              recaudacion:
+                type: number
+                format: float
+                example: 4275000.00
