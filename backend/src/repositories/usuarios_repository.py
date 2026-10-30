@@ -3,8 +3,13 @@ from src.db import ejecutar_consulta, ejecutar_mutacion
 
 def buscar_usuario_por_email_db(email: str) -> dict | None:
     """Busca un usuario en la tabla usuarios por su email."""
-    # query = "SELECT id_usuario, nombre, email, contrasena_hash, rol, activo FROM usuarios WHERE email = :email"
-    pass
+    query = """
+        SELECT id_usuario, nombre, email, numero_socio, contrasena_hash, rol, activo
+        FROM usuarios
+        WHERE email = %(email)s
+    """
+    resultados = ejecutar_consulta(query, {"email": email})
+    return resultados[0] if resultados else None
 
 
 def buscar_usuario_por_id_db(id_usuario: int) -> dict | None:
@@ -15,8 +20,11 @@ def buscar_usuario_por_id_db(id_usuario: int) -> dict | None:
 
 def insertar_usuario_db(datos: dict) -> int:
     """Inserta un nuevo usuario y retorna el id_usuario autoincremental."""
-    # query = "INSERT INTO usuarios (nombre, email, contrasena_hash, rol) VALUES (:nombre, :email, :contrasena_hash, :rol)"
-    pass
+    query = """
+        INSERT INTO usuarios (nombre, email, numero_socio, contrasena_hash, rol)
+        VALUES (%(nombre)s, %(email)s, %(numero_socio)s, %(contrasena_hash)s, %(rol)s)
+    """
+    return ejecutar_mutacion(query, datos)
 
 
 def actualizar_usuario_db(id_usuario: int, datos: dict) -> int:

@@ -19,11 +19,16 @@ def register_auth_routes(app):
         """
         POST /auth/register: Registra a un nuevo cliente.
         """
-        # datos = request.get_json(silent=True)
-        # datos_validados = validar_registro_usuario(datos)
-        # resultado = registrar_usuario(datos_validados)
-        # return jsonify(resultado), 201
-        pass
+        datos = request.get_json(silent=True)
+        datos_validados = validar_registro_usuario(datos)
+        if "errors" in datos_validados:
+            return jsonify(datos_validados), 400
+
+        resultado = registrar_usuario(datos_validados)
+        if "errors" in resultado:
+            return jsonify(resultado), 409
+
+        return jsonify(resultado), 201
 
     @app.route("/auth/login", methods=["POST"])
     def login():

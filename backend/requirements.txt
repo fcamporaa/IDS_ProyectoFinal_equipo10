@@ -3,4 +3,5 @@ PyMySQL==1.2.0
 python-dotenv==1.2.3
 requests==2.34.2
 Werkzeug==3.1.8
+bcrypt==5.0.0
 
