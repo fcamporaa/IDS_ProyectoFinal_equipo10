@@ -90,7 +90,43 @@ def validar_login_usuario(datos: dict) -> dict:
     - email: formato de email válido
     - contrasena: str no vacía
     """
-    pass
+    if not isinstance(datos, dict):
+        return construir_error_api(
+            "error.validacion.cuerpo",
+            "Cuerpo de solicitud inválido",
+            "Se esperaba un objeto JSON con email y contraseña.",
+        )
+
+    campos_permitidos = {"email", "contrasena"}
+    campos_desconocidos = set(datos) - campos_permitidos
+    if campos_desconocidos:
+        return construir_error_api(
+            "error.validacion.campo_no_permitido",
+            "Campo no permitido",
+            f"Los campos no están permitidos: {', '.join(sorted(campos_desconocidos))}.",
+        )
+
+    email = datos.get("email")
+    if (
+        not isinstance(email, str)
+        or len(email.strip()) > 255
+        or not re.fullmatch(PATRON_EMAIL, email.strip())
+    ):
+        return construir_error_api(
+            "error.validacion.email",
+            "Email inválido",
+            "Se requiere un email válido de hasta 255 caracteres.",
+        )
+
+    contrasena = datos.get("contrasena")
+    if not isinstance(contrasena, str) or not contrasena.strip():
+        return construir_error_api(
+            "error.validacion.contrasena",
+            "Contraseña inválida",
+            "La contraseña es obligatoria y debe ser texto no vacío.",
+        )
+
+    return {"email": email.strip().lower(), "contrasena": contrasena}
 
 
 def validar_actualizacion_perfil(datos: dict) -> dict:

@@ -35,11 +35,16 @@ def register_auth_routes(app):
         """
         POST /auth/login: Autentica a un usuario (Cliente o Admin) y devuelve sus datos de sesión.
         """
-        # datos = request.get_json(silent=True)
-        # datos_validados = validar_login_usuario(datos)
-        # resultado = autenticar_usuario(datos_validados)
-        # return jsonify(resultado), 200
-        pass
+        datos = request.get_json(silent=True)
+        datos_validados = validar_login_usuario(datos)
+        if "errors" in datos_validados:
+            return jsonify(datos_validados), 400
+
+        resultado = autenticar_usuario(datos_validados)
+        if "errors" in resultado:
+            return jsonify(resultado), 401
+
+        return jsonify(resultado), 200
 
     @app.route("/auth/me", methods=["GET"])
     def get_profile():

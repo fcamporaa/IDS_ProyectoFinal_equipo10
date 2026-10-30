@@ -54,7 +54,35 @@ def autenticar_usuario(datos: dict) -> dict:
     """
     Verifica credenciales contra el hash de contraseña y retorna datos de sesión.
     """
-    pass
+    usuario = buscar_usuario_por_email_db(datos["email"])
+    hash_guardado = usuario.get("contrasena_hash") if usuario else None
+    credenciales_validas = False
+
+    if usuario and usuario.get("activo") and isinstance(hash_guardado, str):
+        try:
+            credenciales_validas = bcrypt.checkpw(
+                datos["contrasena"].encode("utf-8"),
+                hash_guardado.encode("utf-8"),
+            )
+        except ValueError:
+            credenciales_validas = False
+
+    if not credenciales_validas:
+        return construir_error_api(
+            "error.auth.credenciales_invalidas",
+            "Credenciales inválidas",
+            "El email o la contraseña son incorrectos, o la cuenta no está activa.",
+        )
+
+    return {
+        "usuario": {
+            "id_usuario": usuario["id_usuario"],
+            "nombre": usuario["nombre"],
+            "email": usuario["email"],
+            "numero_socio": usuario["numero_socio"],
+            "rol": usuario["rol"],
+        }
+    }
 
 
 def obtener_perfil_usuario(id_usuario: int) -> dict:
