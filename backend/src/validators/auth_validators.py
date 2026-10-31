@@ -1,6 +1,29 @@
 import re
-from src.constants import PATRON_EMAIL
+
+import jwt
+from src.constants import JWT_SECRET_KEY, PATRON_EMAIL
 from src.utils import construir_error_api
+
+
+def validar_token_acceso(token: str) -> int | None:
+    """Valida el token JWT recibido en el encabezado Authorization."""
+    if not isinstance(token, str) or not token.strip():
+        return None
+
+    if not JWT_SECRET_KEY:
+        raise RuntimeError("La variable JWT_SECRET_KEY no está configurada.")
+
+    try:
+        payload = jwt.decode(
+            token,
+            JWT_SECRET_KEY,
+            algorithms=["HS256"],
+            options={"require": ["sub", "iat", "exp"]},
+        )
+        id_usuario = int(payload["sub"])
+        return id_usuario if id_usuario > 0 else None
+    except (jwt.InvalidTokenError, TypeError, ValueError):
+        return None
 
 
 def validar_registro_usuario(datos: dict) -> dict:

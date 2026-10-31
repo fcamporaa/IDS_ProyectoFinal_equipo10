@@ -1,5 +1,9 @@
+from datetime import datetime, timedelta, timezone
+
 import bcrypt
+import jwt
 import pymysql
+from src.constants import JWT_ACCESS_TOKEN_MINUTES, JWT_SECRET_KEY
 from src.repositories.usuarios_repository import (
     buscar_usuario_por_email_db,
     insertar_usuario_db,
@@ -7,6 +11,22 @@ from src.repositories.usuarios_repository import (
     actualizar_usuario_db,
 )
 from src.utils import construir_error_api
+
+
+def _crear_token_acceso(id_usuario: int) -> str:
+    if not JWT_SECRET_KEY:
+        raise RuntimeError("La variable JWT_SECRET_KEY no está configurada.")
+
+    ahora = datetime.now(timezone.utc)
+    return jwt.encode(
+        {
+            "sub": str(id_usuario),
+            "iat": ahora,
+            "exp": ahora + timedelta(minutes=JWT_ACCESS_TOKEN_MINUTES),
+        },
+        JWT_SECRET_KEY,
+        algorithm="HS256",
+    )
 
 
 def registrar_usuario(datos: dict) -> dict:
@@ -74,14 +94,20 @@ def autenticar_usuario(datos: dict) -> dict:
             "El email o la contraseña son incorrectos, o la cuenta no está activa.",
         )
 
+    fecha_registro = usuario["fecha_registro"]
     return {
+        "token": _crear_token_acceso(usuario["id_usuario"]),
         "usuario": {
             "id_usuario": usuario["id_usuario"],
             "nombre": usuario["nombre"],
             "email": usuario["email"],
             "numero_socio": usuario["numero_socio"],
             "rol": usuario["rol"],
-        }
+            "fecha_registro": fecha_registro.isoformat()
+            if hasattr(fecha_registro, "isoformat")
+            else fecha_registro,
+            "activo": bool(usuario["activo"]),
+        },
     }
 
 
@@ -89,7 +115,33 @@ def obtener_perfil_usuario(id_usuario: int) -> dict:
     """
     Obtiene los datos del perfil del usuario logueado actualmente.
     """
-    pass
+    usuario = buscar_usuario_por_id_db(id_usuario)
+    if not usuario:
+        return construir_error_api(
+            "error.auth.usuario_no_encontrado",
+            "Usuario no encontrado",
+            "No existe un usuario asociado al token de autenticación.",
+        )
+
+    if not usuario["activo"]:
+        return construir_error_api(
+            "error.auth.usuario_inactivo",
+            "Usuario inactivo",
+            "La cuenta asociada al token ya no está activa.",
+        )
+
+    fecha_registro = usuario["fecha_registro"]
+    return {
+        "id_usuario": usuario["id_usuario"],
+        "nombre": usuario["nombre"],
+        "email": usuario["email"],
+        "numero_socio": usuario["numero_socio"],
+        "rol": usuario["rol"],
+        "fecha_registro": fecha_registro.isoformat()
+        if hasattr(fecha_registro, "isoformat")
+        else fecha_registro,
+        "activo": bool(usuario["activo"]),
+    }
 
 
 def actualizar_perfil_usuario(id_usuario: int, datos: dict) -> None:
