@@ -1,0 +1,171 @@
+/* ========================================================
+   Componente: Pie de Página (.main-footer)
+   Arquitectura de 4 columnas, Cinematic Dark Mode
+   ======================================================== */
+
+.main-footer {
+    background-color: #0b0c0f;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding-top: 4rem;
+    margin-top: auto;
+    color: var(--color-text-muted, #94a3b8);
+}
+
+.footer-container {
+    display: grid;
+    grid-template-columns: 1.8fr 1fr 1.4fr 1fr;
+    gap: 3rem;
+    padding-bottom: 3.5rem;
+}
+
+/* Columna de Marca */
+.footer-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    text-decoration: none;
+}
+
+.footer-brand .clapper-icon {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+}
+
+.footer-brand .brand-typography {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.1;
+}
+
+.footer-brand .brand-name {
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    color: var(--color-text-main, #ffffff);
+}
+
+.footer-brand .brand-accent {
+    color: var(--color-primary, #e50914);
+}
+
+.footer-brand .brand-tagline {
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    color: var(--color-secondary, #f59e0b);
+    margin-top: 2px;
+}
+
+.footer-desc {
+    color: var(--color-text-muted, #94a3b8);
+    font-size: 0.88rem;
+    line-height: 1.6;
+    max-width: 320px;
+}
+
+/* Títulos de Secciones */
+.footer-heading {
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-main, #ffffff);
+    margin-bottom: 1.25rem;
+}
+
+/* Listas de Enlaces y Contenido */
+.footer-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.footer-link {
+    color: var(--color-text-muted, #94a3b8);
+    font-size: 0.88rem;
+    text-decoration: none;
+    transition: color 0.2s ease, transform 0.2s ease;
+    display: inline-block;
+}
+
+.footer-link:hover {
+    color: #ffffff;
+    transform: translateX(2px);
+}
+
+/* Columna de Complejos */
+.complexes-list li {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    font-size: 0.88rem;
+}
+
+.complex-name {
+    font-weight: 600;
+    color: var(--color-text-main, #e2e8f0);
+}
+
+.complex-address {
+    font-size: 0.8rem;
+    color: var(--color-text-dim, #64748b);
+}
+
+.complexes-list .contact-info {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px dashed rgba(255, 255, 255, 0.06);
+}
+
+/* Barra Inferior (Bottom Bar) */
+.footer-bottom {
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    background-color: #07080a;
+    padding: 1.25rem 0;
+    font-size: 0.8rem;
+    color: var(--color-text-dim, #64748b);
+}
+
+.footer-bottom-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.copyright-text {
+    margin: 0;
+}
+
+.academic-text {
+    margin: 0;
+    color: var(--color-text-dim, #64748b);
+    font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .footer-container {
+        grid-template-columns: 1fr 1fr;
+        gap: 2.5rem;
+    }
+}
+
+@media (max-width: 600px) {
+    .footer-container {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+        padding-bottom: 2.5rem;
+    }
+
+    .footer-bottom-content {
+        flex-direction: column;
+        text-align: center;
+    }
+}

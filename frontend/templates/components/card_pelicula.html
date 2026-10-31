@@ -1,0 +1,72 @@
+{# Componente Reutilizable: Tarjeta de Película en Cartelera
+   Parámetros esperados en 'p' o 'pelicula':
+   - id_pelicula: Identificador
+   - titulo: Nombre de la película
+   - poster_url: URL de la imagen del póster (proporción 2:3)
+   - formato: '2D', '3D' o '4D'
+   - clasificacion: 'ATP', '+13', '+16', '+18'
+   - duracion_min: Duración en minutos
+   - genero: Texto de género (o lista)
+   - subtitulada: Booleano
+   - sala_principal: Ej. 'Sala 1'
+   - horarios: Lista de horarios (strings ej: ['16:45', '19:30', '22:45'])
+#}
+
+{% set m = pelicula | default(p) %}
+
+<article 
+    class="movie-card" 
+    data-title="{{ m.titulo | lower }}" 
+    data-genres="{{ m.genero_slug | default(m.genero | lower) }}"
+>
+    <!-- Contenedor del Póster 2:3 -->
+    <div class="movie-poster-wrapper">
+        <img 
+            src="{{ m.poster_url }}" 
+            alt="Póster de {{ m.titulo }}" 
+            class="movie-poster-img"
+            loading="lazy"
+        >
+
+        <!-- Badge Superior de Formato Real (2D / 3D / 4D) -->
+        <div class="poster-badge-top">
+            <span class="format-badge format-{{ m.formato | lower }}">{{ m.formato }}</span>
+        </div>
+
+        <!-- Píldora Inferior: Clasificación y Duración -->
+        <div class="poster-badge-bottom">
+            <span class="age-badge">{{ m.clasificacion }}</span>
+            <span class="duration-badge">{{ m.duracion_min }} min</span>
+        </div>
+    </div>
+
+    <!-- Información y Horarios -->
+    <div class="movie-info-body">
+        <div class="movie-header-meta">
+            <span class="genre-text">
+                {{ m.genero }} &bull; {{ 'Subtitulada' if m.subtitulada else 'Castellano' }}
+            </span>
+            <span class="hall-badge">{{ m.sala_principal }}</span>
+        </div>
+
+        <h3 class="movie-title" title="{{ m.titulo }}">{{ m.titulo }}</h3>
+
+        <!-- Horarios Disponibles -->
+        <div class="showtimes-container">
+            <span class="showtimes-heading">Horarios de hoy:</span>
+            <div class="chips-row">
+                {% for hora in m.horarios %}
+                    <a href="#funcion" class="time-btn" title="Función {{ hora }}">
+                        {{ hora }}
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Botón de Acción Directo -->
+        <a href="#butacas" class="btn-select-seats">
+            <span class="seat-icon">🎟️</span>
+            <span>Seleccionar Butacas</span>
+        </a>
+    </div>
+</article>

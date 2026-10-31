@@ -1,0 +1,69 @@
+{# Componente Reutilizable: Barra de Navegación Principal (Cinema Paradiso)
+   Basado en la estética Cinematic Precision de DESIGN.md y el contrato de la API.
+   Parámetros opcionales:
+   - usuario_activo: Diccionario de usuario si hay sesión (opcional)
+   - es_admin: Booleano si el usuario tiene rol de administrador (opcional, default true para demo docente)
+#}
+
+<header class="main-header">
+    <div class="header-container container">
+        <!-- Lado Izquierdo: Marca y Selector de Sede -->
+        <div class="header-brand-group">
+            <a href="{{ url_for('home.index') }}" class="brand-link" title="Inicio - Cinema Paradiso">
+                <!-- Isotipo de Claqueta Cinematográfica -->
+                <div class="brand-clapperboard">
+                    <svg class="clapper-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="6" width="20" height="15" rx="2" fill="#1b1b1f" stroke="#e50914"></rect>
+                        <path d="M2 10h20" stroke="#f59e0b"></path>
+                        <path d="M6 6l3 4" stroke="#f59e0b"></path>
+                        <path d="M12 6l3 4" stroke="#f59e0b"></path>
+                        <path d="M18 6l3 4" stroke="#f59e0b"></path>
+                        <circle cx="12" cy="15" r="2" fill="#f59e0b"></circle>
+                    </svg>
+                </div>
+                <div class="brand-typography">
+                    <span class="brand-name">CINEMA <span class="brand-accent">PARADISO</span></span>
+                    <span class="brand-tagline">ESTUDIOS &amp; SALAS</span>
+                </div>
+            </a>
+
+            <!-- Selector de Complejo Activo (3 sedes reales del proyecto) -->
+            <div class="complex-selector-wrapper">
+                <span class="selector-icon">📍</span>
+                <select class="complex-select" id="complexSelector" aria-label="Seleccionar complejo">
+                    <option value="centro" selected>Cine Paradiso Centro (Av. Corrientes 1240)</option>
+                    <option value="palermo">Cine Paradiso Palermo (Humboldt 1920)</option>
+                    <option value="belgrano">Cine Paradiso Belgrano (Av. Cabildo 2180)</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Centro: Navegación Limpia y no saturada -->
+        <nav class="nav-links" aria-label="Navegación principal">
+            <a href="{{ url_for('home.index') }}" class="nav-link active">Cartelera</a>
+            <a href="#candy-bar" class="nav-link">Candy Bar</a>
+            <a href="#mis-compras" class="nav-link">Mis Compras</a>
+        </nav>
+
+        <!-- Lado Derecho: Acceso y Sesión -->
+        <div class="header-actions">
+            {% if es_admin %}
+                <!-- Acceso a Backoffice exclusivo para administradores autenticados -->
+                <a href="#backoffice" class="nav-backoffice-link" title="Panel de Administración">
+                    <span>⚙️</span> Backoffice
+                </a>
+            {% endif %}
+
+            {% if usuario_activo %}
+                <a href="#perfil" class="nav-user-chip">
+                    <span class="user-avatar">👤</span>
+                    <span class="user-name">{{ usuario_activo.nombre | default('Mi Perfil') }}</span>
+                </a>
+            {% else %}
+                <a href="#login" class="nav-login-btn">
+                    Iniciar Sesión
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</header>
