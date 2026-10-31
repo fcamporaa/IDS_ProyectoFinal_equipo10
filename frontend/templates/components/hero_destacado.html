@@ -1,0 +1,78 @@
+{# Componente Reutilizable: Hero Spotlight Cinematográfico (Película Destacada)
+   Respeta estrictamente el contrato de datos del backend (formatos 2D/3D/4D, año, duración, clasificación).
+   Parámetros opcionales:
+   - pelicula: Diccionario con datos de la película destacada (opcional)
+#}
+
+{% set p = pelicula | default({
+    'titulo': 'Dune: Parte Dos',
+    'sinopsis': 'Paul Atreides se une a Chani y a los Fremen mientras busca venganza contra los conspiradores que destruyeron a su familia, enfrentando la encrucijada entre el amor de su vida y el destino del universo.',
+    'formato': '4D',
+    'subtitulada': true,
+    'clasificacion': '+13',
+    'duracion_min': 166,
+    'anio_estreno': 2024,
+    'es_reestreno': false,
+    'backdrop_url': 'https://lh3.googleusercontent.com/aida-public/AB6AXuBm6vosSaQ437nlMUdS7P23WyWc7QTobZEMWxhNDC5UoljugmC5lo-t4us28RsXxHKXm9SbHhE_K5m9PWN7a8I9jWqV0k3aiEUc7LEe1hvOPgpCZG4noiKQVsy17MaV8MfVpu-7kOK1R8FZil_pCMK_8UCBGdwit3Fh3S4Puiae_Hkuq_4LXYrXdWaT8XbPLgZ0DR1evWbVxFkYR9VucQ6wxmmAyoCA-r9TzCewXQ',
+    'horarios': [
+        {'hora': '19:30 hs', 'sala': 'Sala 1 (4D)'},
+        {'hora': '20:30 hs', 'sala': 'Sala 2 (3D)'},
+        {'hora': '22:45 hs', 'sala': 'Sala 1 (4D)'}
+    ]
+}) %}
+
+<section class="hero-spotlight-section" style="background-image: url('{{ p.backdrop_url }}');" aria-label="Película Destacada">
+    <!-- Capas de Gradientes Cinematográficos (Scrim Layers) -->
+    <div class="hero-scrim-vertical"></div>
+    <div class="hero-scrim-horizontal"></div>
+
+    <div class="hero-content container">
+        <div class="hero-meta-wrapper">
+            <!-- Badges de Formato y Atributos Reales -->
+            <div class="hero-badges">
+                {% if p.es_reestreno %}
+                    <span class="badge-tag badge-reestreno">Reestreno Exclusivo</span>
+                {% else %}
+                    <span class="badge-tag badge-estreno">Estreno de la Semana</span>
+                {% endif %}
+
+                <span class="badge-tag badge-format">SALA {{ p.formato }}</span>
+
+                <span class="badge-tag badge-age">{{ p.clasificacion }}</span>
+
+                <span class="badge-text">
+                    &bull; {{ p.duracion_min }} min &bull; {{ 'Subtitulada' if p.subtitulada else 'Castellano' }} &bull; Año {{ p.anio_estreno }}
+                </span>
+            </div>
+
+            <!-- Título Principal -->
+            <h1 class="hero-title">{{ p.titulo }}</h1>
+
+            <!-- Sinopsis Argumental -->
+            <p class="hero-synopsis">
+                {{ p.sinopsis }}
+            </p>
+
+            <!-- Horarios Directos de Hoy y Botón de Compra -->
+            <div class="hero-actions-panel">
+                <div class="direct-showtimes">
+                    <span class="showtimes-label">Hoy:</span>
+                    <div class="showtime-chips">
+                        {% for h in p.horarios %}
+                            <a href="#funciones" class="hero-time-chip">
+                                <span class="time-text">{{ h.hora }}</span>
+                                <span class="hall-text">{{ h.sala }}</span>
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Botón CTA Primario -->
+                <a href="#comprar" class="hero-cta-btn">
+                    <span class="cta-icon">🎟️</span>
+                    <span>Comprar Entradas</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
