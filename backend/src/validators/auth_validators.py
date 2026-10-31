@@ -26,6 +26,30 @@ def validar_token_acceso(token: str) -> int | None:
         return None
 
 
+def validar_autorizacion(encabezado: str | None) -> dict:
+    """Valida el encabezado Bearer y devuelve el ID del usuario autenticado."""
+    partes_autorizacion = encabezado.split() if isinstance(encabezado, str) else []
+    if (
+        len(partes_autorizacion) != 2
+        or partes_autorizacion[0].lower() != "bearer"
+    ):
+        return construir_error_api(
+            "error.auth.token_requerido",
+            "Autenticación requerida",
+            "Envía un token válido como Bearer en el encabezado Authorization.",
+        )
+
+    usuario_id = validar_token_acceso(partes_autorizacion[1])
+    if usuario_id is None:
+        return construir_error_api(
+            "error.auth.token_invalido",
+            "Token inválido",
+            "El token es inválido o expiró.",
+        )
+
+    return {"usuario_id": usuario_id}
+
+
 def validar_registro_usuario(datos: dict) -> dict:
     """
     Valida datos obligatorios para el registro de cliente:
