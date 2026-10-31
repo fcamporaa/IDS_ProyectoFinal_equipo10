@@ -104,3 +104,18 @@ footer {
     border-top: 1px solid var(--color-border);
     background-color: var(--color-bg-main);
 }
+
+/* Formulario provisional: estilos reutilizables en pantallas cliente. */
+.checkout-card { max-width: 620px; text-align: left; }
+.checkout-form { display: grid; gap: 1rem; margin-top: 1.5rem; }
+.form-field { display: grid; gap: .4rem; }
+.form-field input, .form-field select { width: 100%; padding: .7rem;
+  background: var(--color-bg-main); color: var(--color-text-main);
+  border: 1px solid var(--color-border); border-radius: .5rem; }
+.action-btn { padding: .75rem 1rem; background: var(--color-accent-red);
+  color: white; border: 0; border-radius: .5rem; cursor: pointer; }
+.compra-resumen { display: grid; grid-template-columns: 1fr 2fr;
+  gap: .5rem 1rem; margin: 1.5rem 0; }
+.compra-resumen dt { color: var(--color-text-muted); }
+.alert-error { color: #fda4af !important; }
+.alert-success { color: #86efac !important; }

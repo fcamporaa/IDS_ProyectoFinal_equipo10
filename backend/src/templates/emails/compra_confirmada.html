@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><title>Entrada Cine Paradiso</title></head>
+<body style="font:16px Arial,sans-serif;max-width:640px;margin:auto;color:#1d2634">
+  <h1>Cine Paradiso</h1>
+  <h2>Compra confirmada</h2>
+  <p>Reserva: <strong>{{ codigo_reserva }}</strong></p>
+  <p>Película: {{ pelicula }}</p>
+  <p>Complejo: {{ local }} — Sala {{ sala }}</p>
+  <p>Función: {{ inicio }}</p>
+  <p>Butacas:
+  {% for entrada in entradas %}{{ entrada.fila }}{{ entrada.numero }}{% if not loop.last %}, {% endif %}{% endfor %}
+  </p>
+  <p>Total abonado (simulado en desarrollo): $ {{ total }}</p>
+  <p><img alt="Código QR de la entrada" src="cid:entrada-qr" width="220" height="220"></p>
+  <p>Presentá este QR en la puerta de la sala. Es válido una sola vez para la función adquirida.</p>
+  <small>Comprobante demostrativo. No constituye una factura fiscal autorizada.</small>
+</body></html>

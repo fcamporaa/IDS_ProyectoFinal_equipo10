@@ -1,0 +1,22 @@
+{% extends 'layout.html' %}
+{% block title %}Compra confirmada | Cine Paradiso{% endblock %}
+{% block content %}
+<section class="card checkout-card">
+  <h1>¡Gracias por tu compra!</h1>
+  {% include 'components/mensajes.html' %}
+  <p>Compra <strong>{{ compra.codigo_reserva }}</strong> — estado {{ compra.estado }}.</p>
+  <dl class="compra-resumen">
+    <dt>Película</dt><dd>{{ compra.pelicula }}</dd>
+    <dt>Función</dt><dd>{{ compra.inicio }}</dd>
+    <dt>Complejo</dt><dd>{{ compra.local }} · Sala {{ compra.sala }}</dd>
+    <dt>Butacas</dt><dd>{% for entrada in compra.entradas %}{{ entrada.fila }}{{ entrada.numero }}{% if not loop.last %}, {% endif %}{% endfor %}</dd>
+    <dt>Total</dt><dd>$ {{ compra.total }}</dd>
+    <dt>Correo</dt><dd>{{ compra.email_comprobante }} · {{ compra.email_estado }}</dd>
+  </dl>
+  <p>El QR se envía por email cuando se configura SMTP. El modo consola no envía correo.</p>
+  <form method="POST" action="{{ url_for('compras.reenviar_email', id_compra=compra.id_compra) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    {% with texto='Reenviar comprobante' %}{% include 'components/boton.html' %}{% endwith %}
+  </form>
+</section>
+{% endblock %}

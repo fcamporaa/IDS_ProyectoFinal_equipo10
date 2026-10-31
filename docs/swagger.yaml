@@ -789,8 +789,9 @@ paths:
         Realiza la transacción de compra:
         1. Valida que las butacas seleccionadas sigan libres en la función.
         2. Calcula el subtotal de entradas y servicios adicionales agregados.
-        3. Procesa el pago y registra la orden en estado `PAGADA`.
-        4. Genera el código QR (`qr_token`) y dispara el envío del email con la factura y el QR adjunto.
+        3. En entorno de desarrollo, simula la aprobación del pago (medio `TARJETA_SIMULADA` y ALLOW_SIMULATED_PAYMENTS=true). NO cobra tarjetas reales.
+        4. Guarda la compra y las entradas con transacción y control de butacas.
+        5. Genera un token QR y prepara el comprobante HTML con QR; el envío SMTP es opcional.
       operationId: procesarCompra
       security:
         - BearerAuth: []
@@ -802,7 +803,7 @@ paths:
               $ref: '#/components/schemas/CompraCrearRequest'
       responses:
         '201':
-          description: Compra procesada con éxito y comprobante/QR enviado al email.
+          description: Compra registrada. Revisar email_estado (ENVIADO, SIMULADO o ERROR).
           content:
             application/json:
               schema:
@@ -817,6 +818,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorRespuesta'
+
+  /compras/{id}/reenviar-comprobante:
+    post:
+      tags:
+        - Compras y Entradas
+      summary: Reintenta el envío del comprobante y QR de una compra pagada del cliente
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/CompraId'
+      responses:
+        '200':
+          description: Envío solicitado.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mensaje:
+                    type: string
+                  email_estado:
+                    type: string
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '404':
+          $ref: '#/components/responses/RecursoNoEncontrado'
 
   /compras/mis-compras:
     get:
@@ -1832,7 +1859,7 @@ components:
               cantidad: 2
         medio_pago:
           type: string
-          example: 'TARJETA_CREDITO'
+          example: 'TARJETA_SIMULADA'
         email_comprobante:
           type: string
           format: email
@@ -1854,9 +1881,10 @@ components:
           type: number
           format: float
           example: 15400.00
-        qr_token:
+        email_estado:
           type: string
-          example: 'c1f8e6a2-921b-4df2-a1f9-8c9e543b1234'
+          enum: [PENDIENTE, ENVIADO, SIMULADO, ERROR]
+          example: 'SIMULADO'
         email_enviado_a:
           type: string
           example: 'comprador@gmail.com'
@@ -1945,8 +1973,20 @@ components:
           type: string
           format: date-time
           example: '2026-11-12T14:22:00'
-        funcion:
-          $ref: '#/components/schemas/FuncionItem'
+        pelicula:
+          type: string
+        inicio:
+          type: string
+          format: date-time
+        sala:
+          type: integer
+        local:
+          type: string
+        email_comprobante:
+          type: string
+        email_estado:
+          type: string
+          enum: [PENDIENTE, ENVIADO, SIMULADO, ERROR]
         entradas:
           type: array
           items:
@@ -1971,9 +2011,7 @@ components:
           type: number
           format: float
           example: 15400.00
-        qr_token:
-          type: string
-          example: 'c1f8e6a2-921b-4df2-a1f9-8c9e543b1234'
+        # El token QR es secreto de acceso: se entrega en el correo al titular.
         qr_validado_en:
           type: string
           format: date-time

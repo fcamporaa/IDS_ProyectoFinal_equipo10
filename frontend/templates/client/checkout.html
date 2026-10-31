@@ -1,0 +1,30 @@
+{% extends 'layout.html' %}
+{% block title %}Checkout de integración | Cine Paradiso{% endblock %}
+{% block content %}
+<section class="card checkout-card">
+  <h1>Checkout de integración</h1>
+  <p>Formulario temporal para probar la conexión con US-08. No ingreses datos reales de tarjeta.</p>
+  {% include 'components/mensajes.html' %}
+  <form class="checkout-form" method="POST" action="{{ url_for('compras.confirmar_compra') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    {% with nombre='id_funcion', etiqueta='ID de función', tipo='number', minimo=1, obligatorio=true %}
+      {% include 'components/campo_formulario.html' %}
+    {% endwith %}
+    {% with nombre='butacas_ids', etiqueta='ID de butaca 1', tipo='number', minimo=1, obligatorio=true %}
+      {% include 'components/campo_formulario.html' %}
+    {% endwith %}
+    <label class="form-field">Butaca adicional (opcional)
+      <input name="butacas_ids" type="number" min="1">
+    </label>
+    {% with nombre='email_comprobante', etiqueta='Correo del comprobante', tipo='email', obligatorio=true %}
+      {% include 'components/campo_formulario.html' %}
+    {% endwith %}
+    <label class="form-field" for="medio_pago">Medio de pago
+      <select id="medio_pago" name="medio_pago">
+        <option value="TARJETA_SIMULADA">Pago SIMULADO de desarrollo</option>
+      </select>
+    </label>
+    {% with texto='Confirmar compra de prueba' %}{% include 'components/boton.html' %}{% endwith %}
+  </form>
+</section>
+{% endblock %}

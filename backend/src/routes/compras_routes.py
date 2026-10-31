@@ -1,44 +1,67 @@
-from flask import jsonify, request
+from flask import Blueprint, jsonify, request
+from src.constants import HTTP_OK, HTTP_CREADO, HTTP_NO_AUTORIZADO, HTTP_NO_ENCONTRADO
+from src.utils import construir_error_api
+from src.services.sesion_services import obtener_cliente_autenticado
 from src.services.compras_services import (
-    procesar_compra,
-    listar_mis_compras,
-    obtener_detalle_compra,
-    cancelar_compra,
+    procesar_compra, obtener_detalle_compra, listar_mis_compras, reenviar_comprobante,
 )
-from src.validators.compras_validators import (
-    validar_id_compra,
-    validar_datos_compra,
-)
+from src.validators.compras_validators import validar_id_compra, validar_datos_compra
+
+compras_bp = Blueprint("compras", __name__)
 
 
-def register_compras_routes(app):
+def _cliente_actual():
+    usuario = obtener_cliente_autenticado(request.headers.get("Authorization", ""))
+    if not usuario:
+        return None, (jsonify(construir_error_api(
+            "auth.required", "No autorizado", "Se requiere una sesión de cliente válida."
+        )), HTTP_NO_AUTORIZADO)
+    return usuario, None
 
-    @app.route("/compras", methods=["POST"])
-    def post_compra():
-        """
-        POST /compras: Procesa la compra (verifica que las butacas sigan libres,
-        calcula los servicios adicionales y procesa el pago), genera el QR y envía la factura/QR por email.
-        """
-        pass
 
-    @app.route("/compras/mis-compras", methods=["GET"])
-    def get_mis_compras():
-        """
-        GET /compras/mis-compras: Devuelve el historial de compras del cliente logueado.
-        """
-        pass
+@compras_bp.route("/compras", methods=["POST"])
+def post_compra():
+    usuario, error = _cliente_actual()
+    if error:
+        return error
+    datos = validar_datos_compra(request.get_json(silent=True))
+    compra = procesar_compra(usuario["id_usuario"], datos)
+    return jsonify(compra), HTTP_CREADO
 
-    @app.route("/compras/<int:id>", methods=["GET"])
-    def get_compra(id):
-        """
-        GET /compras/{id}: Muestra el detalle completo de una compra, sus entradas, servicios asociados y datos del QR.
-        """
-        pass
 
-    @app.route("/compras/<int:id>/cancelar", methods=["PUT"])
-    def put_cancelar_compra(id):
-        """
-        PUT /compras/{id}/cancelar: Cancela una compra, la registra y libera las butacas,
-        validando estar dentro del tiempo límite previo a la función.
-        """
-        pass
+@compras_bp.route("/compras/mis-compras", methods=["GET"])
+def get_mis_compras():
+    usuario, error = _cliente_actual()
+    if error:
+        return error
+    return jsonify(listar_mis_compras(usuario["id_usuario"])), HTTP_OK
+
+
+@compras_bp.route("/compras/<int:id>", methods=["GET"])
+def get_compra(id):
+    usuario, error = _cliente_actual()
+    if error:
+        return error
+    compra = obtener_detalle_compra(validar_id_compra(id), usuario["id_usuario"])
+    if not compra:
+        return jsonify(construir_error_api("compras.no_existe", "No encontrada",
+                                            "No existe esa compra para el usuario.")), HTTP_NO_ENCONTRADO
+    return jsonify(compra), HTTP_OK
+
+
+@compras_bp.route("/compras/<int:id>/reenviar-comprobante", methods=["POST"])
+def post_reenviar_comprobante(id):
+    usuario, error = _cliente_actual()
+    if error:
+        return error
+    estado = reenviar_comprobante(validar_id_compra(id), usuario["id_usuario"])
+    if estado is None:
+        return jsonify(construir_error_api("compras.no_existe", "No encontrada",
+                                            "No existe esa compra para el usuario.")), HTTP_NO_ENCONTRADO
+    return jsonify({"mensaje": "Solicitud de envío procesada.", "email_estado": estado}), HTTP_OK
+
+
+@compras_bp.route("/compras/<int:id>/cancelar", methods=["PUT"])
+def put_cancelar_compra(id):
+    return jsonify(construir_error_api("compras.pendiente", "No implementado",
+                                        "La cancelación pertenece a US-10.")), 501

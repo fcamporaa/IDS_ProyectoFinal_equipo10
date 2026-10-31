@@ -1,0 +1,7 @@
+<label class="form-field" for="{{ identificador | default(nombre) }}">
+  <span>{{ etiqueta }}</span>
+  <input id="{{ identificador | default(nombre) }}" name="{{ nombre }}" type="{{ tipo | default('text') }}"
+         {% if obligatorio | default(false) %}required{% endif %}
+         {% if minimo is defined %}min="{{ minimo }}"{% endif %}
+         {% if valor is defined %}value="{{ valor }}"{% endif %}>
+</label>
