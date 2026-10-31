@@ -158,4 +158,55 @@ def validar_actualizacion_perfil(datos: dict) -> dict:
     - nombre (opcional)
     - contrasena (opcional)
     """
-    pass
+    if not isinstance(datos, dict):
+        return construir_error_api(
+            "error.validacion.cuerpo",
+            "Cuerpo de solicitud inválido",
+            "Se esperaba un objeto JSON con nombre o contraseña.",
+        )
+
+    campos_permitidos = {"nombre", "contrasena"}
+    campos_desconocidos = set(datos) - campos_permitidos
+    if campos_desconocidos:
+        return construir_error_api(
+            "error.validacion.campo_no_permitido",
+            "Campo no permitido",
+            f"Los campos no están permitidos: {', '.join(sorted(campos_desconocidos))}.",
+        )
+
+    if not datos:
+        return construir_error_api(
+            "error.validacion.perfil_vacio",
+            "Datos de perfil requeridos",
+            "Debe proporcionar al menos nombre o contraseña para actualizar el perfil.",
+        )
+
+    datos_validados = {}
+    if "nombre" in datos:
+        nombre = datos["nombre"]
+        if not isinstance(nombre, str) or not nombre.strip() or len(nombre.strip()) > 120:
+            return construir_error_api(
+                "error.validacion.nombre",
+                "Nombre inválido",
+                "El nombre debe tener entre 1 y 120 caracteres.",
+            )
+        datos_validados["nombre"] = nombre.strip()
+
+    if "contrasena" in datos:
+        contrasena = datos["contrasena"]
+        if (
+            not isinstance(contrasena, str)
+            or len(contrasena) < 8
+            or len(contrasena.encode("utf-8")) > 72
+            or not re.search(r"[a-z]", contrasena)
+            or not re.search(r"[A-Z]", contrasena)
+            or not re.search(r"[0-9]", contrasena)
+        ):
+            return construir_error_api(
+                "error.validacion.contrasena",
+                "Contraseña inválida",
+                "La contraseña debe tener al menos 8 caracteres, incluir mayúscula, minúscula y número, y no superar 72 bytes en UTF-8.",
+            )
+        datos_validados["contrasena"] = contrasena
+
+    return datos_validados

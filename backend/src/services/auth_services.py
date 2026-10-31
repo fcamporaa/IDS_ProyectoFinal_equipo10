@@ -148,4 +148,12 @@ def actualizar_perfil_usuario(id_usuario: int, datos: dict) -> None:
     """
     Actualiza datos de perfil o contraseña del usuario logueado.
     """
-    pass
+    datos_actualizados = {}
+    if "nombre" in datos:
+        datos_actualizados["nombre"] = datos["nombre"]
+    if "contrasena" in datos:
+        datos_actualizados["contrasena_hash"] = bcrypt.hashpw(
+            datos["contrasena"].encode("utf-8"), bcrypt.gensalt()
+        ).decode("utf-8")
+
+    actualizar_usuario_db(id_usuario, datos_actualizados)

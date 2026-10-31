@@ -35,4 +35,21 @@ def insertar_usuario_db(datos: dict) -> int:
 
 def actualizar_usuario_db(id_usuario: int, datos: dict) -> int:
     """Actualiza datos del usuario por su id_usuario."""
-    pass
+    columnas_permitidas = ("nombre", "contrasena_hash")
+    campos_actualizables = [
+        campo for campo in columnas_permitidas if campo in datos
+    ]
+    if not campos_actualizables:
+        return 0
+
+    asignaciones = ", ".join(
+        f"{campo} = %({campo})s" for campo in campos_actualizables
+    )
+    query = f"""
+        UPDATE usuarios
+        SET {asignaciones}
+        WHERE id_usuario = %(id_usuario)s
+    """
+    parametros = {campo: datos[campo] for campo in campos_actualizables}
+    parametros["id_usuario"] = id_usuario
+    return ejecutar_mutacion(query, parametros)

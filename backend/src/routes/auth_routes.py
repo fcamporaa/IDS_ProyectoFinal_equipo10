@@ -89,9 +89,39 @@ def register_auth_routes(app):
         """
         PUT /auth/me: Permite al usuario logueado actualizar sus datos personales o contraseña.
         """
-        # usuario_id = ... (obtener de token / sesión)
-        # datos = request.get_json(silent=True)
-        # datos_validados = validar_actualizacion_perfil(datos)
-        # actualizar_perfil_usuario(usuario_id, datos_validados)
-        # return "", 204
-        pass
+        partes_autorizacion = request.headers.get("Authorization", "").split()
+        if (
+            len(partes_autorizacion) != 2
+            or partes_autorizacion[0].lower() != "bearer"
+        ):
+            return jsonify(
+                construir_error_api(
+                    "error.auth.token_requerido",
+                    "Autenticación requerida",
+                    "Envía un token válido como Bearer en el encabezado Authorization.",
+                )
+            ), 401
+
+        usuario_id = validar_token_acceso(partes_autorizacion[1])
+        if usuario_id is None:
+            return jsonify(
+                construir_error_api(
+                    "error.auth.token_invalido",
+                    "Token inválido",
+                    "El token es inválido o expiró.",
+                )
+            ), 401
+
+        datos = request.get_json(silent=True)
+        datos_validados = validar_actualizacion_perfil(datos)
+        if "errors" in datos_validados:
+            return jsonify(datos_validados), 400
+
+        perfil = obtener_perfil_usuario(usuario_id)
+        if "errors" in perfil:
+            codigo_error = perfil["errors"][0]["code"]
+            estado = 401 if codigo_error == "error.auth.usuario_inactivo" else 404
+            return jsonify(perfil), estado
+
+        actualizar_perfil_usuario(usuario_id, datos_validados)
+        return jsonify({"mensaje": "Perfil actualizado correctamente."}), 200
