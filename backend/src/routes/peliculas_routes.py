@@ -7,8 +7,6 @@ from src.services.peliculas_services import (
     eliminar_pelicula,
     buscar_peliculas_externas,
     listar_generos,
-    listar_resenas_pelicula,
-    crear_resena_pelicula,
 )
 from src.validators.peliculas_validators import (
     validar_id_pelicula,
@@ -16,7 +14,6 @@ from src.validators.peliculas_validators import (
     validar_crear_pelicula,
     validar_actualizar_pelicula,
     validar_busqueda_externa,
-    validar_crear_resena,
 )
 
 
