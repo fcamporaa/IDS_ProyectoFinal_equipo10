@@ -1,6 +1,5 @@
 from flask import jsonify, request
 
-from src.constants import HTTP_CREATED, HTTP_OK
 from src.services.funciones_services import (
     actualizar_funcion,
     crear_funcion,
@@ -24,7 +23,7 @@ def register_funciones_routes(app):
         GET /funciones: Lista las funciones programadas.
         """
         filtros = validar_filtros_funciones(request.args)
-        return jsonify(listar_funciones(filtros)), HTTP_OK
+        return jsonify(listar_funciones(filtros)), 200
 
     @app.route("/funciones", methods=["POST"])
     def post_funcion():
@@ -32,7 +31,7 @@ def register_funciones_routes(app):
         POST /funciones: Programa una nueva función validando que esté disponible el horario en la misma sala (Solo Admin).
         """
         datos = validar_crear_funcion(request.get_json(silent=True))
-        return jsonify(crear_funcion(datos)), HTTP_CREATED
+        return jsonify(crear_funcion(datos)), 201
 
     @app.route("/funciones/<int:id>", methods=["PUT"])
     def put_funcion(id):
@@ -41,18 +40,18 @@ def register_funciones_routes(app):
         """
         id_funcion = validar_id_funcion(id)
         cambios = validar_actualizar_funcion(request.get_json(silent=True))
-        return jsonify(actualizar_funcion(id_funcion, cambios)), HTTP_OK
+        return jsonify(actualizar_funcion(id_funcion, cambios)), 200
 
     @app.route("/funciones/<int:id>", methods=["DELETE"])
     def delete_funcion(id):
         """
         DELETE /funciones/{id}: Cancela o da de baja una función programada sin entradas activas (Solo Admin).
         """
-        return jsonify(eliminar_funcion(validar_id_funcion(id))), HTTP_OK
+        return jsonify(eliminar_funcion(validar_id_funcion(id))), 200
 
     @app.route("/funciones/<int:id>/butacas", methods=["GET"])
     def get_butacas_funcion(id):
         """
         GET /funciones/{id}/butacas: Devuelve el mapa de butacas de la sala indicando cuáles están libres y cuáles ocupadas para esa función.
         """
-        return jsonify(obtener_mapa_butacas_funcion(validar_id_funcion(id))), HTTP_OK
+        return jsonify(obtener_mapa_butacas_funcion(validar_id_funcion(id))), 200
