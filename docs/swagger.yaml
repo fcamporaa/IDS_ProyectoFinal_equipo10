@@ -1398,6 +1398,7 @@ components:
         - titulo
         - origen_api
         - generos_ids
+        - duracion_min 
       properties:
         titulo:
           type: string
