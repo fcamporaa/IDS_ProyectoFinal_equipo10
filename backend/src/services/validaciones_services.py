@@ -1,22 +1,20 @@
+from datetime import datetime
 from src.repositories.validaciones_repository import (
-    buscar_compra_por_qr_token_db,
-    marcar_qr_utilizado_db,
-    registrar_auditoria_validacion_db,
-    obtener_historial_validaciones_db,
+    validar_y_registrar_qr_db, obtener_historial_validaciones_db,
 )
-from src.utils import construir_error_api
 
 
-def procesar_validacion_qr(datos: dict) -> dict:
-    """
-    1. Busca compra por qr_token.
-    2. Valida que exista, coincida función/fecha, no esté cancelada ni previamente usada.
-    3. Registra auditoría en validaciones_qr ('EXITO', 'FALLIDO', 'REUTILIZADO').
-    4. Si es válida, marca qr_validado_en con datetime actual.
-    """
-    pass
+def procesar_validacion_qr(datos: dict, id_administrador: int) -> dict:
+    """El repositorio aplica la verificación y el marcado de forma atómica."""
+    return validar_y_registrar_qr_db(
+        datos["qr_token"], id_administrador, datos["id_sala"]
+    )
 
 
 def listar_historial_validaciones_qr(filtros: dict) -> list[dict]:
-    """Lista las validaciones registradas en puerta."""
-    pass
+    historial = obtener_historial_validaciones_db(filtros)
+    for item in historial:
+        fecha = item.get("fecha_validacion")
+        if isinstance(fecha, datetime):
+            item["fecha_validacion"] = fecha.isoformat(timespec="seconds")
+    return historial
