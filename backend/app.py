@@ -7,7 +7,7 @@ from src.routes.peliculas_routes import register_peliculas_routes
 from src.routes.salas_routes import register_salas_routes
 from src.routes.funciones_routes import register_funciones_routes
 from src.routes.servicios_routes import register_servicios_routes
-from src.routes.compras_routes import register_compras_routes
+from src.routes.compras_routes import compras_bp
 from src.routes.validaciones_routes import register_validaciones_routes
 from src.routes.dashboard_routes import register_dashboard_routes
 
@@ -50,7 +50,7 @@ register_peliculas_routes(app)
 register_salas_routes(app)
 register_funciones_routes(app)
 register_servicios_routes(app)
-register_compras_routes(app)
+app.register_blueprint(compras_bp)
 register_validaciones_routes(app)
 register_dashboard_routes(app)
 

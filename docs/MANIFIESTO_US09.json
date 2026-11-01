@@ -1,0 +1,54 @@
+{
+  "fuente": "IDS_ProyectoFinal_equipo10(1).zip — repositorio original entregado por el usuario",
+  "enfoque": "US-09 + integración mínima con US-08; pago de prueba, sin procesador bancario real",
+  "instrucciones_leidas": [
+    "AGENTS.md",
+    "GEMINI.md",
+    ".agents/skills/01-planificar-y-reutilizar/SKILL.md",
+    ".agents/skills/02-desarrollar-backend/SKILL.md",
+    ".agents/skills/03-desarrollar-frontend/SKILL.md",
+    ".agents/skills/04-revisar-y-commitear/SKILL.md",
+    "docs/plan_templates_frontend.md"
+  ],
+  "añadidos": [
+    "backend/db/migrations/001_us09_qr_correo.sql",
+    "backend/src/config.py",
+    "backend/src/services/comprobantes_services.py",
+    "backend/src/services/qr_services.py",
+    "backend/src/services/sesion_services.py",
+    "backend/src/templates/emails/compra_confirmada.html",
+    "backend/src/templates/emails/comprobante_provisorio.html",
+    "docs/US09_PLAN_Y_SEGUIMIENTO.md",
+    "frontend/routes/compras_routes.py",
+    "frontend/services/compras_service.py",
+    "frontend/templates/client/checkout.html",
+    "frontend/templates/client/compra_exitosa.html",
+    "frontend/templates/components/boton.html",
+    "frontend/templates/components/campo_formulario.html",
+    "frontend/templates/components/mensajes.html",
+    "frontend/utils/csrf.py",
+    "frontend/validators/compras_validators.py",
+    "tests/test_us09.py"
+  ],
+  "modificados": [
+    "backend/.env.example",
+    "backend/app.py",
+    "backend/db/init_db.sql",
+    "backend/src/constants.py",
+    "backend/src/repositories/compras_repository.py",
+    "backend/src/routes/compras_routes.py",
+    "backend/src/services/compras_services.py",
+    "backend/src/utils.py",
+    "backend/src/validators/compras_validators.py",
+    "docs/swagger.yaml",
+    "frontend/.env.example",
+    "frontend/app.py",
+    "frontend/static/css/style.css"
+  ],
+  "dependencias_no_agregadas_por_restriccion": [
+    "requests en frontend/requirements.txt",
+    "qrcode (y Pillow) en backend/requirements.txt"
+  ],
+  "pruebas": "11 pruebas unitarias aprobadas; no hay verificación MySQL/SMTP en vivo",
+  "commit": "no realizado; requiere revisión y aprobación humana"
+}

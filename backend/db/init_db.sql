@@ -56,7 +56,10 @@ CREATE TABLE `compras` (
   `total` decimal(10,2) NOT NULL,
   `qr_token` varchar(160) DEFAULT NULL,
   `qr_validado_en` datetime DEFAULT NULL,
-  `cancelada_en` datetime DEFAULT NULL
+  `cancelada_en` datetime DEFAULT NULL,
+  `email_estado` varchar(20) NOT NULL DEFAULT 'PENDIENTE',
+  `email_intentos` int NOT NULL DEFAULT 0,
+  `email_enviado_en` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -86,7 +89,7 @@ CREATE TABLE `entradas` (
   `id_butaca` int(11) NOT NULL,
   `precio_unitario` decimal(10,2) NOT NULL,
   `estado` enum('DISPONIBLE','RESERVADA','OCUPADA','CANCELADA') NOT NULL,
-  `id_butaca_ocupada` int(11) DEFAULT NULL
+  `id_butaca_ocupada` int(11) GENERATED ALWAYS AS (CASE WHEN `estado` IN ('RESERVADA', 'OCUPADA') THEN `id_butaca` ELSE NULL END) STORED
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -254,7 +257,9 @@ ALTER TABLE `butacas`
 ALTER TABLE `compras`
   ADD PRIMARY KEY (`id_compra`),
   ADD KEY `id_usuario` (`id_usuario`),
-  ADD KEY `id_funcion` (`id_funcion`);
+  ADD KEY `id_funcion` (`id_funcion`),
+  ADD UNIQUE KEY `uq_codigo_reserva` (`codigo_reserva`),
+  ADD UNIQUE KEY `uq_qr_token` (`qr_token`);
 
 --
 -- Indices de la tabla `compra_servicios`
@@ -271,7 +276,8 @@ ALTER TABLE `entradas`
   ADD PRIMARY KEY (`id_entrada`),
   ADD KEY `id_compra` (`id_compra`),
   ADD KEY `id_funcion` (`id_funcion`),
-  ADD KEY `id_butaca` (`id_butaca`);
+  ADD KEY `id_butaca` (`id_butaca`),
+  ADD UNIQUE KEY `uq_entrada_funcion_activa` (`id_funcion`, `id_butaca_ocupada`);
 
 --
 -- Indices de la tabla `funciones`
