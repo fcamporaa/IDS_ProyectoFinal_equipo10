@@ -49,3 +49,10 @@ OMDB_TIMEOUT_SEGUNDOS = 10
 # Respuestas de OMDb que significan "sin resultados" y no un error del servicio
 OMDB_ERRORES_SIN_RESULTADOS = {"Movie not found!", "Too many results."}
 
+# ==========================================
+# Dominio - Funciones
+# ==========================================
+ZONA_HORARIA_LOCAL = timezone(timedelta(hours=-3))
+DURACION_FUNCION_POR_DEFECTO_MIN = 120
+ESTADOS_FUNCION_TERMINALES = {"CANCELADA", "FINALIZADA"}
+
