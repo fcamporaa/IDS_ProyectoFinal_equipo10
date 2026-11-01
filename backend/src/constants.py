@@ -39,3 +39,13 @@ FORMATOS_SALA = {"2D", "3D", "4D"}
 TIPOS_SERVICIO = {"COMIDA", "BEBIDA"}
 ORIGENES_API_PELICULAS = {"OMDB", "TMDB", "CUSTOM"}
 RESULTADOS_VALIDACION_QR = {"EXITO", "FALLIDO", "REUTILIZADO"}
+
+# ==========================================
+# API externa de películas (OMDb)
+# ==========================================
+OMDB_API_KEY = os.getenv("OMDB_API_KEY", "")
+OMDB_URL = "https://www.omdbapi.com/"
+OMDB_TIMEOUT_SEGUNDOS = 10
+# Respuestas de OMDb que significan "sin resultados" y no un error del servicio
+OMDB_ERRORES_SIN_RESULTADOS = {"Movie not found!", "Too many results."}
+
