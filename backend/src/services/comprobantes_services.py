@@ -1,14 +1,15 @@
 from src.repositories.compras_repository import (
-    obtener_detalle_compra_db,
+    obtener_detalle_comprobante_db,
     actualizar_estado_email_db,
 )
 from src.services.qr_services import crear_imagen_qr
 from src.utils import enviar_correo_html
+from src.config import obtener_config_email
 
 
 def enviar_comprobante_compra(id_compra: int, plantilla: str = "compra_confirmada") -> str:
     """Reutilizable por US-19: plantilla 'comprobante_provisorio' sin QR."""
-    compra = obtener_detalle_compra_db(id_compra)
+    compra = obtener_detalle_comprobante_db(id_compra)
     if not compra:
         raise ValueError("Compra inexistente")
     if plantilla == "compra_confirmada" and compra["estado"] != "PAGADA":
@@ -18,7 +19,7 @@ def enviar_comprobante_compra(id_compra: int, plantilla: str = "compra_confirmad
 
     try:
         imagenes = {}
-        if plantilla == "compra_confirmada":
+        if plantilla == "compra_confirmada" and obtener_config_email()["modo"] == "smtp":
             imagenes["entrada-qr"] = crear_imagen_qr(compra["qr_token"])
         estado = enviar_correo_html(
             destinatario=compra["email_comprobante"],

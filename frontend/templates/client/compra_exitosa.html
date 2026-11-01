@@ -6,9 +6,9 @@
   {% include 'components/mensajes.html' %}
   <p>Compra <strong>{{ compra.codigo_reserva }}</strong> — estado {{ compra.estado }}.</p>
   <dl class="compra-resumen">
-    <dt>Película</dt><dd>{{ compra.pelicula }}</dd>
-    <dt>Función</dt><dd>{{ compra.inicio }}</dd>
-    <dt>Complejo</dt><dd>{{ compra.local }} · Sala {{ compra.sala }}</dd>
+    <dt>Película</dt><dd>{{ compra.funcion.titulo_pelicula }}</dd>
+    <dt>Función</dt><dd>{{ compra.funcion.inicio }}</dd>
+    <dt>Complejo</dt><dd>{{ compra.funcion.nombre_local }} · Sala {{ compra.funcion.numero_sala }}</dd>
     <dt>Butacas</dt><dd>{% for entrada in compra.entradas %}{{ entrada.fila }}{{ entrada.numero }}{% if not loop.last %}, {% endif %}{% endfor %}</dd>
     <dt>Total</dt><dd>$ {{ compra.total }}</dd>
     <dt>Correo</dt><dd>{{ compra.email_comprobante }} · {{ compra.email_estado }}</dd>

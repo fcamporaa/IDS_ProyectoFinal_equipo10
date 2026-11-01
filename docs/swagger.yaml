@@ -812,6 +812,8 @@ paths:
           $ref: '#/components/responses/ErrorValidacion'
         '401':
           $ref: '#/components/responses/NoAutorizado'
+        '501':
+          description: No hay pasarela de pago real; habilitar solo el modo simulado de desarrollo.
         '409':
           description: Una o más butacas seleccionadas ya fueron adquiridas o reservadas por otro usuario.
           content:
@@ -900,7 +902,7 @@ paths:
       tags:
         - Compras y Entradas
       summary: Cancela una compra y libera las butacas
-      description: Cancela la compra (pasa a estado CANCELADA), invalida el QR y libera las butacas para que vuelvan a estar disponibles, validando que se realice dentro del tiempo límite previo al inicio de la función.
+      description: Cancela la compra (pasa a estado CANCELADA), invalida el QR y libera las butacas para que vuelvan a estar disponibles. Solo se permite hasta 24 horas antes del inicio de la función.
       operationId: cancelarCompra
       security:
         - BearerAuth: []
@@ -924,7 +926,7 @@ paths:
                     type: string
                     example: CANCELADA
         '400':
-          description: Tiempo límite de cancelación excedido o compra ya utilizada.
+          description: La compra está a menos de 24 horas de la función, ya fue utilizada o no está pagada.
           content:
             application/json:
               schema:
@@ -1881,10 +1883,12 @@ components:
           type: number
           format: float
           example: 15400.00
+        qr_token:
+          type: string
+          example: 'c1f8e6a2-921b-4df2-a1f9-8c9e543b1234'
         email_estado:
           type: string
           enum: [PENDIENTE, ENVIADO, SIMULADO, ERROR]
-          example: 'SIMULADO'
         email_enviado_a:
           type: string
           example: 'comprador@gmail.com'
@@ -1973,20 +1977,8 @@ components:
           type: string
           format: date-time
           example: '2026-11-12T14:22:00'
-        pelicula:
-          type: string
-        inicio:
-          type: string
-          format: date-time
-        sala:
-          type: integer
-        local:
-          type: string
-        email_comprobante:
-          type: string
-        email_estado:
-          type: string
-          enum: [PENDIENTE, ENVIADO, SIMULADO, ERROR]
+        funcion:
+          $ref: '#/components/schemas/FuncionItem'
         entradas:
           type: array
           items:
@@ -2011,7 +2003,15 @@ components:
           type: number
           format: float
           example: 15400.00
-        # El token QR es secreto de acceso: se entrega en el correo al titular.
+        email_comprobante:
+          type: string
+          format: email
+        email_estado:
+          type: string
+          enum: [PENDIENTE, ENVIADO, SIMULADO, ERROR]
+        qr_token:
+          type: string
+          example: 'c1f8e6a2-921b-4df2-a1f9-8c9e543b1234'
         qr_validado_en:
           type: string
           format: date-time

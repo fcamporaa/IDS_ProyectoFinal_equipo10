@@ -1,51 +1,57 @@
-from src.constants import (
-    MAX_BUTACAS_COMPRA, MAX_ITEMS_SERVICIOS, MEDIO_PAGO_DEMO,
-    HTTP_SOLICITUD_INVALIDA, HTTP_NO_IMPLEMENTADO,
-)
-from src.utils import es_entero_positivo, es_email_valido, error_de_negocio
+from src.utils import construir_error_api, es_entero_positivo, es_email_valido
+from src.constants import MAX_BUTACAS_COMPRA, MAX_ITEMS_SERVICIOS, MEDIO_PAGO_DEMO
 
 
 def validar_id_compra(id_compra: int) -> int:
-    if not es_entero_positivo(id_compra):
-        error_de_negocio("compras.id", "ID inválido", "Debe ser positivo.", HTTP_SOLICITUD_INVALIDA)
-    return id_compra
+    """Valida que id_compra sea un entero positivo."""
+    try:
+        id_validado = int(id_compra)
+    except (TypeError, ValueError):
+        id_validado = 0
+    if id_validado <= 0:
+        return construir_error_api(
+            "error.validacion.id_compra",
+            "ID de compra inválido",
+            "El identificador de compra debe ser un entero positivo.",
+        )
+    return id_validado
 
 
-def validar_datos_compra(datos: dict) -> dict:
+def validar_datos_compra(datos: dict, email_usuario: str = "") -> dict:
+    """Valida los IDs, servicios, correo y medio de pago del checkout."""
+    def error(codigo, texto):
+        return construir_error_api(codigo, "Compra inválida", texto)
+
     if not isinstance(datos, dict):
-        error_de_negocio("compras.json", "JSON inválido", "Se esperaba un objeto.", HTTP_SOLICITUD_INVALIDA)
+        return error("error.compras.json", "Se esperaba un objeto JSON.")
     funcion = datos.get("id_funcion")
     butacas = datos.get("butacas_ids")
-    servicios = datos.get("servicios", [])
-    email = datos.get("email_comprobante", "")
-    medio_pago = datos.get("medio_pago")
-
     if not es_entero_positivo(funcion):
-        error_de_negocio("compras.funcion", "Función inválida", "ID positivo obligatorio.", HTTP_SOLICITUD_INVALIDA)
+        return error("error.compras.funcion", "ID de función inválido.")
     if (not isinstance(butacas, list) or not 1 <= len(butacas) <= MAX_BUTACAS_COMPRA
-            or any(not es_entero_positivo(i) for i in butacas)
+            or any(not es_entero_positivo(b) for b in butacas)
             or len(set(butacas)) != len(butacas)):
-        error_de_negocio("compras.butacas", "Butacas inválidas", "1 a 20 IDs positivos sin repeticiones.", HTTP_SOLICITUD_INVALIDA)
+        return error("error.compras.butacas", "Las butacas deben ser IDs positivos, sin repeticiones.")
+    servicios = datos.get("servicios", [])
     if not isinstance(servicios, list) or len(servicios) > MAX_ITEMS_SERVICIOS:
-        error_de_negocio("compras.servicios", "Servicios inválidos", "Se esperaba una lista corta.", HTTP_SOLICITUD_INVALIDA)
-    ids = []
-    for servicio in servicios:
-        if (not isinstance(servicio, dict)
-                or not es_entero_positivo(servicio.get("id_servicio"))
-                or not es_entero_positivo(servicio.get("cantidad"))
-                or servicio["cantidad"] > 99):
-            error_de_negocio("compras.servicios", "Servicio inválido", "ID y cantidad positivos.", HTTP_SOLICITUD_INVALIDA)
-        ids.append(servicio["id_servicio"])
-    if len(set(ids)) != len(ids):
-        error_de_negocio("compras.servicios", "Servicios repetidos", "Agrupá las cantidades.", HTTP_SOLICITUD_INVALIDA)
+        return error("error.compras.servicios", "Lista de servicios inválida.")
+    ids_servicios = []
+    for item in servicios:
+        if (not isinstance(item, dict) or not es_entero_positivo(item.get("id_servicio"))
+                or not es_entero_positivo(item.get("cantidad")) or item["cantidad"] > 99):
+            return error("error.compras.servicios", "ID y cantidad de servicio deben ser positivos.")
+        ids_servicios.append(item["id_servicio"])
+    if len(ids_servicios) != len(set(ids_servicios)):
+        return error("error.compras.servicios", "Un servicio se agregó más de una vez.")
+    email = datos.get("email_comprobante") or email_usuario
     if not es_email_valido(email):
-        error_de_negocio("compras.email", "Email inválido", "Ingresá un correo válido.", HTTP_SOLICITUD_INVALIDA)
-    if medio_pago != MEDIO_PAGO_DEMO:
-        error_de_negocio("compras.pago", "Medio de pago no implementado", "No hay procesador bancario integrado.", HTTP_NO_IMPLEMENTADO)
+        return error("error.compras.email", "Correo electrónico inválido.")
+    if datos.get("medio_pago") != MEDIO_PAGO_DEMO:
+        return error("error.compras.medio_pago", "El pago real aún no está integrado.")
     return {
         "id_funcion": funcion,
         "butacas_ids": butacas,
         "servicios": servicios,
-        "medio_pago": medio_pago,
+        "medio_pago": MEDIO_PAGO_DEMO,
         "email_comprobante": email.strip(),
     }

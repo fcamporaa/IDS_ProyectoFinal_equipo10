@@ -20,7 +20,8 @@ def confirmar_compra():
         return "Formulario vencido o CSRF inválido.", 400
     token = session.get("access_token")
     if not token:
-        return "Falta iniciar sesión: integración con US-02 pendiente.", 401
+        flash("Necesitás iniciar sesión antes de comprar. El login web pertenece a US-02.", "error")
+        return redirect(url_for("home.index"))
     try:
         datos = validar_formulario_compra(request.form)
     except ValueError as error:
@@ -37,7 +38,8 @@ def confirmar_compra():
 def compra_exitosa(id_compra: int):
     token = session.get("access_token")
     if not token:
-        return "Debés iniciar sesión.", 401
+        flash("Necesitás iniciar sesión antes de comprar. El login web pertenece a US-02.", "error")
+        return redirect(url_for("home.index"))
     compra, estado = obtener_compra_del_backend(id_compra, token)
     if estado != 200 or not isinstance(compra, dict):
         return "Compra inexistente o no autorizada.", 404 if estado in (403, 404) else estado
@@ -54,7 +56,8 @@ def reenviar_email(id_compra: int):
         return "Solicitud inválida.", 400
     token = session.get("access_token")
     if not token:
-        return "Debés iniciar sesión.", 401
+        flash("Necesitás iniciar sesión antes de comprar. El login web pertenece a US-02.", "error")
+        return redirect(url_for("home.index"))
     respuesta, estado = reenviar_comprobante_al_backend(id_compra, token)
     if estado == 200:
         flash("Solicitud de reenvío procesada.", "success")

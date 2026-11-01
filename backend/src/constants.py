@@ -11,6 +11,8 @@ DB_PORT = int(os.getenv("DB_PORT", "3306"))
 DB_USER = os.getenv("DB_USER", "root")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "")
 DB_NAME = os.getenv("DB_NAME", "proyecto_integrador")
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+JWT_ACCESS_TOKEN_MINUTES = int(os.getenv("JWT_ACCESS_TOKEN_MINUTES", "60"))
 
 # ==========================================
 # Formatos de Fecha y Hora
@@ -38,7 +40,7 @@ TIPOS_SERVICIO = {"COMIDA", "BEBIDA"}
 ORIGENES_API_PELICULAS = {"OMDB", "TMDB", "CUSTOM"}
 RESULTADOS_VALIDACION_QR = {"EXITO", "FALLIDO", "REUTILIZADO"}
 
-# US-09: no son medios de pago reales. US-08 podrá incorporar un proveedor autorizado.
+# Constantes de la funcionalidad US-09.
 MEDIO_PAGO_DEMO = "TARJETA_SIMULADA"
 ESTADOS_EMAIL = {"PENDIENTE", "ENVIADO", "ERROR", "SIMULADO"}
 MAX_BUTACAS_COMPRA = 20
@@ -47,6 +49,7 @@ HTTP_OK = 200
 HTTP_CREADO = 201
 HTTP_SOLICITUD_INVALIDA = 400
 HTTP_NO_AUTORIZADO = 401
+HTTP_PROHIBIDO = 403
 HTTP_NO_ENCONTRADO = 404
 HTTP_CONFLICTO = 409
 HTTP_NO_IMPLEMENTADO = 501

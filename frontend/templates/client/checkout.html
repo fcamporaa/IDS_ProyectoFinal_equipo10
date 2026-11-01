@@ -13,9 +13,9 @@
     {% with nombre='butacas_ids', etiqueta='ID de butaca 1', tipo='number', minimo=1, obligatorio=true %}
       {% include 'components/campo_formulario.html' %}
     {% endwith %}
-    <label class="form-field">Butaca adicional (opcional)
-      <input name="butacas_ids" type="number" min="1">
-    </label>
+    {% with nombre='butacas_ids', identificador='butaca_adicional', etiqueta='Butaca adicional (opcional)', tipo='number', minimo=1 %}
+      {% include 'components/campo_formulario.html' %}
+    {% endwith %}
     {% with nombre='email_comprobante', etiqueta='Correo del comprobante', tipo='email', obligatorio=true %}
       {% include 'components/campo_formulario.html' %}
     {% endwith %}
