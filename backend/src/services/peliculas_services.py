@@ -10,9 +10,6 @@ from src.repositories.peliculas_repository import (
     obtener_generos_de_peliculas_db,
     asociar_genero_a_pelicula_db,
     quitar_genero_de_pelicula_db,
-    obtener_resenas_por_pelicula_db,
-    insertar_resena_db,
-    usuario_tiene_asistencia_confirmada_db,
 )
 import requests
 
