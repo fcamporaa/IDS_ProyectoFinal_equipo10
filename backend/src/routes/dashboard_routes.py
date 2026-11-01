@@ -47,3 +47,17 @@ def register_dashboard_routes(app):
         GET /dashboard/reporte-ventas: Obtiene el consolidado de ventas por función y ranking de películas más vistas (Solo Admin).
         """
         pass
+
+    @app.route("/dashboard/reporte-ventas", methods=["GET"])
+    def get_dashboard_reporte_ventas():
+        """
+        GET /dashboard/reporte-ventas: Obtiene el consolidado de ventas por función y ranking de películas más vistas (Solo Admin)[cite: 10].
+        """
+        if 'usuario_id' not in session or session.get('rol') != 'admin':
+            return jsonify({"error": "Acceso denegado. Se requiere rol de Administrador."}), 403
+
+        try:
+            reporte = obtener_reporte_ventas_consolidado_db()
+            return jsonify(reporte), 200
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
