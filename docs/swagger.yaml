@@ -803,7 +803,7 @@ paths:
               $ref: '#/components/schemas/CompraCrearRequest'
       responses:
         '201':
-          description: Compra registrada. Revisar email_estado (ENVIADO, SIMULADO o ERROR).
+          description: Compra registrada. email_estado informa el resultado de este intento de envío, sin persistencia en MySQL.
           content:
             application/json:
               schema:
@@ -2006,9 +2006,6 @@ components:
         email_comprobante:
           type: string
           format: email
-        email_estado:
-          type: string
-          enum: [PENDIENTE, ENVIADO, SIMULADO, ERROR]
         qr_token:
           type: string
           example: 'c1f8e6a2-921b-4df2-a1f9-8c9e543b1234'

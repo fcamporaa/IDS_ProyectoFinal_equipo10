@@ -1,6 +1,7 @@
+import logging
+
 from src.repositories.compras_repository import (
     obtener_detalle_comprobante_db,
-    actualizar_estado_email_db,
 )
 from src.services.qr_services import crear_imagen_qr
 from src.utils import enviar_correo_html
@@ -30,7 +31,6 @@ def enviar_comprobante_compra(id_compra: int, plantilla: str = "compra_confirmad
             imagenes_inline=imagenes,
         )
     except Exception:
-        actualizar_estado_email_db(id_compra, "ERROR")
+        logging.exception("Falló el envío del comprobante de la compra %s", id_compra)
         raise
-    actualizar_estado_email_db(id_compra, estado)
     return estado

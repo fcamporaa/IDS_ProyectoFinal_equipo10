@@ -44,7 +44,7 @@ def obtener_detalle_compra_db(id_compra: int) -> dict | None:
     query = """
         SELECT c.id_compra, c.id_usuario, c.codigo_reserva, c.estado, c.creada_en,
                c.subtotal_entradas, c.subtotal_servicios, c.cargo_servicio,
-               c.total, c.qr_token, c.qr_validado_en, c.email_comprobante, c.email_estado,
+               c.total, c.qr_token, c.qr_validado_en, c.email_comprobante,
                f.id_funcion, f.id_pelicula, f.id_sala, f.inicio, f.fin,
                f.formato, f.idioma, f.subtitulada, f.precio_entrada,
                f.estado AS estado_funcion, p.titulo AS titulo_pelicula,
@@ -221,8 +221,8 @@ def registrar_compra_pagada_db(
                 """INSERT INTO compras
                 (id_usuario, id_funcion, codigo_reserva, email_comprobante,
                  estado, medio_pago, subtotal_entradas, subtotal_servicios,
-                 cargo_servicio, total, qr_token, email_estado)
-                VALUES (%s, %s, %s, %s, 'PAGADA', %s, %s, %s, %s, %s, %s, 'PENDIENTE')""",
+                 cargo_servicio, total, qr_token)
+                VALUES (%s, %s, %s, %s, 'PAGADA', %s, %s, %s, %s, %s, %s)""",
                 (id_usuario, datos["id_funcion"], codigo_reserva,
                  datos["email_comprobante"], datos["medio_pago"], subtotal_entradas,
                  subtotal_servicios, cargo_servicio, total, qr_token),
@@ -268,7 +268,7 @@ def obtener_detalle_comprobante_db(id_compra: int, id_usuario: int | None = None
     filas = ejecutar_consulta(
         """SELECT c.id_compra, c.codigo_reserva, c.estado, c.creada_en,
                   c.email_comprobante, c.medio_pago, c.total, c.subtotal_entradas,
-                  c.subtotal_servicios, c.cargo_servicio, c.qr_token, c.email_estado,
+                  c.subtotal_servicios, c.cargo_servicio, c.qr_token, c.qr_validado_en,
                   p.titulo AS pelicula, f.inicio, s.numero AS sala,
                   l.nombre AS local, l.direccion
            FROM compras c
@@ -305,20 +305,3 @@ def obtener_detalle_comprobante_db(id_compra: int, id_usuario: int | None = None
         servicio["precio_unitario"] = float(servicio["precio_unitario"])
     compra["servicios"] = servicios
     return compra
-
-def actualizar_estado_email_db(id_compra: int, estado: str) -> None:
-    conexion = obtener_conexion()
-    try:
-        with conexion.cursor() as cursor:
-            cursor.execute(
-                """UPDATE compras SET email_estado = %s, email_intentos = email_intentos + 1,
-                   email_enviado_en = CASE WHEN %s = 'ENVIADO' THEN NOW() ELSE email_enviado_en END
-                   WHERE id_compra = %s""",
-                (estado, estado, id_compra),
-            )
-        conexion.commit()
-    except Exception:
-        conexion.rollback()
-        raise
-    finally:
-        conexion.close()
