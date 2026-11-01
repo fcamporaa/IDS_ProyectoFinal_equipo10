@@ -1,14 +1,16 @@
-from datetime import datetime, timedelta
+from datetime import datetime
+
 from src.db import obtener_conexion, ejecutar_consulta
 
 
 def validar_y_registrar_qr_db(qr_token: str, id_administrador: int,
-                             id_sala: int | None) -> dict:
-    """Bloquea la compra, decide acceso y registra auditoría en una sola transacción."""
+                             id_sala: int | None, evaluar_ingreso) -> dict:
+    """Bloquea la compra y registra la decisión y la auditoría en una transacción."""
     conexion = obtener_conexion()
     try:
         with conexion.cursor() as cursor:
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT c.id_compra, c.estado, c.qr_validado_en, c.cancelada_en,
                        f.inicio, f.fin, f.estado AS estado_funcion, f.id_sala,
                        p.titulo AS pelicula
@@ -17,59 +19,61 @@ def validar_y_registrar_qr_db(qr_token: str, id_administrador: int,
                 JOIN peliculas p ON p.id_pelicula = f.id_pelicula
                 WHERE c.qr_token = %s
                 FOR UPDATE
-            """, (qr_token,))
+                """,
+                (qr_token,),
+            )
             compra = cursor.fetchone()
             if compra is None:
-                # La migración 002 permite auditar tokens desconocidos con id_compra NULL.
-                cursor.execute("""
-                    INSERT INTO validaciones_qr
-                        (id_compra, id_administrador, fecha_validacion, resultado)
-                    VALUES (NULL, %s, %s, 'FALLIDO')
-                """, (id_administrador, datetime.now()))
-                conexion.commit()
-                return {"autorizado": False, "resultado": "FALLIDO",
-                        "mensaje": "QR inválido o inexistente.", "id_compra": None}
+                # validaciones_qr.id_compra es NOT NULL en el esquema existente.
+                conexion.rollback()
+                return {
+                    "autorizado": False, "resultado": "FALLIDO",
+                    "mensaje": "El código QR no existe.", "id_compra": None,
+                }
 
             ahora = datetime.now()
-            estado = "EXITO"
-            mensaje = "Ingreso autorizado. Compra validada con éxito."
-            if compra["qr_validado_en"] is not None:
-                estado, mensaje = "REUTILIZADO", "El QR ya fue utilizado."
-            elif compra["estado"] != "PAGADA" or compra["cancelada_en"] is not None:
-                estado, mensaje = "FALLIDO", "La compra no está pagada o fue cancelada."
-            elif compra["estado_funcion"] not in ("PROGRAMADA", "EN_CURSO"):
-                estado, mensaje = "FALLIDO", "La función no está habilitada para ingreso."
-            elif id_sala is not None and compra["id_sala"] != id_sala:
-                estado, mensaje = "FALLIDO", "El QR no corresponde a esta sala."
-            elif not (compra["inicio"] - timedelta(minutes=30) <= ahora <= compra["fin"]):
-                estado, mensaje = "FALLIDO", "El QR no corresponde al horario de esta función."
-            else:
-                cursor.execute("""
-                    SELECT COUNT(*) AS cantidad FROM entradas
-                    WHERE id_compra = %s AND estado = 'OCUPADA'
-                """, (compra["id_compra"],))
-                if cursor.fetchone()["cantidad"] <= 0:
-                    estado, mensaje = "FALLIDO", "La compra no tiene entradas vigentes."
-
-            if estado == "EXITO":
-                cursor.execute("""
+            cursor.execute(
+                """
+                SELECT COUNT(*) AS cantidad
+                FROM entradas
+                WHERE id_compra = %s AND estado = 'OCUPADA'
+                """,
+                (compra["id_compra"],),
+            )
+            entradas_vigentes = cursor.fetchone()["cantidad"]
+            resultado, mensaje = evaluar_ingreso(
+                compra, ahora, id_sala, entradas_vigentes,
+            )
+            if resultado == "EXITO":
+                cursor.execute(
+                    """
                     UPDATE compras SET qr_validado_en = %s
                     WHERE id_compra = %s AND qr_validado_en IS NULL
                       AND estado = 'PAGADA' AND cancelada_en IS NULL
-                """, (ahora, compra["id_compra"]))
+                    """,
+                    (ahora, compra["id_compra"]),
+                )
                 if cursor.rowcount != 1:
-                    estado, mensaje = "REUTILIZADO", "El QR ya fue utilizado."
+                    resultado, mensaje = "REUTILIZADO", "El código QR ya fue utilizado."
 
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO validaciones_qr
                     (id_compra, id_administrador, fecha_validacion, resultado)
                 VALUES (%s, %s, %s, %s)
-            """, (compra["id_compra"], id_administrador, ahora, estado))
-            conexion.commit()
-            return {"autorizado": estado == "EXITO", "resultado": estado,
-                    "mensaje": mensaje, "id_compra": compra["id_compra"],
-                    "pelicula": compra["pelicula"] if estado == "EXITO" else None,
-                    "fecha_validacion": ahora.isoformat(timespec="seconds")}
+                """,
+                (compra["id_compra"], id_administrador, ahora, resultado),
+            )
+        conexion.commit()
+        return {
+            "autorizado": resultado == "EXITO",
+            "resultado": resultado,
+            "mensaje": mensaje,
+            "id_compra": compra["id_compra"],
+            "pelicula": compra["pelicula"] if resultado == "EXITO" else None,
+            "entradas_validadas": entradas_vigentes if resultado == "EXITO" else 0,
+            "fecha_validacion": ahora.isoformat(timespec="seconds"),
+        }
     except Exception:
         conexion.rollback()
         raise
@@ -78,7 +82,7 @@ def validar_y_registrar_qr_db(qr_token: str, id_administrador: int,
 
 
 def obtener_historial_validaciones_db(filtros: dict) -> list[dict]:
-    """Consulta limitada para impedir respuestas ilimitadas en el backoffice."""
+    """Devuelve el historial de puerta con filtros parametrizados y límite fijo."""
     condiciones = []
     parametros = []
     if "id_compra" in filtros:
@@ -88,7 +92,7 @@ def obtener_historial_validaciones_db(filtros: dict) -> list[dict]:
         condiciones.append("v.resultado = %s")
         parametros.append(filtros["resultado"])
     where = "WHERE " + " AND ".join(condiciones) if condiciones else ""
-    query = f"""
+    consulta = f"""
         SELECT v.id_validacion, v.id_compra, v.id_administrador,
                u.nombre AS nombre_administrador,
                v.fecha_validacion, v.resultado
@@ -98,4 +102,4 @@ def obtener_historial_validaciones_db(filtros: dict) -> list[dict]:
         ORDER BY v.fecha_validacion DESC, v.id_validacion DESC
         LIMIT 200
     """
-    return ejecutar_consulta(query, tuple(parametros))
+    return ejecutar_consulta(consulta, tuple(parametros))
