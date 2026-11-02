@@ -9,6 +9,7 @@ from src.validators.salas_validators import (
     validar_id_local,
     validar_id_sala,
     validar_actualizar_sala,
+    validar_autorizacion_admin,
 )
 
 
@@ -17,7 +18,7 @@ def register_salas_routes(app):
     @app.route("/locales", methods=["GET"])
     def get_locales():
         """
-        GET /locales: Lista los 3 complejos de cine disponibles.
+        GET /locales: Lista los complejos de cine disponibles.
         """
         locales = listar_locales()
         return jsonify(locales), 200
@@ -45,8 +46,16 @@ def register_salas_routes(app):
         """
         PUT /salas/{id}: Habilita/deshabilita una sala o actualiza su configuración (Solo Admin).
         """
+        # Verificar permisos de administrador
+        autorizacion = validar_autorizacion_admin(request.headers.get("Authorization"))
+        if "errors" in autorizacion:
+            return jsonify({"errors": autorizacion["errors"]}), autorizacion.get("status", 401)
+
         id_sala = validar_id_sala(id)
         datos = request.get_json(silent=True)
         datos_validados = validar_actualizar_sala(datos)
         sala = actualizar_configuracion_sala(id_sala, datos_validados)
         return jsonify(sala), 200
+
+
+
