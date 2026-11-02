@@ -1,5 +1,6 @@
 import os
 from dotenv import load_dotenv
+from datetime import timedelta, timezone
 
 load_dotenv()
 
@@ -48,6 +49,8 @@ OMDB_URL = "https://www.omdbapi.com/"
 OMDB_TIMEOUT_SEGUNDOS = 10
 # Respuestas de OMDb que significan "sin resultados" y no un error del servicio
 OMDB_ERRORES_SIN_RESULTADOS = {"Movie not found!", "Too many results."}
+# """ OJITO, NO OLVIDEN DE PONER UNA KEY DE OMDb. SI NO SALTA 500 """
+
 
 # ==========================================
 # Dominio - Funciones
