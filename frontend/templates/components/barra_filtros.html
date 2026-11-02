@@ -1,0 +1,30 @@
+{# Componente Reutilizable: Barra de Filtros de Cartelera
+   Diseño de fila única: Chips de género a la izquierda y Buscador en vivo a la derecha.
+   Sin fechas hardcodeadas ni botones inactivos.
+#}
+
+<div class="movie-filter-panel" aria-label="Filtros de Cartelera">
+    <!-- Chips de Géneros a la Izquierda -->
+    <div class="genre-chips-group" id="genreFilterBar" role="tablist" aria-label="Filtro por género">
+        <span class="genre-label">Géneros:</span>
+        <button type="button" class="genre-chip active" data-genre="todos">Todos</button>
+        <button type="button" class="genre-chip" data-genre="accion">Acción</button>
+        <button type="button" class="genre-chip" data-genre="scifi">Ciencia Ficción</button>
+        <button type="button" class="genre-chip" data-genre="drama">Drama</button>
+        <button type="button" class="genre-chip" data-genre="terror">Terror</button>
+        <button type="button" class="genre-chip" data-genre="animacion">Animación</button>
+    </div>
+
+    <!-- Buscador en Vivo a la Derecha -->
+    <div class="live-search-wrapper">
+        <span class="search-symbol">🔍</span>
+        <input 
+            type="text" 
+            id="movieSearchInput" 
+            class="live-search-input" 
+            placeholder="Buscar película por título..." 
+            aria-label="Buscar película en cartelera"
+            autocomplete="off"
+        >
+    </div>
+</div>

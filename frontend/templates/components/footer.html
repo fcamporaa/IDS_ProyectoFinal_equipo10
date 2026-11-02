@@ -1,0 +1,82 @@
+{# Componente Reutilizable: Pie de Página Institucional (Cinema Paradiso)
+   4 columnas: Identidad, Navegación, Complejos Reales (Centro, Palermo, Belgrano) y Legal/Soporte.
+#}
+
+<footer class="main-footer">
+    <div class="footer-container container">
+        <!-- Columna 1: Identidad de Marca -->
+        <div class="footer-col brand-col">
+            <div class="footer-brand">
+                <div class="brand-clapperboard">
+                    <svg class="clapper-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="6" width="20" height="15" rx="2" fill="#1b1b1f" stroke="#e50914"></rect>
+                        <path d="M2 10h20" stroke="#f59e0b"></path>
+                        <path d="M6 6l3 4" stroke="#f59e0b"></path>
+                        <path d="M12 6l3 4" stroke="#f59e0b"></path>
+                        <path d="M18 6l3 4" stroke="#f59e0b"></path>
+                        <circle cx="12" cy="15" r="2" fill="#f59e0b"></circle>
+                    </svg>
+                </div>
+                <div class="brand-typography">
+                    <span class="brand-name">CINEMA <span class="brand-accent">PARADISO</span></span>
+                    <span class="brand-tagline">ESTUDIOS &amp; SALAS</span>
+                </div>
+            </div>
+            <p class="footer-desc">
+                La experiencia definitiva en cine: joyas clásicas, reestrenos exclusivos y la última tecnología en proyección 2D, 3D y 4D.
+            </p>
+        </div>
+
+        <!-- Columna 2: Navegación Rápida -->
+        <div class="footer-col">
+            <h4 class="footer-heading">Navegación</h4>
+            <ul class="footer-list">
+                <li><a href="{{ url_for('home.index') }}" class="footer-link">Cartelera Semanal</a></li>
+                <li><a href="#candy-bar" class="footer-link">Candy Bar &amp; Combos</a></li>
+                <li><a href="#mis-compras" class="footer-link">Mis Compras</a></li>
+                <li><a href="#login" class="footer-link">Acceso Clientes</a></li>
+            </ul>
+        </div>
+
+        <!-- Columna 3: Nuestros 3 Complejos Reales -->
+        <div class="footer-col">
+            <h4 class="footer-heading">Nuestros Complejos</h4>
+            <ul class="footer-list complexes-list">
+                <li>
+                    <span class="complex-name">Cine Paradiso Centro</span>
+                    <span class="complex-address">Av. Corrientes 1240, CABA</span>
+                </li>
+                <li>
+                    <span class="complex-name">Cine Paradiso Palermo</span>
+                    <span class="complex-address">Humboldt 1920 (Palermo Soho)</span>
+                </li>
+                <li>
+                    <span class="complex-name">Cine Paradiso Belgrano</span>
+                    <span class="complex-address">Av. Cabildo 2180, CABA</span>
+                </li>
+                <li class="contact-info">
+                    <span class="complex-address">📞 0810-333-CINE (2463)</span>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Columna 4: Legal & Soporte -->
+        <div class="footer-col">
+            <h4 class="footer-heading">Legal &amp; Soporte</h4>
+            <ul class="footer-list">
+                <li><a href="#terminos" class="footer-link">Términos y Condiciones</a></li>
+                <li><a href="#privacidad" class="footer-link">Políticas de Privacidad</a></li>
+                <li><a href="#defensa-consumidor" class="footer-link">Defensa al Consumidor</a></li>
+                <li><a href="#preguntas-frecuentes" class="footer-link">Preguntas Frecuentes</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Barra Inferior de Créditos y Cátedra -->
+    <div class="footer-bottom">
+        <div class="container footer-bottom-content">
+            <p class="copyright-text">&copy; 2026 Cinema Paradiso Argentina S.A. Todos los derechos reservados.</p>
+            <p class="academic-text">Sistema de Gestión de Cine &bull; IDS (Cátedra Lanzillotta)</p>
+        </div>
+    </div>
+</footer>

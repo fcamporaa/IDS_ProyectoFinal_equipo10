@@ -1,10 +1,191 @@
 {% extends 'layout.html' %}
 
-{% block title %}Inicio - Cine Paradiso{% endblock %}
+{% block title %}Cinema Paradiso - Cartelera Oficial &amp; Entradas{% endblock %}
 
 {% block content %}
-<div class="card">
-    <h1>¡Hola Mundo!</h1>
-    <p>La estructura básica del frontend en Flask está funcionando correctamente.</p>
-</div>
+{# Si el backend aún no envía la lista de películas, disponemos del catálogo completo según contrato de BD #}
+{% set lista_peliculas = peliculas | default([
+    {
+        'id_pelicula': 1,
+        'titulo': 'Dune: Parte Dos',
+        'poster_url': 'https://image.tmdb.org/t/p/w500/8b8R8l88Qje9dn9OE8PY05Nxl1X.jpg',
+        'formato': '4D',
+        'clasificacion': '+13',
+        'duracion_min': 166,
+        'genero': 'Ciencia Ficción',
+        'genero_slug': 'scifi accion',
+        'subtitulada': true,
+        'sala_principal': 'Sala 1 (4D)',
+        'horarios': ['16:45', '19:30', '22:45']
+    },
+    {
+        'id_pelicula': 2,
+        'titulo': 'Oppenheimer',
+        'poster_url': 'https://image.tmdb.org/t/p/w500/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg',
+        'formato': '2D',
+        'clasificacion': '+16',
+        'duracion_min': 180,
+        'genero': 'Drama Histórico',
+        'genero_slug': 'drama',
+        'subtitulada': true,
+        'sala_principal': 'Sala 3',
+        'horarios': ['17:00', '20:45']
+    },
+    {
+        'id_pelicula': 3,
+        'titulo': 'Spider-Man: Across the Spider-Verse',
+        'poster_url': 'https://image.tmdb.org/t/p/w500/8Vt6mWEReuy4Of61Lnj5Xj704m8.jpg',
+        'formato': '3D',
+        'clasificacion': 'ATP',
+        'duracion_min': 140,
+        'genero': 'Animación / Acción',
+        'genero_slug': 'animacion accion',
+        'subtitulada': false,
+        'sala_principal': 'Sala 5',
+        'horarios': ['15:15', '18:00', '21:15']
+    },
+    {
+        'id_pelicula': 4,
+        'titulo': 'Alien: Romulus',
+        'poster_url': 'https://lh3.googleusercontent.com/aida-public/AB6AXuAQxSBFFFq7uOCl3YFwcZPodIHb-TOuWYFcvOvIG6rUgp3_Fo2LT4yMVJt1xfFMB4PhTU9jI4sWd9VirXQGp3gWn_rcklVqrsrtAnGZP8wYDx8CKEyBIbaFQKprv-oFj1yB0goBphPfmlwHL0alv8oK4th3cjg0U8Oa_UI6dl3R7EeyO3PcKu6-AASjYe2VWH9SXm4bg0DarETuz7Ck7YHIpmvR2TN226kmV2a5TQ',
+        'formato': '4D',
+        'clasificacion': '+16',
+        'duracion_min': 119,
+        'genero': 'Terror Sci-Fi',
+        'genero_slug': 'terror scifi',
+        'subtitulada': true,
+        'sala_principal': 'Sala 2 (4D)',
+        'horarios': ['19:40', '22:15', '00:30']
+    },
+    {
+        'id_pelicula': 5,
+        'titulo': 'Furiosa: Saga Mad Max',
+        'poster_url': 'https://lh3.googleusercontent.com/aida-public/AB6AXuD_WCA0Xjr002YIeppdUcT04kNIUTdSHNNK5jichNEurYlQmUYOCaaF8_Rim5eNnZnwwqlZAd-jf74954VAuphYJ-MjN0u7DDNOieZYb3OdYDPlLK_6afpIoe0jehkYKn9LPLacpgwvrqz0bxT4ivbqC5iKTQQKjssbZRVIbU2ZGofXMyZNF4sAqmvStOwDLYAd3iiG8HlBFhvZwtpZLVliOXom-8H_36HSBKtEPg',
+        'formato': '3D',
+        'clasificacion': '+16',
+        'duracion_min': 148,
+        'genero': 'Acción Postapocalíptica',
+        'genero_slug': 'accion scifi',
+        'subtitulada': true,
+        'sala_principal': 'Sala 2',
+        'horarios': ['17:15', '20:15', '23:10']
+    },
+    {
+        'id_pelicula': 6,
+        'titulo': 'Intensamente 2',
+        'poster_url': 'https://lh3.googleusercontent.com/aida-public/AB6AXuCXGqYyStEUnDfhIJCuuytXNNfksA8kaBVID3C5R8TGtMO3cH-NKgPWj9zpi1zVCLZYYehmEtq2PAcB7qNToIW4hJOgRr4svpAQ9x7oB9-WPbISvRaRTWXfAru89YakJZrGRuA3Nmj_eagfWihQjo0_hvi41qV66Sief-bXKAZZsGLN6Jyg4VWU0arRInuMaAVPosZBVJtS0HYHnEb0Q5G_jXovv9FrpeCEEvDvwQ',
+        'formato': '2D',
+        'clasificacion': 'ATP',
+        'duracion_min': 96,
+        'genero': 'Animación / Aventura',
+        'genero_slug': 'animacion',
+        'subtitulada': false,
+        'sala_principal': 'Sala 6',
+        'horarios': ['14:30', '16:45', '19:00']
+    },
+    {
+        'id_pelicula': 7,
+        'titulo': 'Gladiador II',
+        'poster_url': 'https://lh3.googleusercontent.com/aida-public/AB6AXuDssm88oeKKBghA0uHki3ak9ocZPoHNlljED5D4Okh34dbPDN28bMGp_A4X6yYLPWIvSeyHHsrcZ7yirRQyU2pvDqeQgvNwAdIWYZQK1FvY5y65RVX9E7pf3aWoGOcs8K32ckFAgm7tA3HqE9Shup_rI-r2u1jFapmknKVl6wJoD7IKjObm1LDYCXSFU-AWgC4UtAdVIFKUuR8gtzaKO7b8GkO1o8G_gF2Hmidp9w',
+        'formato': '3D',
+        'clasificacion': '+16',
+        'duracion_min': 150,
+        'genero': 'Acción Histórica',
+        'genero_slug': 'accion drama',
+        'subtitulada': true,
+        'sala_principal': 'Sala 1',
+        'horarios': ['18:30', '21:40']
+    },
+    {
+        'id_pelicula': 8,
+        'titulo': 'Pobres Criaturas',
+        'poster_url': 'https://lh3.googleusercontent.com/aida-public/AB6AXuDZL9lt0BQ0sW3PhjSuIFsXCMmMHQ9V4yYDU9i6MSYOIZR9BhLFt7i6lNyZWvHo6veOQG0_D-nJvYLvBHN2KtJpR7nVDJdVDYDznqzGogd0Kvlnq0AYCu2BDC7N46iDqqoUIJ8vaZ8Lhn5MOZl838-3jDQNxH8lJH8hiSPtk1uXdoY8m9-IVIpRgYELazVvqwMWjZW5jfgh0k4sWffuply72mKrDBb5YKrDng3DhQ',
+        'formato': '2D',
+        'clasificacion': '+16',
+        'duracion_min': 141,
+        'genero': 'Cine de Autor / Drama',
+        'genero_slug': 'drama',
+        'subtitulada': true,
+        'sala_principal': 'Sala 8',
+        'horarios': ['17:45', '20:40']
+    }
+]) %}
+
+<!-- 1. Hero Spotlight Cinematográfico de Película Destacada -->
+{% include 'components/hero_destacado.html' %}
+
+<!-- 2. Cartelera Semanal de Películas con Panel de Filtros Integrado -->
+<section class="billboard-section" id="cartelera" aria-label="Cartelera Semanal">
+    <div class="container">
+        <!-- Encabezado de la Cartelera -->
+        <div class="billboard-header">
+            <div class="billboard-tag-wrapper">
+                <span class="billboard-dot"></span>
+                <span class="billboard-tag">En Exhibición</span>
+            </div>
+            <h2 class="billboard-title">Cartelera Semanal</h2>
+        </div>
+
+        <!-- Panel de Filtros Rápido (Fecha, Búsqueda en Vivo y Géneros) -->
+        {% include 'components/barra_filtros.html' %}
+
+        <!-- Grilla de Tarjetas de Películas (4 Columnas Responsive) -->
+        <div class="movies-grid" id="moviesBillboardGrid">
+            {% for pelicula in lista_peliculas %}
+                {% with p=pelicula %}
+                    {% include 'components/card_pelicula.html' %}
+                {% endwith %}
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    /* Interactividad Cliente Sin Dependencias (Sin AJAX/fetch) */
+    document.addEventListener('DOMContentLoaded', function () {
+        const searchInput = document.getElementById('movieSearchInput');
+        const genreChips = document.querySelectorAll('.genre-chip');
+        const datePills = document.querySelectorAll('.date-pill');
+        const movieCards = document.querySelectorAll('.movie-card');
+
+        let activeGenre = 'todos';
+        let searchQuery = '';
+
+        function updateFilter() {
+            movieCards.forEach(function (card) {
+                const title = card.getAttribute('data-title') || '';
+                const genres = card.getAttribute('data-genres') || '';
+
+                const matchesQuery = !searchQuery || title.includes(searchQuery);
+                const matchesGenre = activeGenre === 'todos' || genres.includes(activeGenre);
+
+                if (matchesQuery && matchesGenre) {
+                    card.classList.remove('hidden');
+                } else {
+                    card.classList.add('hidden');
+                }
+            });
+        }
+
+        // Búsqueda en vivo por título en la cartelera
+        if (searchInput) {
+            searchInput.addEventListener('input', function (e) {
+                searchQuery = e.target.value.toLowerCase().trim();
+                updateFilter();
+            });
+        }
+
+        // Filtrado por chip de género
+        genreChips.forEach(function (chip) {
+            chip.addEventListener('click', function () {
+                genreChips.forEach(function (c) { c.classList.remove('active'); });
+                chip.classList.add('active');
+                activeGenre = chip.getAttribute('data-genre') || 'todos';
+                updateFilter();
+            });
+        });
+    });
+</script>
 {% endblock %}

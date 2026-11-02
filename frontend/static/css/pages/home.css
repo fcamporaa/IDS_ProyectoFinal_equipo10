@@ -1,0 +1,292 @@
+/* ========================================================
+   Página: Inicio / Cartelera Principal (Home)
+   Cinematic Precision Dark Mode
+   ======================================================== */
+
+/* Contenedor Principal de la Cartelera (Superficie de Contraste) */
+.billboard-section {
+    background-color: #16171b;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    padding: 3rem 0 4.5rem;
+}
+
+/* Cabecera de la Sección */
+.billboard-header {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+    margin-bottom: 1.5rem;
+}
+
+.billboard-tag-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.35rem;
+}
+
+.billboard-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--color-primary, #e50914);
+}
+
+.billboard-tag {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--color-text-dim, #94a3b8);
+}
+
+.billboard-title {
+    font-size: 1.85rem;
+    font-weight: 800;
+    color: var(--color-text-main, #ffffff);
+    margin: 0;
+    letter-spacing: -0.01em;
+}
+
+.billboard-counter {
+    font-size: 0.88rem;
+    color: var(--color-text-dim, #64748b);
+}
+
+/* Grilla Responsive de 4 Columnas */
+.movies-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.75rem;
+}
+
+/* Tarjeta de Película (.movie-card) */
+.movie-card {
+    background-color: var(--color-bg-surface, #1b1b1f);
+    border: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.movie-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(229, 9, 20, 0.4);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.movie-card.hidden {
+    display: none !important;
+}
+
+/* Póster 2:3 */
+.movie-poster-wrapper {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 2 / 3;
+    overflow: hidden;
+    background-color: #0d0e11;
+}
+
+.movie-poster-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 80%;
+    display: block;
+    transition: transform 0.35s ease;
+}
+
+.movie-card:hover .movie-poster-img {
+    transform: scale(1.04);
+}
+
+/* Badges sobre el Póster */
+.poster-badge-top {
+    position: absolute;
+    top: 0.65rem;
+    left: 0.65rem;
+    z-index: 2;
+}
+
+.format-badge {
+    display: inline-block;
+    padding: 0.2rem 0.55rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+.format-4d {
+    background-color: rgba(229, 9, 20, 0.85);
+    color: #ffffff;
+    box-shadow: 0 1px 6px rgba(229, 9, 20, 0.4);
+}
+
+.format-3d {
+    background-color: rgba(0, 114, 215, 0.85);
+    color: #ffffff;
+}
+
+.format-2d {
+    background-color: rgba(18, 19, 22, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--color-text-main, #ffffff);
+}
+
+.poster-badge-bottom {
+    position: absolute;
+    bottom: 0.65rem;
+    left: 0.65rem;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    z-index: 2;
+}
+
+.age-badge,
+.duration-badge {
+    background-color: rgba(18, 19, 22, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--color-text-main, #e2e8f0);
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    backdrop-filter: blur(4px);
+}
+
+/* Cuerpo de la Tarjeta */
+.movie-info-body {
+    padding: 1rem 1.15rem 1.15rem;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    gap: 0.5rem;
+}
+
+.movie-header-meta {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-dim, #94a3b8);
+}
+
+.hall-badge {
+    color: var(--color-secondary, #f59e0b);
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.movie-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--color-text-main, #ffffff);
+    margin: 0.15rem 0 0.35rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color 0.2s ease;
+}
+
+.movie-card:hover .movie-title {
+    color: var(--color-primary, #e50914);
+}
+
+/* Horarios */
+.showtimes-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.showtimes-heading {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-text-dim, #64748b);
+}
+
+.chips-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.time-btn {
+    background-color: var(--color-bg-base, #121316);
+    border: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+    color: var(--color-text-main, #e2e8f0);
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25rem 0.55rem;
+    border-radius: 4px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.time-btn:hover {
+    background-color: var(--color-primary, #e50914);
+    border-color: var(--color-primary, #e50914);
+    color: #ffffff;
+}
+
+/* Botón Seleccionar Butacas */
+.btn-select-seats {
+    margin-top: auto;
+    padding-top: 0.5rem;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    background-color: var(--color-bg-elevated, #292a2d);
+    border: 1px solid var(--color-border, rgba(255, 255, 255, 0.08));
+    color: var(--color-text-main, #ffffff);
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 0.55rem;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.btn-select-seats:hover {
+    background-color: var(--color-primary, #e50914);
+    border-color: var(--color-primary, #e50914);
+    color: #ffffff;
+    box-shadow: 0 2px 10px rgba(229, 9, 20, 0.35);
+}
+
+/* Responsive */
+@media (max-width: 1100px) {
+    .movies-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
+    }
+}
+
+@media (max-width: 800px) {
+    .movies-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.25rem;
+    }
+}
+
+@media (max-width: 520px) {
+    .movies-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+}

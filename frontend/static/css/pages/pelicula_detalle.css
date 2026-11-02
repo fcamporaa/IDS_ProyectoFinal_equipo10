@@ -1,0 +1,1058 @@
+/* ==========================================================================
+   CINEMA PARADISO - DETALLE DE PELÍCULA Y FUNCIONES (pelicula_detalle.css)
+   Tokens: tokens.css | Base: base.css | Replicación pixel-perfect del diseño
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   0. Layout General y Contenedor
+   -------------------------------------------------------------------------- */
+.movie-detail-section {
+    padding-top: 16px;
+    padding-bottom: 24px;
+    background-color: var(--color-bg-main);
+    width: 100%;
+}
+
+.movie-container {
+    max-width: 1260px;
+    margin: 0 auto;
+    padding: 0 24px;
+}
+
+/* --------------------------------------------------------------------------
+   1. Breadcrumbs y Tecnología de Sala
+   -------------------------------------------------------------------------- */
+.movie-top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid #26272b;
+}
+
+.breadcrumb-nav {
+    display: flex;
+    align-items: center;
+    font-size: 13px;
+    color: #9ca3af;
+}
+
+.breadcrumb-link {
+    color: #9ca3af;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: color var(--transition-fast);
+}
+
+.breadcrumb-link:hover {
+    color: #f3f4f6;
+}
+
+.breadcrumb-separator {
+    margin: 0 10px;
+    color: #4b5563;
+    font-size: 12px;
+}
+
+.breadcrumb-text {
+    color: #9ca3af;
+}
+
+.breadcrumb-current {
+    color: #f3f4f6;
+    font-weight: 600;
+}
+
+.tech-spec-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #9ca3af;
+    text-transform: uppercase;
+}
+
+.tech-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: #c084fc;
+    box-shadow: 0 0 8px #c084fc;
+}
+
+/* --------------------------------------------------------------------------
+   2. Grid Principal: Póster con Play (Izq) + Ficha Técnica (Der)
+   -------------------------------------------------------------------------- */
+.movie-hero-grid {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 36px;
+    align-items: start;
+    margin-bottom: 24px;
+}
+
+@media (max-width: 960px) {
+    .movie-hero-grid {
+        grid-template-columns: 1fr;
+        gap: 28px;
+    }
+}
+
+/* Columna Izquierda: Póster con Play Central */
+.movie-poster-column {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.movie-poster-card {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #1b1b1f;
+    border: 1px solid #26272b;
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.7);
+    aspect-ratio: 2 / 3;
+    cursor: pointer;
+}
+
+.movie-poster-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform var(--transition-normal), filter var(--transition-normal);
+}
+
+.movie-poster-card:hover .movie-poster-image {
+    transform: scale(1.03);
+    filter: brightness(0.75);
+}
+
+/* Badges sobre el póster */
+.poster-floating-badges {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.badge-premiere-poster {
+    background: #e50914;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    padding: 4px 10px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    display: inline-block;
+    align-self: flex-start;
+}
+
+.badge-tech-poster {
+    background: rgba(18, 19, 22, 0.85);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(168, 85, 247, 0.5);
+    color: #d8b4fe;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    display: inline-block;
+    align-self: flex-start;
+}
+
+/* Botón de Play Central en el Póster */
+.poster-play-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    z-index: 3;
+    background: rgba(0, 0, 0, 0.25);
+    transition: background var(--transition-fast);
+}
+
+.movie-poster-card:hover .poster-play-overlay {
+    background: rgba(0, 0, 0, 0.45);
+}
+
+.poster-play-circle {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: #e50914;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    box-shadow: 0 0 24px rgba(229, 9, 20, 0.7);
+    transition: transform var(--transition-fast), background var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.icon-play-tri {
+    margin-left: 3px; /* Óptica de centrado del triángulo */
+}
+
+.movie-poster-card:hover .poster-play-circle {
+    transform: scale(1.12);
+    background: #ff1a25;
+    box-shadow: 0 0 32px rgba(229, 9, 20, 0.9);
+}
+
+.poster-play-label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #ffffff;
+    text-transform: uppercase;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
+    opacity: 0.9;
+    transition: opacity var(--transition-fast);
+}
+
+.movie-poster-card:hover .poster-play-label {
+    opacity: 1;
+}
+
+/* Botones Guardar / Compartir */
+.poster-actions-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.btn-poster-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: #1b1b1f;
+    border: 1px solid #26272b;
+    border-radius: 6px;
+    color: #9ca3af;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.btn-poster-action:hover {
+    background: #26272b;
+    border-color: #3f3f46;
+    color: #f3f4f6;
+}
+
+.btn-poster-action svg {
+    stroke: currentColor;
+}
+
+/* Columna Derecha: Información */
+.movie-info-column {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+/* Píldoras de Metadatos */
+.movie-meta-badges {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.meta-pill {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    background: #26272b;
+    color: #9ca3af;
+    border: 1px solid transparent;
+}
+
+.meta-pill.pill-red {
+    background: #e50914;
+    color: #fff;
+    font-weight: 700;
+}
+
+.meta-pill.pill-tech {
+    background: rgba(168, 85, 247, 0.15);
+    color: #d8b4fe;
+    border-color: rgba(168, 85, 247, 0.4);
+}
+
+/* Título y Subtítulos */
+.movie-title-block {
+    margin-top: 2px;
+}
+
+.movie-main-title {
+    font-size: clamp(2rem, 3.2vw, 2.6rem);
+    font-weight: 800;
+    line-height: 1.15;
+    color: #ffffff;
+    margin: 0 0 10px 0;
+    letter-spacing: -0.02em;
+}
+
+.movie-subtitle-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    font-size: 13.5px;
+    color: #9ca3af;
+}
+
+.meta-original-title {
+    color: #9ca3af;
+}
+
+.meta-bullet {
+    margin: 0 8px;
+    color: #4b5563;
+}
+
+.meta-rating-imdb {
+    color: #f59e0b;
+}
+
+.meta-rating-imdb strong {
+    color: #f59e0b;
+}
+
+.meta-critics-score {
+    color: #10b981;
+}
+
+.meta-critics-score strong {
+    color: #10b981;
+}
+
+/* Bloque de Sinopsis */
+.movie-synopsis-block {
+    background: #1b1b1f;
+    border: 1px solid #26272b;
+    border-radius: 8px;
+    padding: 16px 20px;
+}
+
+.synopsis-header-tag {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.synopsis-red-bar {
+    width: 3px;
+    height: 14px;
+    background: #e50914;
+    border-radius: 2px;
+}
+
+.synopsis-heading-text {
+    font-size: 11px;
+    font-weight: 700;
+    color: #e50914;
+    letter-spacing: 0.08em;
+}
+
+.synopsis-paragraph {
+    font-size: 14px;
+    line-height: 1.65;
+    color: #9ca3af;
+    margin: 0;
+}
+
+/* Grilla Técnica (2x2) */
+.movie-tech-specs-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+@media (max-width: 600px) {
+    .movie-tech-specs-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.tech-spec-box {
+    background: #1b1b1f;
+    border: 1px solid #26272b;
+    border-radius: 8px;
+    padding: 14px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.tech-spec-label {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: #6b7280;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.tech-spec-value {
+    font-size: 13.5px;
+    font-weight: 500;
+    color: #e5e7eb;
+}
+
+.highlight-tech-purple {
+    color: #d8b4fe;
+    font-weight: 600;
+}
+
+/* --------------------------------------------------------------------------
+   3. Sección de Funciones y Horarios (Full Width)
+   -------------------------------------------------------------------------- */
+.showtimes-section {
+    width: 100%;
+    border-top: 1px solid #26272b;
+    background-color: var(--color-bg-main);
+    padding-top: 36px;
+    padding-bottom: 60px;
+}
+
+.showtimes-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.showtimes-header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.showtimes-tagline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #e50914;
+    text-transform: uppercase;
+}
+
+.section-bullet-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: #e50914;
+    box-shadow: 0 0 8px #e50914;
+}
+
+.showtimes-section-title {
+    font-size: clamp(1.4rem, 2.4vw, 1.75rem);
+    font-weight: 700;
+    color: #ffffff;
+    margin: 0;
+}
+
+.showtimes-guarantee {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #10b981;
+    font-weight: 500;
+}
+
+/* Selector de Complejos (3 Cards) */
+.cinema-complexes-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+@media (max-width: 850px) {
+    .cinema-complexes-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.complex-card {
+    background: #1b1b1f;
+    border: 1px solid #26272b;
+    border-radius: 8px;
+    padding: 16px 18px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.complex-card:hover {
+    background: #222328;
+    border-color: #3f3f46;
+}
+
+.complex-card.active {
+    background: rgba(229, 9, 20, 0.04);
+    border-color: #e50914;
+    box-shadow: 0 0 16px rgba(229, 9, 20, 0.15);
+}
+
+.complex-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.complex-role-tag {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: #9ca3af;
+    text-transform: uppercase;
+}
+
+.complex-role-tag.tag-red {
+    color: #e50914;
+}
+
+.complex-radio-circle {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 1px solid #4b5563;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-fast);
+}
+
+.complex-card.active .complex-radio-circle {
+    border-color: #e50914;
+    background: #e50914;
+}
+
+.radio-check-mark {
+    font-size: 11px;
+    color: #fff;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.complex-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: #ffffff;
+    margin: 6px 0 2px 0;
+}
+
+.complex-address {
+    font-size: 12px;
+    color: #9ca3af;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 0 10px 0;
+}
+
+.complex-tech-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.complex-tech-chip {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: #26272b;
+    color: #9ca3af;
+    border: 1px solid transparent;
+}
+
+/* Selector de Fecha y Leyenda */
+.date-selector-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    background: #16171a;
+    border: 1px solid #26272b;
+    border-radius: 8px;
+    padding: 12px 18px;
+    margin-bottom: 24px;
+}
+
+.date-pills-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.date-label-text {
+    font-size: 11px;
+    font-weight: 700;
+    color: #9ca3af;
+    letter-spacing: 0.06em;
+    margin-right: 4px;
+}
+
+.showtime-date-pill {
+    background: #1f1f23;
+    border: 1px solid #2b2c31;
+    color: #9ca3af;
+    padding: 6px 16px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.showtime-date-pill:hover {
+    color: #ffffff;
+    border-color: #3f3f46;
+}
+
+.showtime-date-pill.active {
+    background: #e50914;
+    color: #ffffff;
+    border-color: #e50914;
+    box-shadow: 0 0 12px rgba(229, 9, 20, 0.4);
+}
+
+.availability-legend {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    font-size: 12px;
+    color: #9ca3af;
+}
+
+.legend-item {
+    display: inline-flex;
+    align-items: center;
+}
+
+.legend-dot-green {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background-color: #10b981;
+    margin-right: 6px;
+    display: inline-block;
+}
+
+.legend-dot-orange {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background-color: #f59e0b;
+    margin-right: 6px;
+    display: inline-block;
+}
+
+/* --------------------------------------------------------------------------
+   4. Grupos de Salas y Horarios
+   -------------------------------------------------------------------------- */
+.halls-showtimes-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 40px;
+}
+
+.hall-showtime-block {
+    background: #1b1b1f;
+    border: 1px solid #26272b;
+    border-radius: 8px;
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.hall-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.hall-title-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.format-tech-tag {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 4px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.format-tech-tag.badge-4d {
+    background: #e50914;
+    color: #fff;
+}
+
+.format-tech-tag.badge-3d {
+    background: #0284c7;
+    color: #fff;
+}
+
+.format-tech-tag.badge-2d {
+    background: #374151;
+    color: #fff;
+}
+
+.hall-names-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.hall-main-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: #ffffff;
+    margin: 0;
+}
+
+.hall-features-sub {
+    font-size: 12px;
+    color: #9ca3af;
+}
+
+.hall-price-label {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+}
+
+.price-prefix {
+    font-size: 11px;
+    font-weight: 600;
+    color: #9ca3af;
+    letter-spacing: 0.06em;
+}
+
+.hall-price-amount {
+    font-size: 16px;
+    font-weight: 800;
+    color: #ffffff;
+}
+
+/* Grilla de Tarjetas de Horario */
+.showtime-buttons-grid {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.showtime-select-card {
+    background: #16171a;
+    border: 1px solid #26272b;
+    border-radius: 6px;
+    padding: 12px 18px;
+    cursor: pointer;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    transition: all var(--transition-fast);
+    width: 175px;
+    user-select: none;
+}
+
+.showtime-select-card:hover {
+    background: #202227;
+    border-color: #3f3f46;
+}
+
+.showtime-select-card.active {
+    background: rgba(229, 9, 20, 0.08);
+    border: 2px solid #e50914;
+    box-shadow: 0 0 14px rgba(229, 9, 20, 0.2);
+}
+
+.card-time-display {
+    font-size: 17px;
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1.2;
+}
+
+.card-availability-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: #9ca3af;
+}
+
+.status-dot-sm {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.status-dot-sm.dot-alta {
+    background-color: #10b981;
+}
+
+.status-dot-sm.dot-baja {
+    background-color: #f59e0b;
+}
+
+/* --------------------------------------------------------------------------
+   5. Barra Inferior Fija / Sticky Bottom Selection Bar
+   -------------------------------------------------------------------------- */
+.sticky-selection-bar {
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #121316;
+    border-top: 1px solid #26272b;
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.8);
+    padding: 14px 0;
+    z-index: 100;
+}
+
+.sticky-bar-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.selection-summary-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.ticket-icon-badge {
+    width: 42px;
+    height: 42px;
+    border-radius: 8px;
+    background: #e50914;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    flex-shrink: 0;
+}
+
+.selection-details-group {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.selection-headline {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #e50914;
+    text-transform: uppercase;
+}
+
+.selection-values-row {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #f3f4f6;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.selection-dot-separator {
+    margin: 0 8px;
+    color: #4b5563;
+}
+
+.hall-highlight-purple {
+    color: #c084fc;
+}
+
+.time-highlight-amber {
+    color: #f59e0b;
+    font-weight: 700;
+}
+
+.selection-price-base {
+    font-size: 12px;
+    color: #9ca3af;
+}
+
+.selection-price-base strong {
+    color: #ffffff;
+}
+
+.selection-actions-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.btn-secondary-candy {
+    background: transparent;
+    border: 1px solid #374151;
+    color: #ffffff;
+    padding: 10px 18px;
+    border-radius: 6px;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all var(--transition-fast);
+}
+
+.btn-secondary-candy:hover {
+    background: #1f1f23;
+    border-color: #4b5563;
+}
+
+.btn-primary-continue {
+    background: #e50914;
+    border: 1px solid #e50914;
+    color: #ffffff;
+    padding: 10px 22px;
+    border-radius: 6px;
+    font-size: 13.5px;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 0 16px rgba(229, 9, 20, 0.4);
+    transition: all var(--transition-fast);
+}
+
+.btn-primary-continue:hover {
+    background: #b91c1c;
+    border-color: #b91c1c;
+    box-shadow: 0 0 20px rgba(229, 9, 20, 0.6);
+}
+
+.btn-arrow-right {
+    font-size: 15px;
+    font-weight: 700;
+}
+
+/* --------------------------------------------------------------------------
+   6. Modal de Tráiler Embebido (Accesible)
+   -------------------------------------------------------------------------- */
+.trailer-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--transition-normal), visibility var(--transition-normal);
+}
+
+.trailer-modal-backdrop.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.trailer-modal-dialog {
+    background: #1b1b1f;
+    border: 1px solid #26272b;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 860px;
+    overflow: hidden;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.8);
+}
+
+.trailer-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
+    border-bottom: 1px solid #26272b;
+}
+
+.trailer-modal-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #ffffff;
+    margin: 0;
+}
+
+.trailer-modal-close {
+    background: transparent;
+    border: none;
+    color: #9ca3af;
+    font-size: 22px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 4px;
+    transition: color var(--transition-fast);
+}
+
+.trailer-modal-close:hover {
+    color: #ffffff;
+}
+
+.trailer-video-wrapper {
+    position: relative;
+    padding-bottom: 56.25%;
+    height: 0;
+    background: #000;
+}
+
+.trailer-video-wrapper iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+}
