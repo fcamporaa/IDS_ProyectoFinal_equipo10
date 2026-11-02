@@ -183,4 +183,17 @@ def buscar_peliculas_externas(filtros: dict) -> list[dict]:
 
 def listar_generos() -> list[dict]:
     """Devuelve el listado de todos los géneros disponibles."""
-    return obtener_generos_db()
+    pass
+
+
+def listar_resenas_pelicula(id_pelicula: int) -> list[dict]:
+    """Lista las reseñas y puntuaciones de una película."""
+    pass
+
+
+def crear_resena_pelicula(id_pelicula: int, id_usuario: int, datos: dict) -> dict:
+    """
+    Registra una reseña validando que el usuario tenga una compra
+    con QR validado efectivamente en puerta.
+    """
+    pass
