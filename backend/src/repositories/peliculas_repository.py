@@ -1,28 +1,41 @@
-from src.db import ejecutar_consulta, ejecutar_mutacion
+from src.db import ejecutar_consulta, ejecutar_mutacion, ejecutar_transaccion
 
-# Una función es vigente si está programada o en curso y todavía no terminó
+# Una función es vigente si está programada o en curso y todavía no terminó.
+# El %s recibe la hora local actual (así coincide con el resto de la API, no con la del servidor MySQL)
 CONDICION_FUNCION_VIGENTE = (
-    "f.estado IN ('PROGRAMADA', 'EN_CURSO') AND f.fin > NOW()"
+    "f.estado IN ('PROGRAMADA', 'EN_CURSO') AND f.fin > %s"
 )
 
+SQL_INSERTAR_PELICULA = """
+    INSERT INTO peliculas (origen_api, id_api, titulo, sinopsis, poster_url,
+                           trailer_url, duracion_min, clasificacion, anio_estreno)
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);
+"""
+
+SQL_ACTUALIZAR_PELICULA = """
+    UPDATE peliculas
+    SET titulo = %s, sinopsis = %s, poster_url = %s, trailer_url = %s,
+        duracion_min = %s, clasificacion = %s, anio_estreno = %s, activa = %s
+    WHERE id_pelicula = %s;
+"""
+
+SQL_ASOCIAR_GENERO = "INSERT INTO pelicula_generos (id_pelicula, id_genero) VALUES (%s, %s);"
+
+SQL_QUITAR_GENEROS = "DELETE FROM pelicula_generos WHERE id_pelicula = %s;"
 
 
-
-
-
-
-def obtener_cartelera_vigente_db(filtros: dict = None) -> list[dict]:
+def obtener_cartelera_vigente_db(filtros: dict) -> list[dict]:
     """
-    Consulta las películas activas que tienen funciones vigentes.
-    Admite los filtros opcionales id_genero, titulo (parcial) y clasificacion.
+    Consulta las películas activas que tienen funciones vigentes a la hora
+    filtros["vigentes_desde"]. Admite los filtros opcionales id_genero,
+    titulo (parcial) y clasificacion.
     """
-    filtros = filtros or {}
     condiciones = [
         "p.activa = 1",
         "EXISTS (SELECT 1 FROM funciones f "
         f"WHERE f.id_pelicula = p.id_pelicula AND {CONDICION_FUNCION_VIGENTE})",
     ]
-    parametros = []
+    parametros = [filtros["vigentes_desde"]]
 
     if "id_genero" in filtros:
         condiciones.append(
@@ -48,10 +61,6 @@ def obtener_cartelera_vigente_db(filtros: dict = None) -> list[dict]:
         ORDER BY p.titulo;
     """
     return ejecutar_consulta(query, tuple(parametros))
-
-
-
-
 
 
 def buscar_pelicula_por_id_db(id_pelicula: int) -> dict | None:
@@ -82,10 +91,11 @@ def buscar_pelicula_por_api_db(origen_api: str, id_api: str) -> dict | None:
     return None
 
 
-def obtener_funciones_vigentes_por_pelicula_db(id_pelicula: int) -> list[dict]:
+def obtener_funciones_vigentes_por_pelicula_db(id_pelicula: int, vigentes_desde) -> list[dict]:
     """
-    Obtiene las funciones vigentes de una película, ordenadas por inicio,
-    con el título de la película, el número de sala y el nombre del local.
+    Obtiene las funciones de una película vigentes a la hora vigentes_desde,
+    ordenadas por inicio, con el título de la película, el número de sala
+    y el nombre del local.
     """
     query = f"""
         SELECT f.id_funcion, f.id_pelicula, p.titulo AS titulo_pelicula,
@@ -99,15 +109,13 @@ def obtener_funciones_vigentes_por_pelicula_db(id_pelicula: int) -> list[dict]:
         WHERE f.id_pelicula = %s AND {CONDICION_FUNCION_VIGENTE}
         ORDER BY f.inicio;
     """
-    return ejecutar_consulta(query, (id_pelicula,))
+    return ejecutar_consulta(query, (id_pelicula, vigentes_desde))
 
 
-def insertar_pelicula_db(datos: dict) -> int:
-    """Inserta una película y devuelve su id autoincremental."""
-    query = """
-        INSERT INTO peliculas (origen_api, id_api, titulo, sinopsis, poster_url,
-                               trailer_url, duracion_min, clasificacion, anio_estreno)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);
+def insertar_pelicula_db(datos: dict, ids_generos: list[int]) -> int:
+    """
+    Inserta una película y asocia sus géneros en una sola transacción:
+    si algo falla no queda una película guardada a medias. Devuelve su id.
     """
     valores = (
         datos["origen_api"],
@@ -120,16 +128,22 @@ def insertar_pelicula_db(datos: dict) -> int:
         datos["clasificacion"],
         datos["anio_estreno"],
     )
-    return ejecutar_mutacion(query, valores)
+
+    def operacion(cursor):
+        cursor.execute(SQL_INSERTAR_PELICULA, valores)
+        id_pelicula = cursor.lastrowid
+        cursor.executemany(
+            SQL_ASOCIAR_GENERO, [(id_pelicula, id_genero) for id_genero in ids_generos]
+        )
+        return id_pelicula
+
+    return ejecutar_transaccion(operacion)
 
 
-def actualizar_pelicula_db(id_pelicula: int, datos: dict) -> int:
-    """Actualiza los campos editables de una película (incluida activa) en la BD."""
-    query = """
-        UPDATE peliculas
-        SET titulo = %s, sinopsis = %s, poster_url = %s, trailer_url = %s,
-            duracion_min = %s, clasificacion = %s, anio_estreno = %s, activa = %s
-        WHERE id_pelicula = %s;
+def actualizar_pelicula_db(id_pelicula: int, datos: dict, ids_generos: list[int] | None = None) -> None:
+    """
+    Actualiza los campos editables de una película (incluida activa) y, si se
+    indican ids_generos, reemplaza sus géneros, todo en una sola transacción.
     """
     valores = (
         datos["titulo"],
@@ -142,7 +156,16 @@ def actualizar_pelicula_db(id_pelicula: int, datos: dict) -> int:
         int(datos["activa"]),
         id_pelicula,
     )
-    return ejecutar_mutacion(query, valores)
+
+    def operacion(cursor):
+        cursor.execute(SQL_ACTUALIZAR_PELICULA, valores)
+        if ids_generos is not None:
+            cursor.execute(SQL_QUITAR_GENEROS, (id_pelicula,))
+            cursor.executemany(
+                SQL_ASOCIAR_GENERO, [(id_pelicula, id_genero) for id_genero in ids_generos]
+            )
+
+    ejecutar_transaccion(operacion)
 
 
 def dar_de_baja_pelicula_db(id_pelicula: int) -> int:
@@ -175,16 +198,3 @@ def obtener_generos_de_peliculas_db(ids_peliculas: list[int]) -> list[dict]:
         ORDER BY g.nombre;
     """
     return ejecutar_consulta(query, tuple(ids_peliculas))
-
-
-def asociar_genero_a_pelicula_db(id_pelicula: int, id_genero: int) -> int:
-    """Inserta en la tabla intermedia pelicula_generos."""
-    query = "INSERT INTO pelicula_generos (id_pelicula, id_genero) VALUES (%s, %s);"
-    return ejecutar_mutacion(query, (id_pelicula, id_genero))
-
-
-def quitar_genero_de_pelicula_db(id_pelicula: int, id_genero: int) -> int:
-    """Elimina una asociación de la tabla intermedia pelicula_generos."""
-    query = "DELETE FROM pelicula_generos WHERE id_pelicula = %s AND id_genero = %s;"
-    return ejecutar_mutacion(query, (id_pelicula, id_genero))
-
