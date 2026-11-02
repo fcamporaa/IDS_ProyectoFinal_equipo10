@@ -1,4 +1,8 @@
 import urllib.parse
+from datetime import datetime
+from decimal import Decimal, InvalidOperation
+
+from src.constants import ZONA_HORARIA_LOCAL
 
 
 def construir_error_api(
@@ -74,6 +78,13 @@ def error_no_encontrado(descripcion: str) -> ValueError:
     )
 
 
+def error_conflicto(descripcion: str) -> ValueError:
+    """Error 409 estándar para conflictos de estado u horario."""
+    return crear_error_http(
+        "error.recurso.conflicto", "Conflicto", descripcion, 409
+    )
+
+
 # ==========================================
 # Validaciones genéricas de datos de entrada
 # ==========================================
@@ -135,6 +146,54 @@ def validar_booleano(valor, nombre: str) -> bool:
     if not isinstance(valor, bool):
         raise error_validacion(f"El campo {nombre} debe ser true o false.")
     return valor
+
+
+def validar_opcion(valor, opciones, nombre: str):
+    """Valida que el valor pertenezca a un conjunto de opciones permitidas."""
+    if valor not in opciones:
+        opciones_legibles = ", ".join(sorted(opciones))
+        raise error_validacion(
+            f"El campo {nombre} debe ser uno de: {opciones_legibles}."
+        )
+    return valor
+
+
+def validar_decimal_positivo(valor, nombre: str) -> Decimal:
+    """Valida un número decimal positivo (acepta texto numérico de formularios/JSON)."""
+    if isinstance(valor, bool) or not isinstance(
+        valor, (int, float, str, Decimal)
+    ):
+        raise error_validacion(f"El campo {nombre} debe ser un número decimal positivo.")
+
+    try:
+        numero = Decimal(str(valor).strip())
+    except (InvalidOperation, ValueError):
+        raise error_validacion(
+            f"El campo {nombre} debe ser un número decimal positivo."
+        ) from None
+
+    if not numero.is_finite() or numero <= 0:
+        raise error_validacion(f"El campo {nombre} debe ser un número decimal positivo.")
+    return numero
+
+
+def parsear_datetime(valor, nombre: str) -> datetime:
+    """Parsea un DATETIME ISO 8601 y lo devuelve naive en la zona horaria local."""
+    if not isinstance(valor, str) or not valor.strip():
+        raise error_validacion(
+            f"El campo {nombre} debe ser una fecha y hora ISO 8601."
+        )
+
+    try:
+        fecha = datetime.fromisoformat(valor.strip().replace("Z", "+00:00"))
+    except ValueError:
+        raise error_validacion(
+            f"El campo {nombre} debe ser una fecha y hora ISO 8601."
+        ) from None
+
+    if fecha.tzinfo is not None:
+        fecha = fecha.astimezone(ZONA_HORARIA_LOCAL).replace(tzinfo=None)
+    return fecha
 
 
 # ==========================================

@@ -1,6 +1,4 @@
 from src.utils import construir_error_api
-from src.validators.auth_validators import validar_autorizacion
-from src.repositories.usuarios_repository import buscar_usuario_por_id_db
 
 
 def _validar_entero_positivo(valor, nombre_campo: str) -> int:
@@ -83,41 +81,5 @@ def validar_actualizar_sala(datos: dict) -> dict:
         )
 
     return datos_validados
-
-
-def validar_autorizacion_admin(encabezado: str | None) -> dict:
-    """
-    Valida el encabezado Bearer y verifica que el usuario tenga rol ADMINISTRADOR.
-    Retorna un dict con 'errors' y 'status' si no está autorizado.
-    """
-    # Validar token Bearer
-    autorizacion = validar_autorizacion(encabezado)
-    if "errors" in autorizacion:
-        return {**autorizacion, "status": 401}
-
-    # Verificar que el usuario exista y esté activo
-    usuario = buscar_usuario_por_id_db(autorizacion["usuario_id"])
-    if not usuario or not usuario["activo"]:
-        return {
-            **construir_error_api(
-                "error.auth.token_invalido",
-                "Token inválido",
-                "El usuario asociado al token no existe o está inactivo.",
-            ),
-            "status": 401,
-        }
-
-    # Verificar que tenga rol de administrador
-    if usuario["rol"] != "ADMINISTRADOR":
-        return {
-            **construir_error_api(
-                "error.auth.prohibido",
-                "Acceso denegado",
-                "El usuario no tiene rol ADMINISTRADOR para ejecutar esta acción.",
-            ),
-            "status": 403,
-        }
-
-    return autorizacion
 
 

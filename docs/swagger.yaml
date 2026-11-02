@@ -989,30 +989,16 @@ paths:
       tags:
         - Backoffice Dashboard
       summary: Métricas de porcentaje de ocupación (Solo Admin)
-      description: Estadísticas de butacas ocupadas vs. capacidad total agrupadas por función, sala y película.
+      description: >
+        Estadísticas de butacas ocupadas o reservadas contra la capacidad total
+        de la sala, agrupadas por función, sala y película.
       operationId: obtenerOcupacionDashboard
       security:
         - BearerAuth: []
       parameters:
-        - name: id_local
-          in: query
-          required: false
-          schema:
-            type: integer
-        - name: desde
-          in: query
-          required: false
-          schema:
-            type: string
-            format: date
-          example: '2026-11-01'
-        - name: hasta
-          in: query
-          required: false
-          schema:
-            type: string
-            format: date
-          example: '2026-11-30'
+        - $ref: '#/components/parameters/DashboardLocal'
+        - $ref: '#/components/parameters/DashboardDesde'
+        - $ref: '#/components/parameters/DashboardHasta'
       responses:
         '200':
           description: Métricas de ocupación.
@@ -1022,6 +1008,8 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/MetricaOcupacion'
+        '400':
+          $ref: '#/components/responses/ErrorValidacion'
         '401':
           $ref: '#/components/responses/NoAutorizado'
         '403':
@@ -1032,10 +1020,16 @@ paths:
       tags:
         - Backoffice Dashboard
       summary: Estadísticas de recaudación y entradas por género (Solo Admin)
-      description: Reporte de volumen de entradas y monto total recaudado clasificado por género cinematográfico.
+      description: >
+        Reporte de entradas vendidas y monto total recaudado clasificado por
+        género cinematográfico. Solo considera compras PAGADAS.
       operationId: obtenerVentasPorGenero
       security:
         - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DashboardLocal'
+        - $ref: '#/components/parameters/DashboardDesde'
+        - $ref: '#/components/parameters/DashboardHasta'
       responses:
         '200':
           description: Recaudación y entradas por género.
@@ -1045,6 +1039,8 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/VentaPorGenero'
+        '400':
+          $ref: '#/components/responses/ErrorValidacion'
         '401':
           $ref: '#/components/responses/NoAutorizado'
         '403':
@@ -1055,10 +1051,16 @@ paths:
       tags:
         - Backoffice Dashboard
       summary: Reporte de horarios y turnos con mayor volumen de entradas (Solo Admin)
-      description: Identifica las franjas horarias más concurridas del cine (tarde, noche, trasnoche).
+      description: >
+        Identifica las franjas horarias más concurridas del cine agrupando las
+        entradas vendidas en los turnos Mañana, Tarde, Noche y Trasnoche.
       operationId: obtenerFranjasHorarias
       security:
         - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DashboardLocal'
+        - $ref: '#/components/parameters/DashboardDesde'
+        - $ref: '#/components/parameters/DashboardHasta'
       responses:
         '200':
           description: Reporte de volumen por turnos y horarios.
@@ -1068,6 +1070,8 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/FranjaHorariaVenta'
+        '400':
+          $ref: '#/components/responses/ErrorValidacion'
         '401':
           $ref: '#/components/responses/NoAutorizado'
         '403':
@@ -1078,10 +1082,16 @@ paths:
       tags:
         - Backoffice Dashboard
       summary: Tasa y estadísticas de compras canceladas (Solo Admin)
-      description: Reporte de compras canceladas, porcentaje respecto al total de ventas y motivos temporales.
+      description: >
+        Reporte de compras canceladas sobre el total de compras PAGADAS o
+        CANCELADAS, incluyendo el monto total devuelto.
       operationId: obtenerEstadisticasCancelaciones
       security:
         - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DashboardLocal'
+        - $ref: '#/components/parameters/DashboardDesde'
+        - $ref: '#/components/parameters/DashboardHasta'
       responses:
         '200':
           description: Estadísticas de cancelaciones.
@@ -1089,6 +1099,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EstadisticasCancelacion'
+        '400':
+          $ref: '#/components/responses/ErrorValidacion'
         '401':
           $ref: '#/components/responses/NoAutorizado'
         '403':
@@ -1175,6 +1187,31 @@ components:
       schema:
         type: integer
       description: ID único de la compra.
+    DashboardLocal:
+      name: id_local
+      in: query
+      required: false
+      schema:
+        type: integer
+      description: Filtra las métricas por complejo.
+    DashboardDesde:
+      name: desde
+      in: query
+      required: false
+      schema:
+        type: string
+        format: date
+      example: '2026-11-01'
+      description: Fecha inicial inclusiva en formato YYYY-MM-DD.
+    DashboardHasta:
+      name: hasta
+      in: query
+      required: false
+      schema:
+        type: string
+        format: date
+      example: '2026-11-30'
+      description: Fecha final inclusiva en formato YYYY-MM-DD.
 
   responses:
     ErrorValidacion:
@@ -2060,9 +2097,11 @@ components:
           example: 'Cine Paradiso Abasto'
         capacidad_total:
           type: integer
+          description: Cantidad de butacas activas de la sala.
           example: 80
         entradas_vendidas:
           type: integer
+          description: Entradas OCUPADAS o RESERVADAS de la función.
           example: 64
         porcentaje_ocupacion:
           type: number
@@ -2077,10 +2116,12 @@ components:
           example: 'Ciencia Ficción'
         entradas_vendidas:
           type: integer
+          description: Entradas OCUPADAS de compras PAGADAS.
           example: 412
         total_recaudado:
           type: number
           format: float
+          description: Suma del precio unitario de las entradas vendidas.
           example: 1854000.00
 
     FranjaHorariaVenta:
@@ -2088,7 +2129,7 @@ components:
       properties:
         turno:
           type: string
-          example: 'Noche (19:00 - 22:00)'
+          example: 'Noche (19:00 - 22:59)'
         entradas_vendidas:
           type: integer
           example: 820
@@ -2102,6 +2143,7 @@ components:
       properties:
         total_compras:
           type: integer
+          description: Compras PAGADAS o CANCELADAS del período.
           example: 1500
         total_canceladas:
           type: integer
@@ -2113,6 +2155,7 @@ components:
         monto_devuelto:
           type: number
           format: float
+          description: Suma del total de las compras CANCELADAS.
           example: 202500.00
 
     ReporteVentasConsolidado:

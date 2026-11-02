@@ -1,0 +1,94 @@
+{% extends 'layout.html' %}
+
+{% block title %}Dashboard Administrativo - Cinema Paradiso{% endblock %}
+
+{% block content %}
+<div class="dashboard-page container">
+    <header class="dashboard-page__header">
+        <div>
+            <p class="dashboard-page__eyebrow">Backoffice</p>
+            <h1>Dashboard de métricas</h1>
+            <p class="dashboard-page__subtitle">
+                Ocupación, ventas, franjas horarias y cancelaciones del complejo.
+            </p>
+        </div>
+        <a href="{{ url_for('home.index') }}" class="dashboard-page__back">
+            ← Volver a la cartelera
+        </a>
+    </header>
+
+    {% if error_backend %}
+    <div class="dashboard-alert" role="alert">{{ error_backend }}</div>
+    {% endif %}
+
+    {% include 'components/filtros_dashboard.html' %}
+
+    <section class="dashboard-kpis" aria-label="Indicadores principales">
+        {% with titulo='Ocupación promedio', valor='%.2f%%'|format(kpis.ocupacion_promedio), detalle='Sobre butacas activas', icono='🎟️', variante='default' %}
+            {% include 'components/kpi_card.html' %}
+        {% endwith %}
+        {% with titulo='Entradas vendidas', valor=kpis.entradas_vendidas, detalle='Compras pagadas', icono='🎬', variante='success' %}
+            {% include 'components/kpi_card.html' %}
+        {% endwith %}
+        {% with titulo='Recaudación total', valor='$ %.2f'|format(kpis.recaudacion_total), detalle='Período filtrado', icono='💵', variante='warning' %}
+            {% include 'components/kpi_card.html' %}
+        {% endwith %}
+        {% with titulo='Tasa de cancelación', valor='%.2f%%'|format(kpis.tasa_cancelacion), detalle='Compras canceladas', icono='⚠️', variante='danger' %}
+            {% include 'components/kpi_card.html' %}
+        {% endwith %}
+    </section>
+
+    {% set columnas_ocupacion = [
+        {'clave': 'pelicula', 'etiqueta': 'Película'},
+        {'clave': 'sala', 'etiqueta': 'Sala'},
+        {'clave': 'local', 'etiqueta': 'Complejo'},
+        {'clave': 'capacidad_total', 'etiqueta': 'Capacidad'},
+        {'clave': 'entradas_vendidas', 'etiqueta': 'Ocupadas'},
+        {'clave': 'porcentaje_ocupacion', 'etiqueta': 'Ocupación', 'tipo': 'porcentaje'}
+    ] %}
+    {% with titulo='Ocupación por función', descripcion='Butacas ocupadas o reservadas sobre la capacidad activa de cada sala.', columnas=columnas_ocupacion, filas=ocupacion %}
+        {% include 'components/tabla_dashboard.html' %}
+    {% endwith %}
+
+    {% set columnas_genero = [
+        {'clave': 'genero', 'etiqueta': 'Género'},
+        {'clave': 'entradas_vendidas', 'etiqueta': 'Entradas vendidas'},
+        {'clave': 'total_recaudado', 'etiqueta': 'Recaudación', 'tipo': 'moneda'},
+        {'clave': 'porcentaje_visual', 'etiqueta': 'Participación', 'tipo': 'porcentaje'}
+    ] %}
+    {% with titulo='Ventas por género', descripcion='Recaudación y entradas vendidas según el género cinematográfico.', columnas=columnas_genero, filas=ventas_genero %}
+        {% include 'components/tabla_dashboard.html' %}
+    {% endwith %}
+
+    {% set columnas_franjas = [
+        {'clave': 'turno', 'etiqueta': 'Turno'},
+        {'clave': 'entradas_vendidas', 'etiqueta': 'Entradas vendidas'},
+        {'clave': 'total_recaudado', 'etiqueta': 'Recaudación', 'tipo': 'moneda'},
+        {'clave': 'porcentaje_visual', 'etiqueta': 'Participación', 'tipo': 'porcentaje'}
+    ] %}
+    {% with titulo='Franjas horarias', descripcion='Turnos con mayor volumen de entradas vendidas.', columnas=columnas_franjas, filas=franjas %}
+        {% include 'components/tabla_dashboard.html' %}
+    {% endwith %}
+
+    <section class="dashboard-section">
+        <header class="dashboard-section__header">
+            <h2>Cancelaciones</h2>
+            <p>Compras canceladas sobre el total de compras pagadas o canceladas.</p>
+        </header>
+        <div class="dashboard-cancelaciones">
+            {% with titulo='Compras evaluadas', valor=cancelaciones.get('total_compras', 0), detalle='Pagadas + canceladas', icono='🧾', variante='default' %}
+                {% include 'components/kpi_card.html' %}
+            {% endwith %}
+            {% with titulo='Compras canceladas', valor=cancelaciones.get('total_canceladas', 0), detalle='En el período', icono='❌', variante='danger' %}
+                {% include 'components/kpi_card.html' %}
+            {% endwith %}
+            {% with titulo='Tasa de cancelación', valor='%.2f%%'|format(cancelaciones.get('tasa_cancelacion_porcentaje', 0)), detalle='Sobre compras evaluadas', icono='📉', variante='warning' %}
+                {% include 'components/kpi_card.html' %}
+            {% endwith %}
+            {% with titulo='Monto devuelto', valor='$ %.2f'|format(cancelaciones.get('monto_devuelto', 0)), detalle='Total de compras canceladas', icono='↩️', variante='default' %}
+                {% include 'components/kpi_card.html' %}
+            {% endwith %}
+        </div>
+    </section>
+</div>
+{% endblock %}

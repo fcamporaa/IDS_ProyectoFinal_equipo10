@@ -1,8 +1,8 @@
 {# Componente Reutilizable: Barra de Navegación Principal (Cinema Paradiso)
    Basado en la estética Cinematic Precision de DESIGN.md y el contrato de la API.
-   Parámetros opcionales:
-   - usuario_activo: Diccionario de usuario si hay sesión (opcional)
-   - es_admin: Booleano si el usuario tiene rol de administrador (opcional, default true para demo docente)
+   Parámetros inyectados por el context processor de app.py:
+   - usuario_activo: Diccionario del usuario en sesión (opcional)
+   - es_admin: True si el usuario en sesión tiene rol ADMINISTRADOR
 #}
 
 <header class="main-header">
@@ -48,9 +48,9 @@
         <!-- Lado Derecho: Acceso y Sesión -->
         <div class="header-actions">
             {% if es_admin %}
-                <!-- Acceso a Backoffice exclusivo para administradores autenticados -->
-                <a href="#backoffice" class="nav-backoffice-link" title="Panel de Administración">
-                    <span>⚙️</span> Backoffice
+                <!-- Acceso al dashboard exclusivo para administradores autenticados -->
+                <a href="{{ url_for('dashboard.index') }}" class="nav-backoffice-link" title="Dashboard de métricas">
+                    <span>⚙️</span> Dashboard
                 </a>
             {% endif %}
 
