@@ -1,106 +1,19 @@
 /* ========================================================
-   Cine Paradiso - Design System Tokens (Hito 2)
+   Cine Paradiso - Master CSS Manifest (Hito 2)
+   Arquitectura modular: tokens -> base -> componentes -> páginas
    ======================================================== */
 
-:root {
-    /* Paleta Principal Cinematográfica */
-    --color-bg-main: #0b1120;        /* Fondo oscuro profundo */
-    --color-bg-surface: #1e293b;     /* Fondo de tarjetas y componentes */
-    --color-bg-surface-hover: #334155;
-    --color-border: #334155;
+/* 1. Tokens y Variables Globales de Diseño */
+@import "tokens.css";
 
-    /* Acentos y Señalética */
-    --color-accent-red: #e11d48;     /* Rojo marquesina (botones primarios, llamadas a acción) */
-    --color-accent-gold: #f59e0b;    /* Dorado cine (estrellas, VIP, destacados) */
+/* 2. Reset y Estructura Base */
+@import "base.css";
 
-    /* Tipografía y Textos */
-    --font-family-base: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    --color-text-main: #f8fafc;      /* Blanco principal */
-    --color-text-muted: #94a3b8;     /* Gris para subtítulos y metadatos */
+/* 3. Componentes UI Reutilizables de la Página de Inicio */
+@import "components/navbar.css";
+@import "components/barra_filtros.css";
+@import "components/hero_destacado.css";
+@import "components/footer.css";
 
-    /* Estados de Butacas */
-    --seat-available: #475569;       /* Libre (gris pizarra) */
-    --seat-selected: #e11d48;        /* Seleccionada por el usuario (rojo) */
-    --seat-occupied: #1e293b;        /* Ocupada (apagado / deshabilitado) */
-    --seat-vip: #f59e0b;             /* Butaca VIP (dorado) */
-}
-
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
-
-body {
-    font-family: var(--font-family-base);
-    background-color: var(--color-bg-main);
-    color: var(--color-text-main);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    letter-spacing: -0.01em;
-}
-
-header {
-    background-color: rgba(30, 41, 59, 0.85);
-    backdrop-filter: blur(8px);
-    padding: 1.25rem 2.5rem;
-    border-bottom: 1px solid var(--color-border);
-    position: sticky;
-    top: 0;
-    z-index: 50;
-}
-
-.brand {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--color-text-main);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.brand span {
-    color: var(--color-accent-red);
-}
-
-main {
-    flex: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 2.5rem 1.5rem;
-}
-
-.card {
-    background-color: var(--color-bg-surface);
-    padding: 3rem 2rem;
-    border-radius: 16px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
-    text-align: center;
-    max-width: 520px;
-    width: 100%;
-    border: 1px solid var(--color-border);
-}
-
-.card h1 {
-    font-size: 2.25rem;
-    font-weight: 700;
-    margin-bottom: 1rem;
-    color: var(--color-text-main);
-}
-
-.card p {
-    color: var(--color-text-muted);
-    font-size: 1.1rem;
-    line-height: 1.6;
-}
-
-footer {
-    text-align: center;
-    padding: 1.5rem;
-    color: var(--color-text-muted);
-    font-size: 0.875rem;
-    border-top: 1px solid var(--color-border);
-    background-color: var(--color-bg-main);
-}
+/* 4. Estilos de Páginas Específicas */
+@import "pages/home.css";

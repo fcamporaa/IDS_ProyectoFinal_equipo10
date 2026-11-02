@@ -4,26 +4,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Cine Paradiso{% endblock %}</title>
+    <title>{% block title %}Cine Paradiso - Reestrenos y Clásicos del Cine{% endblock %}</title>
+
+    <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Hoja de Estilos del Sistema de Diseño (Master CSS) -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <!-- Bloque para CSS específico de cada página / template -->
+    {% block extra_css %}{% endblock %}
 </head>
 
 <body>
-    <header>
-        <div class="brand">🎬 Cine <span>Paradiso</span></div>
-    </header>
+    <!-- Barra de Navegación Principal Reutilizable -->
+    {% include 'components/navbar.html' %}
 
-    <main>
+    <!-- Contenedor de Mensajes Flash de Flask -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages-container container">
+                {% for category, message in messages %}
+                    <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Contenido Dinámico de cada Vista -->
+    <main class="page-content">
         {% block content %}
         {% endblock %}
     </main>
 
-    <footer>
-        <p>&copy; 2026 Cine Paradiso - Sistema de Gestión de Cine</p>
-    </footer>
+    <!-- Pie de Página Reutilizable -->
+    {% include 'components/footer.html' %}
+
+    {% block extra_scripts %}{% endblock %}
 </body>
 
 </html>

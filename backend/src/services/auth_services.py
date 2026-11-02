@@ -157,3 +157,13 @@ def actualizar_perfil_usuario(id_usuario: int, datos: dict) -> None:
         ).decode("utf-8")
 
     actualizar_usuario_db(id_usuario, datos_actualizados)
+
+
+def actualizar_perfil_autenticado(id_usuario: int, datos: dict) -> dict:
+    """Verifica el estado de la cuenta y actualiza el perfil autenticado."""
+    perfil = obtener_perfil_usuario(id_usuario)
+    if "errors" in perfil:
+        return perfil
+
+    actualizar_perfil_usuario(id_usuario, datos)
+    return {"mensaje": "Perfil actualizado correctamente."}

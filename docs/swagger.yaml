@@ -873,7 +873,7 @@ paths:
       tags:
         - Compras y Entradas
       summary: Cancela una compra y libera las butacas
-      description: Cancela la compra (pasa a estado CANCELADA), invalida el QR y libera las butacas para que vuelvan a estar disponibles, validando que se realice dentro del tiempo límite previo al inicio de la función.
+      description: Cancela la compra (pasa a estado CANCELADA), invalida el QR y libera las butacas para que vuelvan a estar disponibles. Solo se permite hasta 24 horas antes del inicio de la función.
       operationId: cancelarCompra
       security:
         - BearerAuth: []
@@ -897,7 +897,7 @@ paths:
                     type: string
                     example: CANCELADA
         '400':
-          description: Tiempo límite de cancelación excedido o compra ya utilizada.
+          description: La compra está a menos de 24 horas de la función, ya fue utilizada o no está pagada.
           content:
             application/json:
               schema:
@@ -1398,6 +1398,7 @@ components:
         - titulo
         - origen_api
         - generos_ids
+        - duracion_min 
       properties:
         titulo:
           type: string
