@@ -49,14 +49,18 @@
             <span class="hall-badge">{{ m.sala_principal }}</span>
         </div>
 
-        <h3 class="movie-title" title="{{ m.titulo }}">{{ m.titulo }}</h3>
+        <h3 class="movie-title" title="{{ m.titulo }}">
+            <a href="{{ url_for('peliculas.detalle_pelicula', id_pelicula=m.id_pelicula) }}" class="movie-title-link">
+                {{ m.titulo }}
+            </a>
+        </h3>
 
         <!-- Horarios Disponibles -->
         <div class="showtimes-container">
             <span class="showtimes-heading">Horarios de hoy:</span>
             <div class="chips-row">
                 {% for hora in m.horarios %}
-                    <a href="#funcion" class="time-btn" title="Función {{ hora }}">
+                    <a href="{{ url_for('peliculas.detalle_pelicula', id_pelicula=m.id_pelicula) }}" class="time-btn" title="Ver función {{ hora }}">
                         {{ hora }}
                     </a>
                 {% endfor %}
@@ -64,7 +68,7 @@
         </div>
 
         <!-- Botón de Acción Directo -->
-        <a href="#butacas" class="btn-select-seats">
+        <a href="{{ url_for('peliculas.detalle_pelicula', id_pelicula=m.id_pelicula) }}" class="btn-select-seats">
             <span class="seat-icon">🎟️</span>
             <span>Seleccionar Butacas</span>
         </a>
