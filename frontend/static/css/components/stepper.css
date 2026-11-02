@@ -1,0 +1,145 @@
+/* ==========================================================================
+   COMPONENTE: STEPPER DE COMPRA
+   Barra de progreso horizontal compartida en el embudo de compra
+   (Butacas -> Candy Bar -> Checkout & Pago -> Confirmación)
+   ========================================================================== */
+
+.purchase-stepper {
+    margin-bottom: 24px;
+}
+
+.stepper-list {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    flex-wrap: wrap;
+}
+
+.stepper-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13.5px;
+    color: #6b7280;
+}
+
+.stepper-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    color: inherit;
+    transition: opacity 0.2s ease;
+}
+
+.stepper-link:hover:not(.disabled) {
+    opacity: 0.9;
+}
+
+.stepper-link.disabled {
+    cursor: default;
+}
+
+.step-badge {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11.5px;
+    font-weight: 700;
+    background: #26272b;
+    color: #9ca3af;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.step-name {
+    font-weight: 500;
+    letter-spacing: 0.2px;
+}
+
+/* Estado: Activo (Paso actual) */
+.stepper-item.active {
+    color: #ffffff;
+}
+
+.stepper-item.active .step-name {
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.stepper-item.active .step-badge {
+    background: #e50914;
+    color: #ffffff;
+    box-shadow: 0 0 10px rgba(229, 9, 20, 0.5);
+}
+
+/* Estado: Completado (Pasos anteriores) */
+.stepper-item.completed {
+    color: #9ca3af;
+}
+
+.stepper-item.completed .step-name {
+    color: #9ca3af;
+}
+
+.stepper-item.completed .step-badge {
+    background: #10b981;
+    color: #ffffff;
+}
+
+/* Estado: Confirmado / Éxito (Paso final alcanzado) */
+.stepper-item.confirmed {
+    color: #10b981;
+}
+
+.stepper-item.confirmed .step-name {
+    color: #10b981;
+    font-weight: 700;
+}
+
+.stepper-item.confirmed .step-badge {
+    background: #10b981;
+    color: #ffffff;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+}
+
+.step-check {
+    font-size: 12px;
+    line-height: 1;
+}
+
+/* Chevron separador entre pasos */
+.step-chevron {
+    color: #4b5563;
+    font-size: 16px;
+    margin-left: 4px;
+    user-select: none;
+}
+
+/* Responsividad para móviles */
+@media (max-width: 640px) {
+    .stepper-list {
+        gap: 8px;
+    }
+
+    .stepper-item {
+        font-size: 12px;
+        gap: 6px;
+    }
+
+    .step-badge {
+        width: 22px;
+        height: 22px;
+        font-size: 10.5px;
+    }
+
+    .step-chevron {
+        font-size: 14px;
+    }
+}

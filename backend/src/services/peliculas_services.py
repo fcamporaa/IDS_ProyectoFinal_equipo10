@@ -183,4 +183,48 @@ def buscar_peliculas_externas(filtros: dict) -> list[dict]:
 
 def listar_generos() -> list[dict]:
     """Devuelve el listado de todos los géneros disponibles."""
-    return obtener_generos_db()
+    pass
+
+
+def listar_resenas_pelicula(id_pelicula: int) -> list[dict]:
+    """Lista las reseñas y puntuaciones de una película."""
+    pelicula = buscar_pelicula_por_id_db(pelicula_id)
+    if pelicula is None:
+        raise error_validacion("La película indicada no existe.")
+    
+    reseñas = buscar_reseñas_por_pelicula_db(pelicula_id)
+    return [_formatear_reseña(r) for r in reseñas]
+    pass
+
+
+def crear_resena_pelicula(id_pelicula: int, id_usuario: int, datos: dict) -> dict:
+    pelicula_id = datos.get("pelicula_id")
+    usuario_id = datos.get("usuario_id")
+    puntuacion = datos.get("puntuacion")
+    comentario = datos.get("comentario", "")
+
+    # Validar que la película exista
+    pelicula = buscar_pelicula_por_id_db(pelicula_id)
+    if pelicula is None:
+        raise error_validacion("La película indicada no existe.")
+
+    # Validar que la puntuación sea un número válido entre 1 y 5
+    if puntuacion is None or not (1 <= int(puntuacion) <= 5):
+        raise error_validacion("La puntuación es obligatoria y debe ser un valor entero entre 1 y 5.")
+
+    # Validar que el usuario haya asistido (QR validado en puerta)
+    asistio = verificar_asistencia_usuario_db(usuario_id, pelicula_id)
+    if not asistio:
+        raise error_validacion("Acceso denegado. Solo los usuarios con asistencia validada (QR escaneado) pueden dejar reseñas.")
+
+    # Insertar la reseña en la base de datos
+    id_reseña = insertar_reseña_db({
+        "pelicula_id": pelicula_id,
+        "usuario_id": usuario_id,
+        "puntuacion": int(puntuacion),
+        "comentario": comentario,
+        "fecha": datetime.now()
+    })
+
+    return _formatear_reseña(buscar_reseña_por_id_db(id_reseña))
+    pass

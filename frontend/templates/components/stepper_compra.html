@@ -1,0 +1,41 @@
+{# Componente Reutilizable: Stepper / Barra de Progreso del Embudo de Compra
+   Parámetro:
+   - paso_actual: Entero (1: Butacas, 2: Candy Bar, 3: Checkout & Pago, 4: Confirmación)
+#}
+{% set current_step = paso_actual | default(1) %}
+{% set steps = [
+    {'num': 1, 'nombre': 'Butacas', 'url': url_for('compra.seleccion_butacas')},
+    {'num': 2, 'nombre': 'Candy Bar', 'url': url_for('compra.seleccion_servicios')},
+    {'num': 3, 'nombre': 'Checkout & Pago', 'url': url_for('compra.seleccion_checkout')},
+    {'num': 4, 'nombre': 'Confirmación', 'url': url_for('compra.confirmacion_compra')}
+] %}
+
+<nav class="purchase-stepper" aria-label="Progreso de compra">
+    <ol class="stepper-list">
+        {% for s in steps %}
+            <li class="stepper-item {% if s.num == current_step and current_step == 4 %}confirmed{% elif s.num == current_step %}active{% elif s.num < current_step %}completed{% else %}pending{% endif %}">
+                {% if s.num <= current_step and s.url != '#' %}
+                    <a href="{{ s.url }}" class="stepper-link">
+                {% else %}
+                    <span class="stepper-link disabled">
+                {% endif %}
+                    <div class="step-badge">
+                        {% if s.num < current_step or (s.num == 4 and current_step == 4) %}
+                            <span class="step-check">✓</span>
+                        {% else %}
+                            <span class="step-number">{{ s.num }}</span>
+                        {% endif %}
+                    </div>
+                    <span class="step-name">{% if s.num == 4 and current_step == 4 %}PASO 4 • CONFIRMADO{% else %}{{ s.nombre }}{% endif %}</span>
+                {% if s.num <= current_step and s.url != '#' %}
+                    </a>
+                {% else %}
+                    </span>
+                {% endif %}
+                {% if not loop.last %}
+                    <span class="step-chevron" aria-hidden="true">›</span>
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ol>
+</nav>
