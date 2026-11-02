@@ -80,6 +80,33 @@
     color: #9ca3af;
 }
 
+.catalog-header-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.checkout-timer-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    color: #f59e0b;
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.timer-digits {
+    font-size: 13px;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: 1px;
+}
+
 .btn-skip-step-link {
     display: inline-flex;
     align-items: center;
