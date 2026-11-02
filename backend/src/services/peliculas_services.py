@@ -1,3 +1,11 @@
+import requests
+
+from src.constants import (
+    OMDB_API_KEY,
+    OMDB_URL,
+    OMDB_TIMEOUT_SEGUNDOS,
+    OMDB_ERRORES_SIN_RESULTADOS,
+)
 from src.repositories.peliculas_repository import (
     obtener_cartelera_vigente_db,
     buscar_pelicula_por_id_db,
@@ -8,18 +16,13 @@ from src.repositories.peliculas_repository import (
     dar_de_baja_pelicula_db,
     obtener_generos_db,
     obtener_generos_de_peliculas_db,
-    asociar_genero_a_pelicula_db,
-    quitar_genero_de_pelicula_db,
 )
-import requests
-
-from src.constants import (
-    OMDB_API_KEY,
-    OMDB_URL,
-    OMDB_TIMEOUT_SEGUNDOS,
-    OMDB_ERRORES_SIN_RESULTADOS,
+from src.utils import (
+    ahora_local,
+    crear_error_http,
+    error_no_encontrado,
+    formatear_funcion,
 )
-from src.utils import construir_error_api
 
 
 def _formatear_peliculas(peliculas: list[dict]) -> list[dict]:
@@ -41,42 +44,23 @@ def _formatear_peliculas(peliculas: list[dict]) -> list[dict]:
 
 def listar_cartelera(filtros: dict) -> list[dict]:
     """Lista las películas actualmente en cartelera con sus géneros."""
-    peliculas = obtener_cartelera_vigente_db(filtros)
+    peliculas = obtener_cartelera_vigente_db({**filtros, "vigentes_desde": ahora_local()})
     return _formatear_peliculas(peliculas)
-
-
-def _crear_error(codigo: str, mensaje: str, descripcion: str, estado: int) -> ValueError:
-    """Arma el ValueError con el payload de error estándar y el código HTTP."""
-    return ValueError(construir_error_api(codigo, mensaje, descripcion), estado)
 
 
 def _obtener_pelicula_o_404(id_pelicula: int) -> dict:
     """Devuelve la película (activa o no) o lanza el error 404 estándar si no existe."""
     pelicula = buscar_pelicula_por_id_db(id_pelicula)
     if pelicula is None:
-        raise _crear_error(
-            "error.recurso.no_encontrado",
-            "Recurso no encontrado",
-            f"No existe una película con id {id_pelicula}.",
-            404,
-        )
+        raise error_no_encontrado(f"No existe una película con id {id_pelicula}.")
     return pelicula
-
-
-def _formatear_funcion(funcion: dict) -> dict:
-    """Deja la función con el formato del contrato: fechas ISO, precio numérico y booleano."""
-    funcion["inicio"] = funcion["inicio"].isoformat()
-    funcion["fin"] = funcion["fin"].isoformat()
-    funcion["precio_entrada"] = float(funcion["precio_entrada"])
-    funcion["subtitulada"] = bool(funcion["subtitulada"])
-    return funcion
 
 
 def obtener_detalle_pelicula(id_pelicula: int) -> dict:
     """Obtiene el detalle completo de una película y sus funciones vigentes."""
     pelicula = _formatear_peliculas([_obtener_pelicula_o_404(id_pelicula)])[0]
-    funciones = obtener_funciones_vigentes_por_pelicula_db(id_pelicula)
-    pelicula["funciones_vigentes"] = [_formatear_funcion(f) for f in funciones]
+    funciones = obtener_funciones_vigentes_por_pelicula_db(id_pelicula, ahora_local())
+    pelicula["funciones_vigentes"] = [formatear_funcion(f) for f in funciones]
     return pelicula
 
 
@@ -95,7 +79,7 @@ def _verificar_pelicula_no_duplicada(origen_api: str, id_api: str | None) -> Non
     )
     if not existente["activa"]:
         descripcion += f" Está dada de baja: reactivala con PUT /peliculas/{id_existente}."
-    raise _crear_error(
+    raise crear_error_http(
         "error.validacion.pelicula_duplicada", "Dato inválido", descripcion, 400
     )
 
@@ -105,7 +89,7 @@ def _verificar_generos_existentes(ids_generos: list[int]) -> None:
     existentes = {g["id_genero"] for g in obtener_generos_db()}
     faltantes = [i for i in ids_generos if i not in existentes]
     if faltantes:
-        raise _crear_error(
+        raise crear_error_http(
             "error.validacion.generos_inexistentes",
             "Dato inválido",
             f"No existen los géneros con id: {faltantes}.",
@@ -118,48 +102,20 @@ def crear_pelicula(datos: dict) -> dict:
     _verificar_pelicula_no_duplicada(datos["origen_api"], datos["id_api"])
     _verificar_generos_existentes(datos["generos_ids"])
 
-    id_pelicula = insertar_pelicula_db(datos)
-    try:
-        for id_genero in datos["generos_ids"]:
-            asociar_genero_a_pelicula_db(id_pelicula, id_genero)
-    except Exception:
-        # db.py confirma cada sentencia por separado, así que la película ya quedó
-        # guardada: se da de baja para que no circule incompleta (sin todos sus géneros).
-        dar_de_baja_pelicula_db(id_pelicula)
-        raise
-
+    id_pelicula = insertar_pelicula_db(datos, datos["generos_ids"])
     return _formatear_peliculas([_obtener_pelicula_o_404(id_pelicula)])[0]
-
-
-def _reemplazar_generos(id_pelicula: int, ids_nuevos: list[int]) -> None:
-    """
-    Deja la película con exactamente los géneros indicados. Primero agrega los que
-    faltan y recién después quita los que sobran: así nunca queda sin géneros, y
-    repetir el pedido tras una falla completa lo que faltó.
-    """
-    filas = obtener_generos_de_peliculas_db([id_pelicula])
-    ids_actuales = [fila["id_genero"] for fila in filas]
-
-    for id_genero in ids_nuevos:
-        if id_genero not in ids_actuales:
-            asociar_genero_a_pelicula_db(id_pelicula, id_genero)
-    for id_genero in ids_actuales:
-        if id_genero not in ids_nuevos:
-            quitar_genero_de_pelicula_db(id_pelicula, id_genero)
 
 
 def actualizar_pelicula(id_pelicula: int, datos: dict) -> dict:
     """Actualiza datos de la película y devuelve la película ya modificada."""
     existente = _obtener_pelicula_o_404(id_pelicula)
-    if "generos_ids" in datos:
-        _verificar_generos_existentes(datos["generos_ids"])
+    ids_generos = datos.get("generos_ids")
+    if ids_generos is not None:
+        _verificar_generos_existentes(ids_generos)
 
     # actualizar_pelicula_db hace un UPDATE completo: se parte de lo ya guardado
     campos = {k: v for k, v in datos.items() if k != "generos_ids"}
-    if campos:
-        actualizar_pelicula_db(id_pelicula, {**existente, **campos})
-    if "generos_ids" in datos:
-        _reemplazar_generos(id_pelicula, datos["generos_ids"])
+    actualizar_pelicula_db(id_pelicula, {**existente, **campos}, ids_generos)
 
     return _formatear_peliculas([_obtener_pelicula_o_404(id_pelicula)])[0]
 
@@ -173,7 +129,7 @@ def eliminar_pelicula(id_pelicula: int) -> None:
 
 def _api_externa_no_disponible(descripcion: str) -> ValueError:
     """Arma el error 502 estándar para fallas de la API externa."""
-    return _crear_error(
+    return crear_error_http(
         "error.externo.api_no_disponible",
         "Servicio externo no disponible",
         descripcion,
@@ -197,7 +153,7 @@ def _formatear_resultado_externo(item: dict) -> dict:
 def buscar_peliculas_externas(filtros: dict) -> list[dict]:
     """Consulta la API externa (OMDb) por título y devuelve los resultados con el formato del contrato."""
     if not OMDB_API_KEY:
-        raise _crear_error(
+        raise crear_error_http(
             "error.configuracion.api_externa",
             "Configuración incompleta",
             "Falta configurar OMDB_API_KEY en el servidor.",
@@ -228,6 +184,3 @@ def buscar_peliculas_externas(filtros: dict) -> list[dict]:
 def listar_generos() -> list[dict]:
     """Devuelve el listado de todos los géneros disponibles."""
     return obtener_generos_db()
-
-
-
