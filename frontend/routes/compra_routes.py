@@ -152,3 +152,157 @@ def seleccion_butacas():
     }
 
     return render_template("seleccion_butacas.html", c=datos_compra)
+
+
+@compra_bp.route("/servicios")
+def seleccion_servicios():
+    """
+    Renderiza la pantalla de selección de servicios complementarios y combos (Candy Bar).
+    Muestra el catálogo con combos, pochoclos, bebidas y extras, junto al resumen de compra acumulado.
+    """
+    datos_compra = {
+        "pelicula": {
+            "id_pelicula": 2,
+            "titulo": "Furiosa: Saga Mad Max",
+            "titulo_upper": "FURIOSA: SAGA MAD MAX",
+            "poster_url": "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=300&auto=format&fit=crop&q=80",
+            "formato": "SALA 2 • 4D",
+            "sala_badge": "SALA 2 • 4D",
+            "idioma": "Subtitulada",
+            "horario_etiqueta": "Hoy 20:15 hs • Subtitulada",
+            "complejo": "Paradiso Centro (Corrientes 1240)",
+        },
+        "entradas": {
+            "items": [
+                {
+                    "descripcion": "2x Entrada General 4D",
+                    "detalle": "Butacas E-08, E-09",
+                    "subtotal": 17000,
+                    "subtotal_formato": "$17.000",
+                }
+            ],
+            "subtotal": 17000,
+            "subtotal_formato": "$17.000",
+        },
+        "categorias_filtro": [
+            {"id": "todos", "nombre": "Todos los Combos"},
+            {"id": "pochoclos", "nombre": "Pochoclos"},
+            {"id": "bebidas", "nombre": "Bebidas"},
+            {"id": "snacks", "nombre": "Snacks & Dulces"},
+            {"id": "estacionamiento", "nombre": "Estacionamiento & VIP"},
+        ],
+        "servicios": [
+            {
+                "id_servicio": 1,
+                "nombre": "Combo Mega Paradiso",
+                "categoria": "combos pochoclos bebidas",
+                "descripcion": "Balde gigante de pochoclos salados o dulces + 2 gaseosas grandes 1L + golosina a elección en candy bar.",
+                "precio": 14500,
+                "precio_formato": "$14.500",
+                "badge_top": "MÁS VENDIDO",
+                "badge_top_tipo": "badge-gold",
+                "badge_image_bottom": "Tamaño Gigante",
+                "cantidad": 1,
+                "imagen_url": "https://images.unsplash.com/photo-1572177812156-58036aae439c?w=600&auto=format&fit=crop&q=80",
+            },
+            {
+                "id_servicio": 2,
+                "nombre": "Combo Clásico Dúo",
+                "categoria": "combos pochoclos bebidas",
+                "descripcion": "1 Balde mediano de pochoclos recién hechos + 2 gaseosas medianas 500ml.",
+                "precio": 10200,
+                "precio_formato": "$10.200",
+                "badge_top": None,
+                "badge_top_tipo": None,
+                "badge_image_bottom": None,
+                "cantidad": 0,
+                "imagen_url": "https://images.unsplash.com/photo-1585647347384-2593bc35786b?w=600&auto=format&fit=crop&q=80",
+            },
+            {
+                "id_servicio": 3,
+                "nombre": "Combo Individual",
+                "categoria": "combos pochoclos bebidas",
+                "descripcion": "1 Bolsa de pochoclos crocantes + 1 gaseosa 500ml línea Coca-Cola.",
+                "precio": 6800,
+                "precio_formato": "$6.800",
+                "badge_top": None,
+                "badge_top_tipo": None,
+                "badge_image_bottom": None,
+                "cantidad": 0,
+                "imagen_url": "https://images.unsplash.com/photo-1505686994434-e3cc5abf1330?w=600&auto=format&fit=crop&q=80",
+            },
+            {
+                "id_servicio": 4,
+                "nombre": "Voucher Estacionamiento Prepago (3 hs cubiertas)",
+                "categoria": "estacionamiento",
+                "descripcion": "Acceso exclusivo cubierto por 3 horas en cochera de Av. Corrientes 1240. Validación automática con QR.",
+                "precio": 4500,
+                "precio_formato": "$4.500",
+                "badge_top": "PARADISO CENTRO",
+                "badge_top_tipo": "badge-cyan",
+                "badge_image_bottom": "3 Horas Cubiertas",
+                "cantidad": 1,
+                "imagen_url": "https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=600&auto=format&fit=crop&q=80",
+            },
+            {
+                "id_servicio": 5,
+                "nombre": "Nachos con Queso Cheddar Caliente",
+                "categoria": "snacks",
+                "descripcion": "Porción generosa de nachos crujientes con queso cheddar fundido caliente en bandeja térmica.",
+                "precio": 5200,
+                "precio_formato": "$5.200",
+                "badge_top": None,
+                "badge_top_tipo": None,
+                "badge_image_bottom": None,
+                "cantidad": 0,
+                "imagen_url": "https://images.unsplash.com/photo-1513456852971-30c0b8199d4d?w=600&auto=format&fit=crop&q=80",
+            },
+            {
+                "id_servicio": 6,
+                "nombre": "Gaseosa Extra Grande (Línea Coca-Cola)",
+                "categoria": "bebidas",
+                "descripcion": "1000ml a elección: Coca-Cola original, Sin Azúcar, Sprite o Fanta con hielo frappe.",
+                "precio": 3500,
+                "precio_formato": "$3.500",
+                "badge_top": None,
+                "badge_top_tipo": None,
+                "badge_image_bottom": None,
+                "cantidad": 0,
+                "imagen_url": "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=600&auto=format&fit=crop&q=80",
+            },
+        ],
+        "candy_seleccionado": {
+            "items": [
+                {
+                    "id_servicio": 1,
+                    "nombre": "Combo Mega Paradiso",
+                    "descripcion": "Balde gigante + 2 gaseosas 1L",
+                    "cantidad": 1,
+                    "subtotal": 14500,
+                    "subtotal_formato": "$14.500",
+                },
+                {
+                    "id_servicio": 4,
+                    "nombre": "Voucher Estacionamiento Prepago (3 hs cubi...",
+                    "descripcion": "3 hs. cubiertas - Centro",
+                    "cantidad": 1,
+                    "subtotal": 4500,
+                    "subtotal_formato": "$4.500",
+                },
+            ],
+            "total_items": 2,
+            "subtotal": 19000,
+            "subtotal_formato": "$19.000",
+        },
+        "resumen": {
+            "subtotal_entradas": 17000,
+            "subtotal_entradas_formato": "$17.000",
+            "subtotal_candy": 19000,
+            "subtotal_candy_formato": "$19.000",
+            "cargos_servicio_texto": "100% Bonificado",
+            "total": 36000,
+            "total_formato": "$36.000",
+        },
+    }
+
+    return render_template("seleccion_servicios.html", c=datos_compra)

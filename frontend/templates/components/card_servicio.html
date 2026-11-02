@@ -1,0 +1,74 @@
+{# Componente Reutilizable: Card de Servicio / Combo de Candy Bar
+   Parámetro:
+   - s: Diccionario con la información del servicio:
+        id_servicio, nombre, descripcion, precio, precio_formato, categoria,
+        imagen_url, badge_top, badge_top_tipo, badge_image_bottom, cantidad
+#}
+<article class="service-card" 
+         data-service-id="{{ s.id_servicio }}" 
+         data-name="{{ s.nombre }}" 
+         data-price="{{ s.precio }}" 
+         data-category="{{ s.categoria }}">
+    
+    <!-- Imagen y Badges de la Card -->
+    <div class="service-card-media">
+        <img src="{{ s.imagen_url }}" 
+             alt="{{ s.nombre }}" 
+             class="service-card-img" 
+             loading="lazy">
+
+        {% if s.badge_top %}
+            <span class="service-badge-top {{ s.badge_top_tipo | default('badge-gold') }}">
+                {{ s.badge_top }}
+            </span>
+        {% endif %}
+
+        {% if s.badge_image_bottom %}
+            <span class="service-badge-image-bottom">
+                {{ s.badge_image_bottom }}
+            </span>
+        {% endif %}
+    </div>
+
+    <!-- Información del Producto -->
+    <div class="service-card-body">
+        <h3 class="service-title">{{ s.nombre }}</h3>
+        <p class="service-description">{{ s.descripcion }}</p>
+    </div>
+
+    <!-- Footer con Precio y Selector de Cantidad -->
+    <div class="service-card-footer">
+        <div class="service-price-box">
+            <span class="service-price-label">PRECIO</span>
+            <span class="service-price-amount">{{ s.precio_formato }}</span>
+        </div>
+
+        <div class="service-qty-control" aria-label="Selector de cantidad para {{ s.nombre }}">
+            <button type="button" 
+                    class="btn-qty-action btn-qty-minus" 
+                    data-action="minus" 
+                    data-target-id="{{ s.id_servicio }}" 
+                    aria-label="Disminuir cantidad">
+                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+            </button>
+
+            <span class="qty-display" id="qty-service-{{ s.id_servicio }}">
+                {{ s.cantidad | default(0) }}
+            </span>
+
+            <button type="button" 
+                    class="btn-qty-action btn-qty-plus" 
+                    data-action="plus" 
+                    data-target-id="{{ s.id_servicio }}" 
+                    aria-label="Aumentar cantidad">
+                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+</article>

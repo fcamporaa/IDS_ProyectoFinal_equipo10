@@ -1,0 +1,722 @@
+/* ==========================================================================
+   PÁGINA: SELECCIÓN DE SERVICIOS COMPLEMENTARIOS & CANDY BAR
+   Estilos específicos para /compra/servicios (Cinema Paradiso)
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   0. Layout General y Respiro Superior (Navbar sticky estándar 16px)
+   -------------------------------------------------------------------------- */
+.services-selection-page {
+    width: 100%;
+    min-height: calc(100vh - 68px);
+    background-color: #0b0c10;
+    color: #e5e7eb;
+    padding-top: 16px;
+    padding-bottom: 60px;
+}
+
+.services-container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding-left: 20px;
+    padding-right: 20px;
+}
+
+/* --------------------------------------------------------------------------
+   1. Stepper de Compra (Gestionado globalmente en components/stepper.css)
+   -------------------------------------------------------------------------- */
+
+/* --------------------------------------------------------------------------
+   2. Grid Principal: Catálogo (Izq) y Resumen Lateral (Der)
+   -------------------------------------------------------------------------- */
+.services-main-grid {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 32px;
+    align-items: start;
+}
+
+/* --------------------------------------------------------------------------
+   3. Header del Catálogo y Badge Oficial
+   -------------------------------------------------------------------------- */
+.catalog-header {
+    margin-bottom: 20px;
+}
+
+.catalog-header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.badge-candy-bar-official {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    padding: 4px 10px;
+    border-radius: 6px;
+}
+
+.badge-text-gold {
+    color: #f59e0b;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+}
+
+.badge-status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 6px #10b981;
+}
+
+.badge-status-text {
+    font-size: 12px;
+    color: #9ca3af;
+}
+
+.btn-skip-step-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #9ca3af;
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.btn-skip-step-link:hover {
+    color: #ffffff;
+    transform: translateX(2px);
+}
+
+.catalog-main-title {
+    font-size: 26px;
+    font-weight: 800;
+    color: #ffffff;
+    margin: 0;
+    letter-spacing: -0.4px;
+}
+
+/* --------------------------------------------------------------------------
+   4. Píldoras de Filtro por Categoría
+   -------------------------------------------------------------------------- */
+.services-filter-nav {
+    margin-bottom: 24px;
+}
+
+.filter-pills-list {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.filter-pill {
+    background: #13151c;
+    border: 1px solid #222633;
+    color: #9ca3af;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.filter-pill:hover {
+    border-color: #374151;
+    color: #ffffff;
+}
+
+.filter-pill.active {
+    background: #e50914;
+    border-color: #e50914;
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(229, 9, 20, 0.4);
+}
+
+/* --------------------------------------------------------------------------
+   5. Grilla de Tarjetas de Servicios (2 Columnas)
+   -------------------------------------------------------------------------- */
+.services-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    margin-bottom: 24px;
+}
+
+.service-card {
+    background: #13151c;
+    border: 1px solid #202430;
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.service-card:hover {
+    transform: translateY(-2px);
+    border-color: #313749;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+}
+
+.service-card-media {
+    position: relative;
+    width: 100%;
+    height: 180px;
+    overflow: hidden;
+    background: #090a0d;
+}
+
+.service-card-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.35s ease;
+}
+
+.service-card:hover .service-card-img {
+    transform: scale(1.04);
+}
+
+.service-badge-top {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 4px 10px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.service-badge-top.badge-gold {
+    background: #f59e0b;
+    color: #000000;
+}
+
+.service-badge-top.badge-cyan {
+    background: #0284c7;
+    color: #ffffff;
+}
+
+.service-badge-image-bottom {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(4px);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 4px;
+}
+
+.service-card-body {
+    padding: 16px 18px 12px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.service-title {
+    font-size: 15.5px;
+    font-weight: 700;
+    color: #ffffff;
+    margin: 0 0 6px 0;
+}
+
+.service-description {
+    font-size: 12.5px;
+    color: #9ca3af;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.service-card-footer {
+    padding: 12px 18px;
+    border-top: 1px solid #1a1e28;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.service-price-box {
+    display: flex;
+    flex-direction: column;
+}
+
+.service-price-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #6b7280;
+    letter-spacing: 0.5px;
+}
+
+.service-price-amount {
+    font-size: 18px;
+    font-weight: 800;
+    color: #f59e0b;
+}
+
+.service-qty-control {
+    display: inline-flex;
+    align-items: center;
+    background: #0b0c10;
+    border: 1px solid #232733;
+    border-radius: 6px;
+    padding: 2px;
+}
+
+.btn-qty-action {
+    background: transparent;
+    border: none;
+    color: #9ca3af;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.15s ease;
+}
+
+.btn-qty-action:hover {
+    background: #232733;
+    color: #ffffff;
+}
+
+.qty-display {
+    min-width: 26px;
+    text-align: center;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+/* --------------------------------------------------------------------------
+   6. Banner de Entrega Directa en Butaca VIP
+   -------------------------------------------------------------------------- */
+.vip-delivery-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #13151c;
+    border: 1px solid #202430;
+    border-radius: 10px;
+    padding: 14px 18px;
+}
+
+.vip-banner-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.vip-star-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.vip-banner-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #ffffff;
+    margin: 0 0 2px 0;
+}
+
+.vip-banner-desc {
+    font-size: 12px;
+    color: #9ca3af;
+    margin: 0;
+}
+
+.vip-included-tag {
+    font-size: 11px;
+    font-weight: 700;
+    color: #9ca3af;
+    border: 1px solid #2b3040;
+    padding: 6px 12px;
+    border-radius: 6px;
+    background: #181b24;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+/* --------------------------------------------------------------------------
+   7. Columna Derecha: Resumen de Compra Sticky
+   -------------------------------------------------------------------------- */
+.services-summary-column {
+    position: sticky;
+    top: 84px;
+}
+
+.services-summary-card {
+    background: #13151c;
+    border: 1px solid #222633;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.summary-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid #1c202b;
+}
+
+.summary-header-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.summary-header-title h2 {
+    font-size: 14.5px;
+    font-weight: 800;
+    color: #ffffff;
+    margin: 0;
+    letter-spacing: 0.5px;
+}
+
+.summary-cart-icon {
+    display: flex;
+    align-items: center;
+}
+
+.room-format-badge {
+    font-size: 11px;
+    font-weight: 700;
+    color: #c084fc;
+    background: rgba(192, 132, 252, 0.1);
+    border: 1px solid rgba(192, 132, 252, 0.25);
+    padding: 3px 8px;
+    border-radius: 4px;
+}
+
+/* Mini Card Película */
+.summary-movie-card {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    background: #0c0e13;
+    border: 1px solid #1e222e;
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 16px;
+}
+
+.summary-movie-poster {
+    width: 42px;
+    height: 58px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.summary-movie-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.summary-movie-title {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #ffffff;
+    margin: 0 0 2px 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.summary-movie-time {
+    font-size: 11.5px;
+    color: #9ca3af;
+}
+
+.summary-movie-complex {
+    font-size: 11px;
+    color: #6b7280;
+}
+
+/* Secciones del Resumen */
+.summary-section {
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #1a1e28;
+}
+
+.summary-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.summary-section-title {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #9ca3af;
+    letter-spacing: 0.5px;
+}
+
+.badge-status-assigned {
+    font-size: 10px;
+    font-weight: 800;
+    color: #10b981;
+}
+
+.badge-items-count {
+    font-size: 10px;
+    font-weight: 800;
+    color: #f59e0b;
+}
+
+.summary-items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.summary-item-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 12.5px;
+}
+
+.summary-item-left {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.summary-item-name {
+    font-weight: 600;
+    color: #ffffff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.summary-item-sub {
+    font-size: 11px;
+    color: #6b7280;
+}
+
+.summary-item-price {
+    font-weight: 700;
+    color: #ffffff;
+    white-space: nowrap;
+}
+
+.text-gold {
+    color: #f59e0b !important;
+}
+
+.summary-empty-state {
+    font-size: 12px;
+    color: #6b7280;
+    font-style: italic;
+    padding: 4px 0;
+}
+
+/* Desglose de Totales */
+.summary-totals-breakdown {
+    margin-top: 12px;
+    margin-bottom: 18px;
+}
+
+.totals-line {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12.5px;
+    color: #9ca3af;
+    margin-bottom: 6px;
+}
+
+.totals-val {
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.text-green {
+    color: #10b981 !important;
+    font-weight: 700;
+}
+
+/* Caja de Total Acumulado */
+.total-accumulated-box {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #0b0c10;
+    border: 1px solid #1f2330;
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-top: 10px;
+}
+
+.total-box-left {
+    display: flex;
+    flex-direction: column;
+}
+
+.total-box-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #9ca3af;
+    letter-spacing: 0.5px;
+}
+
+.rate-protected-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10.5px;
+    color: #10b981;
+    font-weight: 600;
+    margin-top: 2px;
+}
+
+.total-box-amount {
+    font-size: 22px;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: -0.5px;
+}
+
+/* Botón Continuar */
+.btn-continue-checkout {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    background: #e50914;
+    color: #ffffff;
+    font-size: 13.5px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    padding: 13px;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 16px rgba(229, 9, 20, 0.4);
+}
+
+.btn-continue-checkout:hover {
+    background: #b80710;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(229, 9, 20, 0.55);
+}
+
+.link-skip-bottom {
+    display: block;
+    text-align: center;
+    font-size: 12px;
+    color: #9ca3af;
+    text-decoration: none;
+    margin-top: 12px;
+    transition: color 0.2s ease;
+}
+
+.link-skip-bottom:hover {
+    color: #ffffff;
+    text-decoration: underline;
+}
+
+.official-guarantee-note {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 14px;
+    font-size: 11.5px;
+    color: #6b7280;
+}
+
+/* Banner Informativo QR Abajo del Resumen */
+.candy-qr-info-card {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    background: #13151c;
+    border: 1px solid #202430;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-top: 16px;
+}
+
+.qr-info-icon {
+    flex-shrink: 0;
+}
+
+.qr-info-text p {
+    font-size: 11.5px;
+    color: #9ca3af;
+    line-height: 1.45;
+    margin: 0;
+}
+
+.qr-info-text strong {
+    color: #ffffff;
+    font-weight: 600;
+}
+
+/* --------------------------------------------------------------------------
+   8. Responsive Design
+   -------------------------------------------------------------------------- */
+@media (max-width: 1024px) {
+    .services-main-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .services-summary-column {
+        position: static;
+    }
+}
+
+@media (max-width: 640px) {
+
+    .services-cards-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .vip-delivery-banner {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .catalog-header-top {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+}

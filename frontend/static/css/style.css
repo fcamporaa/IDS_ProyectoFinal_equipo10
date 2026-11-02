@@ -14,6 +14,7 @@
 @import "components/barra_filtros.css";
 @import "components/hero_destacado.css";
 @import "components/footer.css";
+@import "components/stepper.css";
 
 /* 4. Estilos de Páginas Específicas */
 @import "pages/home.css";
