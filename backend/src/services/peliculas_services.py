@@ -81,6 +81,6 @@ def crear_resena_pelicula(id_pelicula: int, id_usuario: int, datos: dict) -> dic
         "comentario": comentario,
         "fecha": datetime.now()
     })
-
+    
     return _formatear_reseña(buscar_reseña_por_id_db(id_reseña))
 
