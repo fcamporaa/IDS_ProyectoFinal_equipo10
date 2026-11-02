@@ -5,7 +5,7 @@
 {% set current_step = paso_actual | default(1) %}
 {% set steps = [
     {'num': 1, 'nombre': 'Butacas', 'url': url_for('compra.seleccion_butacas')},
-    {'num': 2, 'nombre': 'Candy Bar', 'url': '#candy'},
+    {'num': 2, 'nombre': 'Candy Bar', 'url': url_for('compra.seleccion_servicios')},
     {'num': 3, 'nombre': 'Checkout & Pago', 'url': '#checkout'},
     {'num': 4, 'nombre': 'Confirmación', 'url': '#confirmacion'}
 ] %}
@@ -14,14 +14,24 @@
     <ol class="stepper-list">
         {% for s in steps %}
             <li class="stepper-item {% if s.num == current_step %}active{% elif s.num < current_step %}completed{% else %}pending{% endif %}">
-                <div class="step-badge">
-                    {% if s.num < current_step %}
-                        <span class="step-check">✓</span>
-                    {% else %}
-                        <span class="step-number">{{ s.num }}</span>
-                    {% endif %}
-                </div>
-                <span class="step-name">{{ s.nombre }}</span>
+                {% if s.num <= current_step and s.url != '#' %}
+                    <a href="{{ s.url }}" class="stepper-link">
+                {% else %}
+                    <span class="stepper-link disabled">
+                {% endif %}
+                    <div class="step-badge">
+                        {% if s.num < current_step %}
+                            <span class="step-check">✓</span>
+                        {% else %}
+                            <span class="step-number">{{ s.num }}</span>
+                        {% endif %}
+                    </div>
+                    <span class="step-name">{{ s.nombre }}</span>
+                {% if s.num <= current_step and s.url != '#' %}
+                    </a>
+                {% else %}
+                    </span>
+                {% endif %}
                 {% if not loop.last %}
                     <span class="step-chevron" aria-hidden="true">›</span>
                 {% endif %}
