@@ -29,5 +29,11 @@ def obtener_estadisticas_cancelaciones(filtros: dict) -> dict:
 
 
 def obtener_reporte_ventas_consolidado(filtros: dict) -> dict:
-    """Genera consolidado de ventas por función y ranking de películas más vistas."""
-    pass
+    detalle_por_funcion = obtener_ventas_por_funcion_db()
+    ranking_peliculas = obtener_ranking_peliculas_db()
+    
+    return {
+        "detalle_por_funcion": detalle_por_funcion,
+        "ranking_peliculas": ranking_peliculas
+    }
+
