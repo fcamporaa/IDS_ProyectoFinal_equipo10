@@ -366,3 +366,73 @@ def seleccion_checkout():
     }
 
     return render_template("checkout.html", c=datos_compra)
+
+
+@compra_bp.route("/confirmacion")
+@compra_bp.route("/confirmacion/<int:id_compra>")
+def confirmacion_compra(id_compra: int = 89421):
+    """
+    Renderiza la pantalla de Confirmación de Compra y Comprobante Oficial (Paso 4).
+    Muestra el voucher digital de acceso a sala con código QR, detalle de facturación AFIP,
+    política de cancelación autogestionable e instrucciones de sala.
+    """
+    datos_confirmacion = {
+        "id_transaccion": "#CP-2026-89421",
+        "email_comprador": "mateo.rossi@cinemaparadiso.com.ar",
+        "codigo_qr": "QR-CP-89421-E7E8",
+        "pelicula": {
+            "id_pelicula": 1,
+            "titulo": "Dune: Parte Dos",
+            "poster_url": "https://image.tmdb.org/t/p/w500/8b8R8l88Qje9dn9OE8PY05Nxl1X.jpg",
+            "badge_poster": "4D ATMOS",
+            "clasificacion": "SAM 13",
+            "duracion": "166 MIN",
+            "formato_sala": "4D D-BOX",
+            "idioma": "SUBTITULADA",
+            "direccion_sonido": "Dirección: Denis Villeneuve • Formato de Sonido Dolby Atmos 64 Canales",
+            "fecha": "Vie 24 Oct 2026",
+            "horario": "19:30 hs",
+            "complejo": "Centro (Corrientes 1240)",
+            "sala_nombre": "AUDITORIO CENTRO • SALA 1",
+            "butacas": "Fila E • Asientos 7 y 8",
+            "badge_butacas": "VIP D-BOX 4D",
+        },
+        "facturacion": {
+            "tipo": "FACTURA B • AFIP",
+            "items": [
+                {"descripcion": "2x Entrada 4D Subtitulada (Fila E: 7, 8)", "monto": "$17.000"},
+                {"descripcion": "1x Combo Mega Paradiso (Candy Bar)", "monto": "$14.500"},
+                {"descripcion": "1x Estacionamiento Prepago (4 hs)", "monto": "$4.500"},
+            ],
+            "cargo_servicio": "100% BONIFICADO",
+            "cargo_servicio_monto": "$0",
+            "total": "$36.000",
+            "iva_discriminado": "$6.247,93",
+            "tarjeta_info": "Mastercard finalizada en 8821",
+            "cuotas_info": "Aprobado en 3 cuotas fijas de $12.000",
+            "cae": "CAE Nº: 74920194820184",
+            "vto_cae": "Fecha Vto CAE: 03/11/2026",
+        },
+        "adicionales": [
+            {
+                "tipo": "combo",
+                "nombre": "1x Combo Mega Paradiso",
+                "detalle": "Balde Pochoclos + 2 Bebidas Grandes",
+                "estado": "Listo",
+                "icono": "combo",
+            },
+            {
+                "tipo": "cochera",
+                "nombre": "1x Cochera Prepaga",
+                "detalle": "Hasta 4 hs cubiertas (Corrientes 1240)",
+                "subdetalle": "PATENTE: AB-829-QX",
+                "estado": "Activo",
+                "icono": "parking",
+            },
+        ],
+        "cancelacion": {
+            "limite_texto": "Viernes 24/10 hasta las 17:30 hs",
+        },
+    }
+
+    return render_template("confirmacion_compra.html", c=datos_confirmacion)
