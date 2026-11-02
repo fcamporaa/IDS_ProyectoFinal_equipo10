@@ -1,5 +1,6 @@
 import urllib.parse
-
+from datetime import datetime
+from src.constants import ZONA_HORARIA_LOCAL
 
 def construir_error_api(
     code: str, message: str, description: str, level: str = "error"
