@@ -4,6 +4,7 @@ from flask import Flask
 
 from routes.home_routes import home_bp
 from routes.peliculas_routes import peliculas_bp
+from routes.compra_routes import compra_bp
 
 load_dotenv()
 
@@ -15,6 +16,7 @@ app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "cine-paradiso-secret-dev")
 # Registro de rutas (Blueprints)
 app.register_blueprint(home_bp)
 app.register_blueprint(peliculas_bp)
+app.register_blueprint(compra_bp)
 
 
 if __name__ == "__main__":
