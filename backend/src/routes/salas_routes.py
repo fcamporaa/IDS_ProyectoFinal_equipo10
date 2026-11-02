@@ -19,25 +19,34 @@ def register_salas_routes(app):
         """
         GET /locales: Lista los 3 complejos de cine disponibles.
         """
-        pass
+        locales = listar_locales()
+        return jsonify(locales), 200
 
     @app.route("/locales/<int:id>/salas", methods=["GET"])
     def get_salas_por_local(id):
         """
         GET /locales/{id}/salas: Lista todas las salas pertenecientes a un complejo específico y su capacidad.
         """
-        pass
+        id_local = validar_id_local(id)
+        salas = listar_salas_por_local(id_local)
+        return jsonify(salas), 200
 
     @app.route("/salas/<int:id>", methods=["GET"])
     def get_sala(id):
         """
         GET /salas/{id}: Obtiene el detalle de una sala y la distribución física de sus butacas.
         """
-        pass
+        id_sala = validar_id_sala(id)
+        sala = obtener_detalle_sala(id_sala)
+        return jsonify(sala), 200
 
     @app.route("/salas/<int:id>", methods=["PUT"])
     def put_sala(id):
         """
         PUT /salas/{id}: Habilita/deshabilita una sala o actualiza su configuración (Solo Admin).
         """
-        pass
+        id_sala = validar_id_sala(id)
+        datos = request.get_json(silent=True)
+        datos_validados = validar_actualizar_sala(datos)
+        sala = actualizar_configuracion_sala(id_sala, datos_validados)
+        return jsonify(sala), 200
