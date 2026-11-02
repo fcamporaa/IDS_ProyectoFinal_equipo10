@@ -36,7 +36,7 @@
 
             <!-- Columna Izquierda: Formulario de Checkout -->
             <section class="checkout-form-column" aria-label="Formulario de Pago y Facturación">
-                <form id="checkoutForm" method="POST" action="#" onsubmit="return handleSimulatedPayment(event);">
+                <form id="checkoutForm" method="GET" action="{{ url_for('compra.confirmacion_compra') }}" onsubmit="return handleSimulatedPayment(event);">
 
                     <!-- Bloque 1: Datos del Comprador -->
                     <div class="checkout-card-block">
@@ -447,24 +447,7 @@
     // Simulación del procesamiento de pago exitoso para este hito
     function handleSimulatedPayment(e) {
         e.preventDefault();
-        const btn = document.querySelector('.btn-confirm-payment');
-        if (btn) {
-            btn.disabled = true;
-            btn.innerHTML = `
-                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none" style="animation: spin 1s linear infinite;">
-                    <circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle>
-                    <path d="M12 2a10 10 0 0 1 10 10"></path>
-                </svg>
-                <span>PROCESANDO PAGO SEGURO...</span>
-            `;
-        }
-
-        setTimeout(function () {
-            alert('¡Pago procesado con éxito! Generando comprobante y entradas QR...');
-            btn.disabled = false;
-            btn.innerHTML = `<span>✓ PAGO CONFIRMADO</span>`;
-        }, 1200);
-
+        window.location.href = "{{ url_for('compra.confirmacion_compra') }}";
         return false;
     }
 </script>
