@@ -1,5 +1,5 @@
 import urllib.parse
-
+import datetime
 
 def construir_error_api(
     code: str, message: str, description: str, level: str = "error"
