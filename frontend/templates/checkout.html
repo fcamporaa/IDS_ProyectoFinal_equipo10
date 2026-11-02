@@ -1,0 +1,471 @@
+{% extends 'layout.html' %}
+
+{% block title %}Checkout & Pago - {{ c.pelicula.titulo }} | Cinema Paradiso{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/checkout.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="checkout-page">
+    <div class="container checkout-container">
+
+        <!-- 1. Barra Superior de Seguridad y Temporizador Persistente -->
+        <header class="checkout-top-banner">
+            <div class="security-indicator">
+                <span class="security-dot"></span>
+                <span class="security-text">SISTEMA DE RESERVAS ONLINE <span class="security-divider">|</span> CHECKOUT SEGURO</span>
+            </div>
+            <div class="checkout-timer-pill" title="Tiempo asignado para completar la compra">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <span>TIEMPO RESTANTE PARA COMPLETAR LA COMPRA:</span>
+                <strong id="checkoutCountdown" class="timer-digits">{{ c.tiempo_restante }}</strong>
+            </div>
+        </header>
+
+        <!-- 2. Stepper del Embudo de Compra (Paso 3 Activo) -->
+        {% with paso_actual=3 %}
+            {% include 'components/stepper_compra.html' %}
+        {% endwith %}
+
+        <!-- 3. Grid Principal: Formulario de Pago (Izq) y Resumen Consolidado (Der) -->
+        <div class="checkout-main-grid">
+
+            <!-- Columna Izquierda: Formulario de Checkout -->
+            <section class="checkout-form-column" aria-label="Formulario de Pago y Facturación">
+                <form id="checkoutForm" method="POST" action="#" onsubmit="return handleSimulatedPayment(event);">
+
+                    <!-- Bloque 1: Datos del Comprador -->
+                    <div class="checkout-card-block">
+                        <div class="card-block-header">
+                            <div class="card-block-title-row">
+                                <span class="card-block-icon icon-buyer">
+                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                                        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                                    </svg>
+                                </span>
+                                <h2>DATOS DEL COMPRADOR</h2>
+                            </div>
+                            <span class="invoice-type-badge">Facturación B / Consumidor Final</span>
+                        </div>
+
+                        <div class="form-grid">
+                            <!-- Nombre Completo -->
+                            <div class="form-group full-width">
+                                <label for="inputNombre" class="form-label">
+                                    NOMBRE COMPLETO (COMO FIGURA EN EL DNI) <span class="required-star">*</span>
+                                </label>
+                                <input type="text" 
+                                       id="inputNombre" 
+                                       name="nombre_completo" 
+                                       class="form-control" 
+                                       value="{{ c.comprador_default.nombre }}" 
+                                       required>
+                            </div>
+
+                            <!-- Correo y Confirmación -->
+                            <div class="form-group">
+                                <label for="inputEmail" class="form-label">
+                                    CORREO ELECTRÓNICO <span class="required-star">*</span>
+                                </label>
+                                <input type="email" 
+                                       id="inputEmail" 
+                                       name="email" 
+                                       class="form-control" 
+                                       value="{{ c.comprador_default.email }}" 
+                                       required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="inputEmailConfirm" class="form-label">
+                                    CONFIRMAR CORREO ELECTRÓNICO <span class="required-star">*</span>
+                                </label>
+                                <input type="email" 
+                                       id="inputEmailConfirm" 
+                                       name="email_confirm" 
+                                       class="form-control" 
+                                       value="{{ c.comprador_default.email }}" 
+                                       required>
+                            </div>
+
+                            <!-- Nota informativa de envío de QR -->
+                            <div class="form-info-callout full-width">
+                                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                                </svg>
+                                <span>Aquí te enviaremos las entradas con el código QR y la factura digital correspondiente para ingresar sin pasar por boletería.</span>
+                            </div>
+
+                            <!-- DNI y Teléfono -->
+                            <div class="form-group">
+                                <label for="inputDni" class="form-label">
+                                    DNI / CUIT (PARA FACTURACIÓN AFIP) <span class="required-star">*</span>
+                                </label>
+                                <input type="text" 
+                                       id="inputDni" 
+                                       name="dni_cuit" 
+                                       class="form-control" 
+                                       value="{{ c.comprador_default.dni }}" 
+                                       required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="inputTelefono" class="form-label">
+                                    TELÉFONO MÓVIL (WHATSAPP ENTRADAS)
+                                </label>
+                                <input type="tel" 
+                                       id="inputTelefono" 
+                                       name="telefono" 
+                                       class="form-control" 
+                                       value="{{ c.comprador_default.telefono }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bloque 2: Método de Pago (Tarjeta Directa) -->
+                    <div class="checkout-card-block">
+                        <div class="card-block-header">
+                            <div class="card-block-title-row">
+                                <span class="card-block-icon icon-payment">
+                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                                        <path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-0.9-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>
+                                    </svg>
+                                </span>
+                                <h2>MÉTODO DE PAGO</h2>
+                            </div>
+                            <span class="tls-encrypted-badge">
+                                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                </svg>
+                                <span>Conexión Encriptada TLS 1.3</span>
+                            </span>
+                        </div>
+
+                        <!-- Opción de Pago: Tarjeta Directa Seleccionada -->
+                        <div class="payment-methods-single">
+                            <div class="payment-method-card active">
+                                <div class="payment-card-left">
+                                    <div class="payment-radio-dot"></div>
+                                    <div class="payment-card-texts">
+                                        <span class="payment-method-name">Tarjeta Crédito / Débito</span>
+                                        <span class="payment-method-promo">Hasta 3 cuotas sin interés</span>
+                                    </div>
+                                </div>
+                                <div class="payment-card-icon">
+                                    <svg viewBox="0 0 24 24" width="22" height="22" fill="#e50914">
+                                        <path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-0.9-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tarjetas Aceptadas -->
+                        <div class="accepted-cards-row">
+                            <span class="accepted-label">TARJETAS ACEPTADAS:</span>
+                            <div class="accepted-badges-list">
+                                <span class="card-brand-pill">VISA</span>
+                                <span class="card-brand-pill">MASTERCARD</span>
+                                <span class="card-brand-pill">AMEX</span>
+                                <span class="card-brand-pill">CABAL</span>
+                            </div>
+                        </div>
+
+                        <!-- Campos del Formulario de Tarjeta -->
+                        <div class="form-grid">
+                            <!-- Número de Tarjeta -->
+                            <div class="form-group full-width">
+                                <label for="inputNumeroTarjeta" class="form-label">
+                                    NÚMERO DE TARJETA <span class="required-star">*</span>
+                                </label>
+                                <div class="input-with-icon">
+                                    <input type="text" 
+                                           id="inputNumeroTarjeta" 
+                                           name="numero_tarjeta" 
+                                           class="form-control" 
+                                           value="{{ c.comprador_default.tarjeta_numero }}" 
+                                           maxlength="19" 
+                                           placeholder="4509 •••• •••• 8821" 
+                                           required>
+                                    <span class="input-icon-right">
+                                        <svg viewBox="0 0 24 24" width="18" height="18" fill="#9ca3af">
+                                            <path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-0.9-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>
+                                        </svg>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Titular -->
+                            <div class="form-group full-width">
+                                <label for="inputTitularTarjeta" class="form-label">
+                                    NOMBRE Y APELLIDO IMPRESO EN LA TARJETA <span class="required-star">*</span>
+                                </label>
+                                <input type="text" 
+                                       id="inputTitularTarjeta" 
+                                       name="titular_tarjeta" 
+                                       class="form-control" 
+                                       value="{{ c.comprador_default.tarjeta_titular }}" 
+                                       required>
+                            </div>
+
+                            <!-- Vencimiento y CVV -->
+                            <div class="form-group">
+                                <label for="inputVencimiento" class="form-label">
+                                    VENCIMIENTO (MM/AA) <span class="required-star">*</span>
+                                </label>
+                                <input type="text" 
+                                       id="inputVencimiento" 
+                                       name="vencimiento" 
+                                       class="form-control" 
+                                       value="{{ c.comprador_default.tarjeta_vencimiento }}" 
+                                       placeholder="MM/AA" 
+                                       maxlength="5" 
+                                       required>
+                            </div>
+
+                            <div class="form-group">
+                                <div class="label-with-hint">
+                                    <label for="inputCvv" class="form-label">
+                                        CÓDIGO CVV <span class="required-star">*</span>
+                                    </label>
+                                    <span class="hint-small">3 dígitos</span>
+                                </div>
+                                <input type="password" 
+                                       id="inputCvv" 
+                                       name="cvv" 
+                                       class="form-control" 
+                                       value="•••" 
+                                       maxlength="4" 
+                                       placeholder="•••" 
+                                       required>
+                            </div>
+
+                            <!-- Selector de Cuotas -->
+                            <div class="form-group full-width">
+                                <label for="selectCuotas" class="form-label">
+                                    PLANES DE CUOTAS DISPONIBLES
+                                </label>
+                                <div class="select-wrapper">
+                                    <select id="selectCuotas" name="cuotas" class="form-control form-select">
+                                        {% for cuota in c.cuotas %}
+                                            <option value="{{ cuota }}" {% if loop.first %}selected{% endif %}>
+                                                {{ cuota }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Checkbox de Términos y Condiciones -->
+                    <div class="terms-checkbox-row">
+                        <label class="custom-checkbox-container">
+                            <input type="checkbox" id="checkTerms" required checked>
+                            <span class="checkbox-checkmark"></span>
+                            <span class="checkbox-text">
+                                Acepto los <a href="#terminos" class="terms-link">Términos y Condiciones</a> y la <a href="#politica" class="terms-link">Política de Cancelación</a>. Entiendo que la cancelación o cambio de butacas está permitida hasta <strong>2 horas antes del inicio de la función</strong>.
+                            </span>
+                        </label>
+                    </div>
+
+                </form>
+            </section>
+
+            <!-- Columna Derecha: Resumen de Compra Consolidado (Sticky) -->
+            <aside class="checkout-summary-column" aria-label="Resumen de compra y pago">
+                <div class="checkout-summary-card">
+
+                    <!-- Ficha Superior de Película y Sala -->
+                    <div class="movie-header-box">
+                        <img src="{{ c.pelicula.poster_url }}" 
+                             alt="Póster de {{ c.pelicula.titulo }}" 
+                             class="movie-poster-thumb">
+                        <div class="movie-header-info">
+                            <div class="movie-badges-line">
+                                <span class="badge-tag-motion">{{ c.pelicula.badge_formato }}</span>
+                                <span class="badge-tag-age">{{ c.pelicula.badge_edad }}</span>
+                            </div>
+                            <h3 class="movie-title">{{ c.pelicula.titulo }}</h3>
+                            <span class="movie-specs">{{ c.pelicula.especificaciones }}</span>
+                            <span class="movie-room-label">
+                                <svg viewBox="0 0 24 24" width="13" height="13" fill="#f59e0b">
+                                    <path d="M4 18v3h3v-3h10v3h3v-3h1a1 1 0 0 0 1-1v-8a4 4 0 0 0-4-4h-1V3a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v2H6a4 4 0 0 0-4 4v8a1 1 0 0 0 1 1h1z"/>
+                                </svg>
+                                <span>{{ c.pelicula.sala_completa }}</span>
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Metadatos de Función y Butacas -->
+                    <div class="function-meta-list">
+                        <div class="meta-row">
+                            <div class="meta-icon-label">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                                </svg>
+                                <span>Día y Horario</span>
+                            </div>
+                            <span class="meta-val">{{ c.pelicula.dia_horario }}</span>
+                        </div>
+
+                        <div class="meta-row">
+                            <div class="meta-icon-label">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                                </svg>
+                                <span>Complejo</span>
+                            </div>
+                            <span class="meta-val">{{ c.pelicula.complejo }}</span>
+                        </div>
+
+                        <div class="meta-row">
+                            <div class="meta-icon-label">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="#f59e0b">
+                                    <path d="M4 18v3h3v-3h10v3h3v-3h1a1 1 0 0 0 1-1v-8a4 4 0 0 0-4-4h-1V3a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v2H6a4 4 0 0 0-4 4v8a1 1 0 0 0 1 1h1z"/>
+                                </svg>
+                                <span>Butacas Asignadas</span>
+                            </div>
+                            <span class="meta-val text-amber-bold">{{ c.pelicula.butacas_asignadas }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Desglose de Ítems Comprados -->
+                    <div class="items-breakdown-box">
+                        {% for item in c.desglose %}
+                            <div class="breakdown-item-line">
+                                <div class="breakdown-left">
+                                    <span class="breakdown-item-name">{{ item.titulo }}</span>
+                                    {% if item.subtexto %}
+                                        <span class="breakdown-item-sub">{{ item.subtexto }}</span>
+                                    {% endif %}
+                                </div>
+                                <span class="breakdown-price">{{ item.precio }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Subtotal y Cargos -->
+                    <div class="totals-calculation-box">
+                        <div class="totals-row">
+                            <span>Subtotal Parcial</span>
+                            <span class="totals-amount">{{ c.subtotal_parcial }}</span>
+                        </div>
+                        <div class="totals-row">
+                            <span class="fee-label">
+                                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                                <span>Cargo por Servicio Web</span>
+                            </span>
+                            <span class="fee-badge-free">{{ c.cargo_servicio }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Total a Facturar -->
+                    <div class="total-to-pay-box">
+                        <div class="total-pay-left">
+                            <span class="total-pay-label">TOTAL A FACTURAR</span>
+                            <span class="total-pay-sub">IVA incluido (21%)</span>
+                        </div>
+                        <span class="total-pay-amount">{{ c.total }}</span>
+                    </div>
+
+                    <!-- Botón de Confirmación y Pago -->
+                    <button type="submit" form="checkoutForm" class="btn-confirm-payment">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                        </svg>
+                        <span>CONFIRMAR Y PAGAR {{ c.total }}</span>
+                    </button>
+
+                    <!-- Leyenda de Transacción Segura -->
+                    <div class="security-guarantee-note">
+                        <div class="security-shield-row">
+                            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                                <polyline points="9 12 11 14 15 10"></polyline>
+                            </svg>
+                            <span class="security-main-text">Transacción 100% segura y encriptada</span>
+                        </div>
+                        <span class="security-sub-text">Protección anti-fraude certificada TLS 1.3 / PCI-DSS Level 1 Compliant</span>
+                    </div>
+
+                </div>
+
+                <!-- Tarjeta de Ingreso Directo QR -->
+                <div class="direct-qr-card">
+                    <div class="direct-qr-icon">
+                        <svg viewBox="0 0 24 24" width="22" height="22" fill="#f59e0b">
+                            <path d="M2 17h20v2H2v-2zm1.15-4.05L4 11.47l.85 1.48 1.3-.75-.85-1.48H7v-1.5H5.3l.85-1.47-1.3-.75L4 8.53l-.85-1.48-1.3.75.85 1.47H1v1.5h1.7l-.85 1.48 1.3.75zm17.7 0l1.3-.75-.85-1.48H23v-1.5h-1.7l.85-1.47-1.3-.75L20 8.53l-.85-1.48-1.3.75.85 1.47H17v1.5h1.7l-.85 1.48 1.3.75zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+                        </svg>
+                    </div>
+                    <div class="direct-qr-text">
+                        <h4 class="direct-qr-title">INGRESO DIRECTO QR</h4>
+                        <p class="direct-qr-desc">Al finalizar el pago se generará tu comprobante virtual para escanear en la puerta de la sala sin filas.</p>
+                    </div>
+                </div>
+
+            </aside>
+
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Cuenta regresiva visual del temporizador (8 min 40 seg)
+    document.addEventListener('DOMContentLoaded', function () {
+        let totalSeconds = 8 * 60 + 40;
+        const countdownEl = document.getElementById('checkoutCountdown');
+
+        if (countdownEl) {
+            setInterval(function () {
+                if (totalSeconds > 0) {
+                    totalSeconds--;
+                    const mins = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+                    const secs = String(totalSeconds % 60).padStart(2, '0');
+                    countdownEl.textContent = `${mins}:${secs}`;
+                }
+            }, 1000);
+        }
+    });
+
+    // Simulación del procesamiento de pago exitoso para este hito
+    function handleSimulatedPayment(e) {
+        e.preventDefault();
+        const btn = document.querySelector('.btn-confirm-payment');
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = `
+                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none" style="animation: spin 1s linear infinite;">
+                    <circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle>
+                    <path d="M12 2a10 10 0 0 1 10 10"></path>
+                </svg>
+                <span>PROCESANDO PAGO SEGURO...</span>
+            `;
+        }
+
+        setTimeout(function () {
+            alert('¡Pago procesado con éxito! Generando comprobante y entradas QR...');
+            btn.disabled = false;
+            btn.innerHTML = `<span>✓ PAGO CONFIRMADO</span>`;
+        }, 1200);
+
+        return false;
+    }
+</script>
+{% endblock %}

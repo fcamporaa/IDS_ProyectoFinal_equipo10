@@ -29,10 +29,20 @@
                             <span class="badge-status-dot"></span>
                             <span class="badge-status-text">Retiro express con QR en mostrador</span>
                         </div>
-                        <a href="#checkout" class="btn-skip-step-link" title="Omitir selección de confitería y avanzar al checkout">
-                            <span>Omitir este paso</span>
-                            <span aria-hidden="true">→</span>
-                        </a>
+                        <div class="catalog-header-actions">
+                            <div class="checkout-timer-pill" title="Tiempo asignado para completar la compra">
+                                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polyline points="12 6 12 12 16 14"></polyline>
+                                </svg>
+                                <span>TIEMPO RESTANTE:</span>
+                                <strong id="candyCountdown" class="timer-digits">08:40</strong>
+                            </div>
+                            <a href="{{ url_for('compra.seleccion_checkout') }}" class="btn-skip-step-link" title="Omitir selección de confitería y avanzar al checkout">
+                                <span>Omitir este paso</span>
+                                <span aria-hidden="true">→</span>
+                            </a>
+                        </div>
                     </div>
                     <h1 class="catalog-main-title">Servicios Complementarios & Combos</h1>
                 </header>
@@ -184,7 +194,7 @@
                     </div>
 
                     <!-- Botón de Acción Principal -->
-                    <a href="#checkout" class="btn-continue-checkout" id="btnContinueCheckout" title="Avanzar a Checkout">
+                    <a href="{{ url_for('compra.seleccion_checkout') }}" class="btn-continue-checkout" id="btnContinueCheckout" title="Avanzar a Checkout">
                         <span>CONTINUAR AL PAGO</span>
                         <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
                             <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -193,7 +203,7 @@
                     </a>
 
                     <!-- Enlace Secundario: Omitir Paso -->
-                    <a href="#checkout" class="link-skip-bottom">Omitir este paso y pagar entradas</a>
+                    <a href="{{ url_for('compra.seleccion_checkout') }}" class="link-skip-bottom">Omitir este paso y pagar entradas</a>
 
                     <!-- Leyenda de Compra Oficial Asegurada -->
                     <div class="official-guarantee-note">
@@ -358,6 +368,20 @@
                 });
             });
         });
+
+        // Cuenta regresiva visual del temporizador (8 min 40 seg)
+        let candySeconds = 8 * 60 + 40;
+        const candyCountdownEl = document.getElementById('candyCountdown');
+        if (candyCountdownEl) {
+            setInterval(function () {
+                if (candySeconds > 0) {
+                    candySeconds--;
+                    const mins = String(Math.floor(candySeconds / 60)).padStart(2, '0');
+                    const secs = String(candySeconds % 60).padStart(2, '0');
+                    candyCountdownEl.textContent = `${mins}:${secs}`;
+                }
+            }, 1000);
+        }
     });
 </script>
 {% endblock %}

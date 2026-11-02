@@ -306,3 +306,63 @@ def seleccion_servicios():
     }
 
     return render_template("seleccion_servicios.html", c=datos_compra)
+
+
+@compra_bp.route("/checkout")
+def seleccion_checkout():
+    """
+    Renderiza la pantalla de Checkout y Pago final de la reserva.
+    Presenta los datos del comprador, formulario de tarjeta con cuotas y el resumen consolidado.
+    """
+    datos_compra = {
+        "tiempo_restante": "08:40",
+        "pelicula": {
+            "id_pelicula": 1,
+            "titulo": "Dune: Parte Dos",
+            "poster_url": "https://image.tmdb.org/t/p/w500/8b8R8l88Qje9dn9OE8PY05Nxl1X.jpg",
+            "badge_formato": "4D MOTION",
+            "badge_edad": "+13",
+            "especificaciones": "Subtitulada • 166 min",
+            "sala_completa": "Sala 1 (Atmos 4D Extreme)",
+            "dia_horario": "Viernes 24/10/2026 • 19:30 hs",
+            "complejo": "Cine Paradiso Centro",
+            "butacas_asignadas": "Fila E • Butacas 7, 8 (VIP 4D)",
+        },
+        "desglose": [
+            {
+                "titulo": "2x Entrada 4D Subtitulada ($8.500 c/u)",
+                "subtexto": None,
+                "precio": "$17.000",
+            },
+            {
+                "titulo": "1x Combo Mega Paradiso",
+                "subtexto": "1 Balde Popcorn XL + 2 Gaseosas 750ml + 1 Golosina",
+                "precio": "$14.500",
+            },
+            {
+                "titulo": "Estacionamiento Prepago (4 hs)",
+                "subtexto": "Acceso por calle Cerrito 1150",
+                "precio": "$4.500",
+            },
+        ],
+        "subtotal_parcial": "$36.000",
+        "cargo_servicio": "BONIFICADO ($0)",
+        "total": "$36.000",
+        "total_monto": 36000,
+        "cuotas": [
+            "3 cuotas de $12.000 (Programa Cuota Simple - Sin Interés)",
+            "1 pago de $36.000 (Sin Interés)",
+            "6 cuotas fijas de $7.200",
+        ],
+        "comprador_default": {
+            "nombre": "Mateo Alessandro Rossi",
+            "email": "mateo.rossi@cinemaparadiso.com.ar",
+            "dni": "39.842.109",
+            "telefono": "+54 9 11 4982-3390",
+            "tarjeta_numero": "4509 •••• •••• 8821",
+            "tarjeta_titular": "MATEO A ROSSI",
+            "tarjeta_vencimiento": "08/29",
+        },
+    }
+
+    return render_template("checkout.html", c=datos_compra)
