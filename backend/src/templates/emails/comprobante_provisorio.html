@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><title>Reserva Cine Paradiso</title></head>
+<body style="font:16px Arial,sans-serif;max-width:640px;margin:auto;color:#1d2634">
+  <h1>Cine Paradiso</h1><h2>Reserva pendiente de pago</h2>
+  <p>Código para presentar en boletería: <strong>{{ codigo_reserva }}</strong></p>
+  <p>Película: {{ pelicula }} · Sala {{ sala }} · Función {{ inicio }}</p>
+  <p>Importe pendiente: $ {{ total }}</p>
+  <p>Esta reserva NO habilita el ingreso: recibirás un QR válido cuando se confirme el pago.</p>
+  {% if vencimiento is defined %}<p>Vence: {{ vencimiento }}</p>{% endif %}
+</body></html>

@@ -4,6 +4,7 @@ from flask import Flask, session
 
 from routes.dashboard_routes import dashboard_bp
 from routes.home_routes import home_bp
+from routes.compras_routes import compras_bp
 from routes.peliculas_routes import peliculas_bp
 from routes.compra_routes import compra_bp
 
@@ -12,12 +13,18 @@ load_dotenv()
 app = Flask(__name__)
 
 # Configuración básica de la aplicación
-app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "cine-paradiso-secret-dev")
+if len(os.getenv("SECRET_KEY", "")) < 32:
+    raise RuntimeError("Configurá SECRET_KEY (mínimo 32 caracteres) en el frontend.")
+app.config["SECRET_KEY"] = os.environ["SECRET_KEY"]
 
 # Registro de rutas (Blueprints)
 app.register_blueprint(home_bp)
+app.register_blueprint(compras_bp)
 app.register_blueprint(peliculas_bp)
 app.register_blueprint(dashboard_bp)
+
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
 
 @app.context_processor
