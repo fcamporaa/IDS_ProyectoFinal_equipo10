@@ -4,7 +4,8 @@ from flask import Flask, session
 
 from routes.dashboard_routes import dashboard_bp
 from routes.home_routes import home_bp
-from routes.peliculas_routes import peliculas_bp
+from routes.peliculas_routes import peliculas_bp 
+from routes.admin_funciones_routes import admin_funciones_bp
 
 load_dotenv()
 
@@ -17,7 +18,7 @@ app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "cine-paradiso-secret-dev")
 app.register_blueprint(home_bp)
 app.register_blueprint(peliculas_bp)
 app.register_blueprint(dashboard_bp)
-
+app.register_blueprint(admin_funciones_bp)
 
 @app.context_processor
 def inyectar_contexto_sesion():
