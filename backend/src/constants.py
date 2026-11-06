@@ -33,7 +33,8 @@ PATRON_FECHA_HORA_ISO = r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(-03:00|Z)
 # Constantes de Dominio - Cine Paradiso
 # ==========================================
 ROLES_USUARIOS = {"CLIENTE", "ADMINISTRADOR"}
-ROL_ADMINISTRADOR = "ADMINISTRADOR"
+ROL_ADMINISTRADOR = "ADMINISTRADOR" 
+#Segun la ia, esto era la manera más intuitiva y simple de revisar el administrador, pero, como verán, parece un duplicado innecesario de roles_usuarios = ADMINISTRADOR. Si les desagrada o les parece mala practica, diganme y veo como lo cambio.
 ESTADOS_COMPRA = {"PENDIENTE", "PAGADA", "CANCELADA"}
 PUNTUACION_RESENA_MIN = 1
 PUNTUACION_RESENA_MAX = 5
