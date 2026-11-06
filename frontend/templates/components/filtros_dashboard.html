@@ -1,0 +1,52 @@
+{# Componente reutilizable: filtros comunes del dashboard administrativo.
+   Parámetros:
+   - filtros: dict con valores actuales (desde, hasta, id_local)
+   - locales: lista de complejos disponibles
+#}
+<form class="dashboard-filters" method="get" action="{{ url_for('dashboard.index') }}">
+    <div class="dashboard-filters__field">
+        <label for="filtro-desde">Desde</label>
+        <input
+            type="date"
+            id="filtro-desde"
+            name="desde"
+            value="{{ filtros.get('desde', '') }}"
+        >
+    </div>
+
+    <div class="dashboard-filters__field">
+        <label for="filtro-hasta">Hasta</label>
+        <input
+            type="date"
+            id="filtro-hasta"
+            name="hasta"
+            value="{{ filtros.get('hasta', '') }}"
+        >
+    </div>
+
+    <div class="dashboard-filters__field">
+        <label for="filtro-local">Complejo</label>
+        <select id="filtro-local" name="id_local">
+            <option value="">Todos los complejos</option>
+            {% for local in locales %}
+            <option
+                value="{{ local.id_local }}"
+                {% if filtros.get('id_local') == local.id_local %}selected{% endif %}
+            >
+                {{ local.nombre }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="dashboard-filters__actions">
+        {% with texto='Aplicar filtros', variante='primary', tipo='submit' %}
+            {% include 'components/button.html' %}
+        {% endwith %}
+        {% if filtros %}
+        <a href="{{ url_for('dashboard.index') }}" class="dashboard-filters__clear">
+            Limpiar
+        </a>
+        {% endif %}
+    </div>
+</form>

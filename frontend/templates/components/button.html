@@ -1,0 +1,14 @@
+{# Componente reutilizable: botón o enlace con variantes visuales.
+   Parámetros:
+   - texto: texto visible (obligatorio)
+   - variante: primary | secondary | danger (default: primary)
+   - url_destino: si se informa, renderiza un enlace en lugar de un botón
+   - tipo: tipo del botón cuando no hay url_destino (default: button)
+   - clase_extra: clases adicionales opcionales
+#}
+{% set variante_final = variante | default('primary') %}
+{% if url_destino %}
+<a href="{{ url_destino }}" class="btn btn--{{ variante_final }} {{ clase_extra | default('') }}">{{ texto }}</a>
+{% else %}
+<button type="{{ tipo | default('button') }}" class="btn btn--{{ variante_final }} {{ clase_extra | default('') }}">{{ texto }}</button>
+{% endif %}

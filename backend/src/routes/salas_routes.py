@@ -5,11 +5,11 @@ from src.services.salas_services import (
     obtener_detalle_sala,
     actualizar_configuracion_sala,
 )
+from src.validators.auth_validators import validar_autorizacion_admin
 from src.validators.salas_validators import (
     validar_id_local,
     validar_id_sala,
     validar_actualizar_sala,
-    validar_autorizacion_admin,
 )
 
 

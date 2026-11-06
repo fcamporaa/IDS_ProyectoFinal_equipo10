@@ -4,11 +4,19 @@ from src.services.dashboard_services import (
     obtener_ventas_por_genero,
     obtener_ventas_franjas_horarias,
     obtener_estadisticas_cancelaciones,
-    obtener_reporte_ventas_consolidado,
 )
-from src.validators.dashboard_validators import (
-    validar_filtros_dashboard,
-)
+from src.validators.auth_validators import validar_autorizacion_admin
+from src.validators.dashboard_validators import validar_filtros_dashboard
+
+
+def _responder_reporte(calcular_reporte):
+    """Valida permisos y filtros comunes, y arma la respuesta del reporte."""
+    autorizacion = validar_autorizacion_admin(request.headers.get("Authorization"))
+    if "errors" in autorizacion:
+        return jsonify({"errors": autorizacion["errors"]}), autorizacion["status"]
+
+    filtros = validar_filtros_dashboard(request.args)
+    return jsonify(calcular_reporte(filtros)), 200
 
 
 def register_dashboard_routes(app):
@@ -16,48 +24,39 @@ def register_dashboard_routes(app):
     @app.route("/dashboard/ocupacion", methods=["GET"])
     def get_ocupacion():
         """
-        GET /dashboard/ocupación: Métricas de porcentaje de ocupación por función, sala y película (Solo Admin).
+        GET /dashboard/ocupacion: Métricas de porcentaje de ocupación por función,
+        sala y película (Solo Admin).
         """
-        pass
+        return _responder_reporte(obtener_metricas_ocupacion)
 
     @app.route("/dashboard/ventas-genero", methods=["GET"])
     def get_ventas_genero():
         """
-        GET /dashboard/ventas-genero: Estadísticas de recaudación y entradas vendidas agrupadas por género (Solo Admin).
+        GET /dashboard/ventas-genero: Estadísticas de recaudación y entradas
+        vendidas agrupadas por género (Solo Admin).
         """
-        pass
+        return _responder_reporte(obtener_ventas_por_genero)
 
     @app.route("/dashboard/franjas-horarias", methods=["GET"])
     def get_franjas_horarias():
         """
-        GET /dashboard/franjas-horarias: Reporte de los horarios y turnos con mayor volumen de entradas vendidas (Solo Admin).
+        GET /dashboard/franjas-horarias: Reporte de los horarios y turnos con
+        mayor volumen de entradas vendidas (Solo Admin).
         """
-        pass
+        return _responder_reporte(obtener_ventas_franjas_horarias)
 
     @app.route("/dashboard/cancelaciones", methods=["GET"])
     def get_cancelaciones():
         """
-        GET /dashboard/cancelaciones: Tasa y estadísticas de compras canceladas (Solo Admin).
+        GET /dashboard/cancelaciones: Tasa y estadísticas de compras canceladas
+        (Solo Admin).
         """
-        pass
+        return _responder_reporte(obtener_estadisticas_cancelaciones)
 
     @app.route("/dashboard/reporte-ventas", methods=["GET"])
     def get_reporte_ventas():
         """
-        GET /dashboard/reporte-ventas: Obtiene el consolidado de ventas por función y ranking de películas más vistas (Solo Admin).
+        GET /dashboard/reporte-ventas: Obtiene el consolidado de ventas por
+        función y ranking de películas más vistas (Solo Admin).
         """
         pass
-
-    @app.route("/dashboard/reporte-ventas", methods=["GET"])
-    def get_dashboard_reporte_ventas():
-        """
-        GET /dashboard/reporte-ventas: Obtiene el consolidado de ventas por función y ranking de películas más vistas (Solo Admin)[cite: 10].
-        """
-        if 'usuario_id' not in session or session.get('rol') != 'admin':
-            return jsonify({"error": "Acceso denegado. Se requiere rol de Administrador."}), 403
-
-        try:
-            reporte = obtener_reporte_ventas_consolidado_db()
-            return jsonify(reporte), 200
-        except Exception as e:
-            return jsonify({"error": str(e)}), 500
