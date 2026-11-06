@@ -1,0 +1,457 @@
+{% extends 'layout.html' %}
+
+{% block title %}{{ p.titulo }} - Horarios y Funciones | Cinema Paradiso{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/pelicula_detalle.css') }}">
+{% endblock %}
+
+{% block content %}
+<!-- SECCIÓN 1: Detalle de Película y Ficha (Hero) -->
+<section class="movie-detail-section" aria-label="Detalle de Película">
+    <div class="container movie-container">
+
+        <!-- Breadcrumbs y Tecnología de Sala -->
+        <header class="movie-top-bar">
+            <nav class="breadcrumb-nav" aria-label="Ruta de navegación">
+                <a href="{{ url_for('home.index') }}" class="breadcrumb-link">
+                    <svg class="icon-nav" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                    <span>Cartelera</span>
+                </a>
+                <span class="breadcrumb-separator">/</span>
+                <span class="breadcrumb-text">{{ p.generos[0] | default('Ciencia Ficción') }}</span>
+                <span class="breadcrumb-separator">/</span>
+                <span class="breadcrumb-current">{{ p.titulo }}</span>
+            </nav>
+
+            <div class="tech-spec-indicator">
+                <span class="tech-dot"></span>
+                <span>SALA DIGITAL 4K LÁSER • DOLBY ATMOS™</span>
+            </div>
+        </header>
+
+        <!-- Grid Principal: Póster con Play (Izq) + Ficha (Der) -->
+        <div class="movie-hero-grid">
+
+            <!-- Columna Izquierda: Póster con Botón Play Central -->
+            <div class="movie-poster-column">
+                <div class="movie-poster-card" id="openTrailerBtn" role="button" tabindex="0" title="Reproducir tráiler oficial">
+                    <img 
+                        src="{{ p.poster_url }}" 
+                        alt="Póster oficial de {{ p.titulo }}" 
+                        class="movie-poster-image"
+                        loading="eager"
+                    >
+                    <div class="poster-floating-badges">
+                        <span class="badge-premiere-poster">Estreno de la semana</span>
+                        <span class="badge-tech-poster">{{ p.formato_destacado }} Disponible</span>
+                    </div>
+
+                    <!-- Botón de Play Central en el Póster -->
+                    <div class="poster-play-overlay">
+                        <div class="poster-play-circle">
+                            <svg class="icon-play-tri" viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                                <polygon points="6 4 20 12 6 20 6 4"></polygon>
+                            </svg>
+                        </div>
+                        <span class="poster-play-label">Ver Tráiler</span>
+                    </div>
+                </div>
+
+                <!-- Acciones del Póster (Guardar / Compartir) -->
+                <div class="poster-actions-row">
+                    <button type="button" class="btn-poster-action" id="btnGuardarPelicula" title="Guardar en favoritos">
+                        <svg class="icon-action" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                        <span>Guardar</span>
+                    </button>
+                    <button type="button" class="btn-poster-action" id="btnCompartirPelicula" title="Compartir enlace">
+                        <svg class="icon-action" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="18" cy="5" r="3"></circle>
+                            <circle cx="6" cy="12" r="3"></circle>
+                            <circle cx="18" cy="19" r="3"></circle>
+                            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                        </svg>
+                        <span>Compartir</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Columna Derecha: Información de la Película -->
+            <div class="movie-info-column">
+
+                <!-- Píldoras de Metadatos Superiores -->
+                <div class="movie-meta-badges">
+                    <span class="meta-pill pill-red">Estreno de la semana</span>
+                    <span class="meta-pill pill-tech">{{ p.formato_destacado }}</span>
+                    <span class="meta-pill">{{ p.clasificacion }}</span>
+                    <span class="meta-pill">{{ p.duracion_legible }}</span>
+                    <span class="meta-pill">{{ p.idioma_formato }}</span>
+                    <span class="meta-pill">Año {{ p.anio }}</span>
+                </div>
+
+                <!-- Título y Puntuaciones -->
+                <div class="movie-title-block">
+                    <h1 class="movie-main-title">{{ p.titulo }}</h1>
+                    <div class="movie-subtitle-meta">
+                        <span class="meta-original-title">Título Original: <em>{{ p.titulo_original }}</em></span>
+                        <span class="meta-bullet">•</span>
+                        <span class="meta-rating-imdb">★ <strong>{{ p.puntuacion_imdb }}</strong></span>
+                        <span class="meta-bullet">•</span>
+                        <span class="meta-critics-score">👍 <strong>{{ p.porcentaje_critica }}</strong></span>
+                    </div>
+                </div>
+
+                <!-- Bloque de Sinopsis -->
+                <div class="movie-synopsis-block">
+                    <div class="synopsis-header-tag">
+                        <span class="synopsis-red-bar"></span>
+                        <span class="synopsis-heading-text">SINOPSIS</span>
+                    </div>
+                    <p class="synopsis-paragraph">{{ p.sinopsis }}</p>
+                </div>
+
+                <!-- Ficha Técnica (Grid 2x2) -->
+                <div class="movie-tech-specs-grid">
+                    <div class="tech-spec-box">
+                        <span class="tech-spec-label">DIRECCIÓN</span>
+                        <span class="tech-spec-value">{{ p.direccion }}</span>
+                    </div>
+                    <div class="tech-spec-box">
+                        <span class="tech-spec-label">REPARTO PRINCIPAL</span>
+                        <span class="tech-spec-value">{{ p.reparto }}</span>
+                    </div>
+                    <div class="tech-spec-box">
+                        <span class="tech-spec-label">GÉNERO</span>
+                        <span class="tech-spec-value">{{ p.generos | join(', ') }}</span>
+                    </div>
+                    <div class="tech-spec-box">
+                        <span class="tech-spec-label">DISTRIBUIDORA / TECNOLOGÍA DE SALA</span>
+                        <span class="tech-spec-value">
+                            {{ p.distribuidora }} • <span class="highlight-tech-purple">{{ p.tecnologia_sala }}</span>
+                        </span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</section>
+
+<!-- SECCIÓN 2: Horarios y Funciones (Línea Divisoria Full-Width de Borde a Borde) -->
+<section class="showtimes-section" id="seccion-funciones" aria-label="Horarios y Funciones">
+    <div class="container movie-container">
+
+        <!-- Encabezado de Sección -->
+        <div class="showtimes-section-header">
+            <div class="showtimes-header-left">
+                <div class="showtimes-tagline">
+                    <span class="section-bullet-dot"></span>
+                    <span>HORARIOS Y FUNCIONES</span>
+                </div>
+                <h2 class="showtimes-section-title">Selecciona Complejo, Fecha y Función</h2>
+            </div>
+            <div class="showtimes-guarantee">
+                <svg viewBox="0 0 24 24" width="18" height="18" stroke="#10b981" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                </svg>
+                <span>Butacas numeradas garantizadas al instante</span>
+            </div>
+        </div>
+
+        <!-- Selector de Complejos (3 Cards) -->
+        <div class="cinema-complexes-grid" id="complexesSelector">
+            {% for complejo in p.complejos %}
+            <div 
+                class="complex-card {% if complejo.seleccionado %}active{% endif %}" 
+                data-complex-id="{{ complejo.id }}"
+                data-complex-name="{{ complejo.nombre }}"
+                role="button"
+                tabindex="0"
+            >
+                <div class="complex-card-top">
+                    <span class="complex-role-tag {% if complejo.seleccionado %}tag-red{% endif %}">{{ complejo.etiqueta }}</span>
+                    <div class="complex-radio-circle">
+                        {% if complejo.seleccionado %}
+                            <span class="radio-check-mark">✓</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <h3 class="complex-name">{{ complejo.nombre }}</h3>
+                <p class="complex-address">
+                    <svg class="icon-pin" viewBox="0 0 24 24" width="14" height="14" stroke="#e50914" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                        <circle cx="12" cy="10" r="3"></circle>
+                    </svg>
+                    <span>{{ complejo.direccion }}</span>
+                </p>
+                <div class="complex-tech-badges">
+                    {% for badge in complejo.badges %}
+                        <span class="complex-tech-chip">{{ badge }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Selector de Fecha y Leyenda -->
+        <div class="date-selector-row">
+            <div class="date-pills-group" id="datePillsGroup">
+                <span class="date-label-text">FECHA:</span>
+                {% for fecha in p.fechas %}
+                <button 
+                    type="button" 
+                    class="showtime-date-pill {% if fecha.activa %}active{% endif %}" 
+                    data-date="{{ fecha.etiqueta }}"
+                >
+                    {{ fecha.etiqueta }}
+                </button>
+                {% endfor %}
+            </div>
+
+            <div class="availability-legend">
+                <span class="legend-item">
+                    <span class="legend-dot-green"></span>
+                    <span>Alta disponibilidad</span>
+                </span>
+                <span class="legend-item">
+                    <span class="legend-dot-orange"></span>
+                    <span>Últimos lugares</span>
+                </span>
+            </div>
+        </div>
+
+        <!-- Grupos de Salas y Horarios -->
+        <div class="halls-showtimes-list" id="hallsShowtimesList">
+            {% for sala in p.salas_funciones %}
+            <div class="hall-showtime-block">
+                <!-- Cabecera de la Sala -->
+                <div class="hall-header-row">
+                    <div class="hall-title-group">
+                        <span class="format-tech-tag {{ sala.badge_clase }}">{{ sala.badge_tipo }}</span>
+                        <div class="hall-names-wrapper">
+                            <h3 class="hall-main-name">{{ sala.nombre }}</h3>
+                            <span class="hall-features-sub">{{ sala.descripcion }}</span>
+                        </div>
+                    </div>
+                    <div class="hall-price-label">
+                        <span class="price-prefix">ENTRADA GENERAL:</span>
+                        <span class="hall-price-amount">{{ sala.precio }}</span>
+                    </div>
+                </div>
+
+                <!-- Horarios de la Sala -->
+                <div class="showtime-buttons-grid">
+                    {% for func in sala.funciones %}
+                    <div 
+                        class="showtime-select-card {% if func.seleccionada %}active{% endif %}" 
+                        data-func-id="{{ func.id_funcion }}"
+                        data-func-time="{{ func.hora }}"
+                        data-hall-name="{{ sala.nombre }}"
+                        data-hall-badge="{{ sala.badge_tipo }}"
+                        data-hall-price="{{ sala.precio }}"
+                        role="button"
+                        tabindex="0"
+                    >
+                        <span class="card-time-display">{{ func.hora }}</span>
+                        <div class="card-availability-meta">
+                            <span class="status-dot-sm dot-{{ func.estado }}"></span>
+                            <span>{{ func.idioma }} • {{ func.disponibilidad }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+    </div>
+</section>
+
+<!-- SECCIÓN 3: Barra Inferior Fija / Sticky Bottom Selection Bar -->
+<aside class="sticky-selection-bar" aria-label="Resumen de selección de entradas">
+    <div class="container sticky-bar-container">
+        <!-- Detalle de Selección Izquierda -->
+        <div class="selection-summary-left">
+            <div class="ticket-icon-badge" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="6" width="20" height="12" rx="2"></rect>
+                    <line x1="6" y1="10" x2="6" y2="10"></line>
+                    <line x1="10" y1="10" x2="10" y2="10"></line>
+                    <line x1="14" y1="10" x2="14" y2="10"></line>
+                    <line x1="18" y1="10" x2="18" y2="10"></line>
+                    <line x1="6" y1="14" x2="6" y2="14"></line>
+                    <line x1="10" y1="14" x2="10" y2="14"></line>
+                    <line x1="14" y1="14" x2="14" y2="14"></line>
+                    <line x1="18" y1="14" x2="18" y2="14"></line>
+                </svg>
+            </div>
+            <div class="selection-details-group">
+                <span class="selection-headline">TU SELECCIÓN ACTUAL</span>
+                <div class="selection-values-row">
+                    <span id="selectedComplexDisplay">{{ p.seleccion_inicial.complejo }}</span>
+                    <span class="selection-dot-separator">•</span>
+                    <span id="selectedDateDisplay">{{ p.seleccion_inicial.fecha }}</span>
+                    <span class="selection-dot-separator">•</span>
+                    <span id="selectedHallDisplay" class="hall-highlight-purple">{{ p.seleccion_inicial.sala }}</span>
+                    <span class="selection-dot-separator">•</span>
+                    <span id="selectedTimeDisplay" class="time-highlight-amber">{{ p.seleccion_inicial.hora }}</span>
+                </div>
+                <div class="selection-price-base">
+                    Precio unitario base: <strong id="selectedPriceDisplay">{{ p.seleccion_inicial.precio }}</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- Acciones Derecha -->
+        <div class="selection-actions-right">
+            <a href="#candy" class="btn-secondary-candy" title="Ver combos de confitería">
+                Ver Combos Candy
+            </a>
+            <a href="{{ url_for('compra.seleccion_butacas') }}" id="btnContinueSeats" class="btn-primary-continue" title="Continuar a la selección de asientos">
+                <span>Continuar a Selección de Butacas</span>
+                <span class="btn-arrow-right">→</span>
+            </a>
+        </div>
+    </div>
+</aside>
+
+<!-- Modal de Tráiler Embebido (Accesible) -->
+<div class="trailer-modal-backdrop" id="trailerModal" role="dialog" aria-modal="true" aria-labelledby="trailerModalTitle">
+    <div class="trailer-modal-dialog">
+        <div class="trailer-modal-header">
+            <h3 class="trailer-modal-title" id="trailerModalTitle">Tráiler Oficial: {{ p.titulo }}</h3>
+            <button type="button" class="trailer-modal-close" id="closeTrailerBtn" aria-label="Cerrar modal de tráiler">&times;</button>
+        </div>
+        <div class="trailer-video-wrapper">
+            <iframe 
+                id="trailerIframe" 
+                src="" 
+                data-src="{{ p.trailer_url }}" 
+                title="Tráiler de {{ p.titulo }}" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                allowfullscreen
+            ></iframe>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Elementos de la barra flotante
+        const displayComplex = document.getElementById('selectedComplexDisplay');
+        const displayDate = document.getElementById('selectedDateDisplay');
+        const displayHall = document.getElementById('selectedHallDisplay');
+        const displayTime = document.getElementById('selectedTimeDisplay');
+        const displayPrice = document.getElementById('selectedPriceDisplay');
+
+        // Selector de Complejos
+        const complexCards = document.querySelectorAll('.complex-card');
+        complexCards.forEach(function (card) {
+            card.addEventListener('click', function () {
+                complexCards.forEach(function (c) { 
+                    c.classList.remove('active'); 
+                    const radio = c.querySelector('.complex-radio-circle');
+                    if (radio) radio.innerHTML = '';
+                    const roleTag = c.querySelector('.complex-role-tag');
+                    if (roleTag) roleTag.classList.remove('tag-red');
+                });
+
+                card.classList.add('active');
+                const radio = card.querySelector('.complex-radio-circle');
+                if (radio) radio.innerHTML = '<span class="radio-check-mark">✓</span>';
+                const roleTag = card.querySelector('.complex-role-tag');
+                if (roleTag) roleTag.classList.add('tag-red');
+
+                if (displayComplex) {
+                    displayComplex.textContent = card.getAttribute('data-complex-name');
+                }
+            });
+        });
+
+        // Selector de Fechas
+        const datePills = document.querySelectorAll('.showtime-date-pill');
+        datePills.forEach(function (pill) {
+            pill.addEventListener('click', function () {
+                datePills.forEach(function (p) { p.classList.remove('active'); });
+                pill.classList.add('active');
+                if (displayDate) {
+                    displayDate.textContent = pill.getAttribute('data-date');
+                }
+            });
+        });
+
+        // Selector de Horarios
+        const showtimeCards = document.querySelectorAll('.showtime-select-card');
+        showtimeCards.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                showtimeCards.forEach(function (b) { b.classList.remove('active'); });
+                btn.classList.add('active');
+
+                const time = btn.getAttribute('data-func-time');
+                const badge = btn.getAttribute('data-hall-badge');
+                const price = btn.getAttribute('data-hall-price');
+                const hallName = btn.getAttribute('data-hall-name');
+
+                if (displayTime) displayTime.textContent = time;
+                if (displayHall) displayHall.textContent = hallName.split('—')[0].trim() + ' (' + badge + ')';
+                if (displayPrice) displayPrice.textContent = price;
+            });
+        });
+
+        // Modal de Tráiler (Se activa desde el póster)
+        const openTrailerBtn = document.getElementById('openTrailerBtn');
+        const closeTrailerBtn = document.getElementById('closeTrailerBtn');
+        const trailerModal = document.getElementById('trailerModal');
+        const trailerIframe = document.getElementById('trailerIframe');
+
+        function openModal() {
+            if (trailerModal && trailerIframe) {
+                trailerIframe.src = trailerIframe.getAttribute('data-src');
+                trailerModal.classList.add('active');
+            }
+        }
+
+        function closeModal() {
+            if (trailerModal && trailerIframe) {
+                trailerIframe.src = '';
+                trailerModal.classList.remove('active');
+            }
+        }
+
+        if (openTrailerBtn) openTrailerBtn.addEventListener('click', openModal);
+        if (closeTrailerBtn) closeTrailerBtn.addEventListener('click', closeModal);
+        if (trailerModal) {
+            trailerModal.addEventListener('click', function (e) {
+                if (e.target === trailerModal) closeModal();
+            });
+        }
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && trailerModal && trailerModal.classList.contains('active')) {
+                closeModal();
+            }
+        });
+
+        // Botón Compartir
+        const btnCompartir = document.getElementById('btnCompartirPelicula');
+        if (btnCompartir) {
+            btnCompartir.addEventListener('click', function () {
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(window.location.href);
+                    const originalText = btnCompartir.innerHTML;
+                    btnCompartir.innerHTML = '<span>✓</span><span>¡Copiado!</span>';
+                    setTimeout(function () { btnCompartir.innerHTML = originalText; }, 2000);
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

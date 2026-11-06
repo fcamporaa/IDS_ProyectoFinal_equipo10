@@ -2,6 +2,7 @@ import re
 
 import jwt
 from src.constants import JWT_SECRET_KEY, PATRON_EMAIL
+from src.repositories.usuarios_repository import buscar_usuario_por_id_db
 from src.utils import construir_error_api
 
 
@@ -48,6 +49,39 @@ def validar_autorizacion(encabezado: str | None) -> dict:
         )
 
     return {"usuario_id": usuario_id}
+
+
+def validar_autorizacion_admin(encabezado: str | None) -> dict:
+    """
+    Valida el encabezado Bearer y verifica que el usuario tenga rol ADMINISTRADOR.
+    Retorna un dict con 'errors' y 'status' si no está autorizado.
+    """
+    autorizacion = validar_autorizacion(encabezado)
+    if "errors" in autorizacion:
+        return {**autorizacion, "status": 401}
+
+    usuario = buscar_usuario_por_id_db(autorizacion["usuario_id"])
+    if not usuario or not usuario["activo"]:
+        return {
+            **construir_error_api(
+                "error.auth.token_invalido",
+                "Token inválido",
+                "El usuario asociado al token no existe o está inactivo.",
+            ),
+            "status": 401,
+        }
+
+    if usuario["rol"] != "ADMINISTRADOR":
+        return {
+            **construir_error_api(
+                "error.auth.prohibido",
+                "Acceso denegado",
+                "El usuario no tiene rol ADMINISTRADOR para ejecutar esta acción.",
+            ),
+            "status": 403,
+        }
+
+    return autorizacion
 
 
 def validar_registro_usuario(datos: dict) -> dict:

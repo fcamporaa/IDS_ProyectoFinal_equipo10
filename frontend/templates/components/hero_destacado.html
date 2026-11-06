@@ -59,7 +59,7 @@
                     <span class="showtimes-label">Hoy:</span>
                     <div class="showtime-chips">
                         {% for h in p.horarios %}
-                            <a href="#funciones" class="hero-time-chip">
+                            <a href="{{ url_for('peliculas.detalle_pelicula', id_pelicula=1) }}" class="hero-time-chip">
                                 <span class="time-text">{{ h.hora }}</span>
                                 <span class="hall-text">{{ h.sala }}</span>
                             </a>
@@ -68,7 +68,7 @@
                 </div>
 
                 <!-- Botón CTA Primario -->
-                <a href="#comprar" class="hero-cta-btn">
+                <a href="{{ url_for('peliculas.detalle_pelicula', id_pelicula=1) }}" class="hero-cta-btn">
                     <span class="cta-icon">🎟️</span>
                     <span>Comprar Entradas</span>
                 </a>

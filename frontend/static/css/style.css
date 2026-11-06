@@ -14,6 +14,11 @@
 @import "components/barra_filtros.css";
 @import "components/hero_destacado.css";
 @import "components/footer.css";
+@import "components/button.css";
+@import "components/kpi_card.css";
+@import "components/tabla_dashboard.css";
+@import "components/filtros_dashboard.css";
 
 /* 4. Estilos de Páginas Específicas */
 @import "pages/home.css";
+@import "pages/dashboard.css";

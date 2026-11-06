@@ -1,0 +1,18 @@
+{# Componente reutilizable: tarjeta de indicador del dashboard.
+   Parámetros:
+   - titulo: nombre de la métrica
+   - valor: cifra principal ya formateada
+   - detalle: texto secundario opcional
+   - icono: emoji o símbolo opcional
+   - variante: default | success | warning | danger
+#}
+<article class="kpi-card kpi-card--{{ variante | default('default') }}">
+    <span class="kpi-card__icon" aria-hidden="true">{{ icono | default('📊') }}</span>
+    <div class="kpi-card__content">
+        <p class="kpi-card__label">{{ titulo }}</p>
+        <p class="kpi-card__value">{{ valor }}</p>
+        {% if detalle %}
+        <p class="kpi-card__detail">{{ detalle }}</p>
+        {% endif %}
+    </div>
+</article>
