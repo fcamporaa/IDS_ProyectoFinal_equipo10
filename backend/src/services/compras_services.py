@@ -1,4 +1,12 @@
 from datetime import datetime, timedelta
+import secrets
+
+from src.config import pagos_simulados_habilitados
+from src.services.qr_services import crear_token_qr
+from src.services.comprobantes_services import enviar_comprobante_compra
+from src.repositories.compras_repository import registrar_compra_pagada_db, obtener_detalle_comprobante_db
+from src.constants import HTTP_NO_IMPLEMENTADO, HTTP_CONFLICTO
+from src.utils import error_de_negocio
 
 from src.constants import FORMATO_DATETIME_SQL
 from src.repositories.compras_repository import (
@@ -18,14 +26,21 @@ from src.utils import construir_error_api
 
 
 def procesar_compra(id_usuario: int, datos: dict) -> dict:
-    """
-    1. Verifica que las butacas sigan libres para esa función.
-    2. Calcula subtotales de entradas, servicios y total.
-    3. Registra compra, entradas y servicios asociados.
-    4. Genera QR token único.
-    5. Envía factura/comprobante con QR por email (stub/mock).
-    """
-    pass
+    """Registra la compra demostrativa, genera el QR y envía el correo tras COMMIT."""
+    if not pagos_simulados_habilitados():
+        error_de_negocio(
+            "compras.pago", "Pago no disponible",
+            "Habilitá ALLOW_SIMULATED_PAYMENTS solo en desarrollo.", HTTP_NO_IMPLEMENTADO,
+        )
+    codigo_reserva = "CP-" + secrets.token_hex(8).upper()
+    qr_token = crear_token_qr()
+    compra = registrar_compra_pagada_db(id_usuario, datos, codigo_reserva, qr_token)
+    try:
+        compra["email_estado"] = enviar_comprobante_compra(compra["id_compra"])
+    except Exception:
+        # El commit de la compra ya ocurrió: un fallo de SMTP no debe liberar las entradas.
+        compra["email_estado"] = "ERROR"
+    return compra
 
 
 def listar_mis_compras(id_usuario: int) -> list[dict]:
@@ -113,3 +128,16 @@ def cancelar_compra(id_compra: int, id_usuario: int) -> dict | None:
             "La compra ya fue cancelada, utilizada o superó el plazo de cancelación.",
         )
     return None
+
+
+def reenviar_comprobante(id_compra: int, id_usuario: int) -> str | None:
+    """Solo el dueño puede reenviar un QR, y exclusivamente para compras pagadas."""
+    compra = obtener_detalle_comprobante_db(id_compra, id_usuario)
+    if compra is None:
+        return None
+    if compra["estado"] != "PAGADA" or compra.get("qr_validado_en") is not None:
+        error_de_negocio(
+            "compras.estado", "Comprobante no disponible",
+            "La compra no está pagada o su QR ya fue usado.", HTTP_CONFLICTO,
+        )
+    return enviar_comprobante_compra(id_compra)
