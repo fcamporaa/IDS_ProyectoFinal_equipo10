@@ -1,4 +1,9 @@
-from src.constants import ORIGENES_API_PELICULAS
+from src.constants import (
+    LARGO_MAX_COMENTARIO_RESENA,
+    ORIGENES_API_PELICULAS,
+    PUNTUACION_RESENA_MAX,
+    PUNTUACION_RESENA_MIN,
+)
 from src.utils import (
     ahora_local,
     error_validacion,
@@ -170,3 +175,24 @@ def validar_busqueda_externa(args) -> dict:
     if query is None:
         raise error_validacion("El parámetro query es obligatorio.")
     return {"query": query}
+
+
+def validar_crear_resena(datos: dict) -> dict:
+    """
+    Valida el cuerpo de POST /peliculas/{id}/resenas:
+    id_compra (entero positivo), puntuacion (entero de 1 a 5) y comentario (texto opcional).
+    Devuelve id_compra, puntuacion y comentario (None si no se envió).
+    """
+    datos = validar_objeto_json(datos)
+    return {
+        "id_compra": validar_entero_positivo(datos.get("id_compra"), "id_compra"),
+        "puntuacion": validar_entero_en_rango(
+            datos.get("puntuacion"),
+            "puntuacion",
+            PUNTUACION_RESENA_MIN,
+            PUNTUACION_RESENA_MAX,
+        ),
+        "comentario": validar_texto_opcional(
+            datos.get("comentario"), "comentario", LARGO_MAX_COMENTARIO_RESENA
+        ),
+    }
