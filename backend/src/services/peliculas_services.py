@@ -16,11 +16,18 @@ from src.repositories.peliculas_repository import (
     dar_de_baja_pelicula_db,
     obtener_generos_db,
     obtener_generos_de_peliculas_db,
+    obtener_resenas_por_pelicula_db,
+    buscar_resena_por_id_db,
+    buscar_compra_para_resena_db,
+    existe_resena_de_compra_db,
+    insertar_resena_db,
 )
 from src.utils import (
     ahora_local,
     crear_error_http,
     error_no_encontrado,
+    error_validacion,
+    formatear_datetime_iso,
     formatear_funcion,
 )
 
@@ -183,48 +190,62 @@ def buscar_peliculas_externas(filtros: dict) -> list[dict]:
 
 def listar_generos() -> list[dict]:
     """Devuelve el listado de todos los géneros disponibles."""
-    pass
+    return obtener_generos_db()
+
+
+def _formatear_resena(resena: dict) -> dict:
+    """Deja la reseña con el formato del contrato: `creada_en` como fecha ISO 8601."""
+    return {**resena, "creada_en": formatear_datetime_iso(resena["creada_en"])}
 
 
 def listar_resenas_pelicula(id_pelicula: int) -> list[dict]:
-    """Lista las reseñas y puntuaciones de una película."""
-    pelicula = buscar_pelicula_por_id_db(pelicula_id)
-    if pelicula is None:
-        raise error_validacion("La película indicada no existe.")
-    
-    reseñas = buscar_reseñas_por_pelicula_db(pelicula_id)
-    return [_formatear_reseña(r) for r in reseñas]
-    pass
+    """Lista las reseñas y puntuaciones de una película (404 si la película no existe)."""
+    _obtener_pelicula_o_404(id_pelicula)
+    return [_formatear_resena(r) for r in obtener_resenas_por_pelicula_db(id_pelicula)]
+
+
+def _verificar_asistencia_validada(id_pelicula: int, id_usuario: int, id_compra: int) -> None:
+    """
+    Lanza 403 si la compra no es del usuario, no es de esta película, no está pagada
+    o su QR todavía no fue validado en puerta (es decir, si no hay asistencia comprobada).
+    """
+    compra = buscar_compra_para_resena_db(id_compra)
+    if (
+        compra is None
+        or compra["id_usuario"] != id_usuario
+        or compra["id_pelicula"] != id_pelicula
+        or compra["estado"] != "PAGADA"
+        or compra["qr_validado_en"] is None
+    ):
+        raise crear_error_http(
+            "error.auth.prohibido",
+            "Acceso denegado",
+            "El usuario no posee una compra con QR validado para esta película.",
+            403,
+        )
 
 
 def crear_resena_pelicula(id_pelicula: int, id_usuario: int, datos: dict) -> dict:
-    pelicula_id = datos.get("pelicula_id")
-    usuario_id = datos.get("usuario_id")
-    puntuacion = datos.get("puntuacion")
-    comentario = datos.get("comentario", "")
+    """
+    Registra la reseña de un usuario para una película. Solo puede reseñar quien
+    asistió (QR de su compra validado) y una única vez por compra.
+    `datos` ya viene validado: id_compra, puntuacion y comentario.
+    """
+    _obtener_pelicula_o_404(id_pelicula)
+    id_compra = datos["id_compra"]
+    _verificar_asistencia_validada(id_pelicula, id_usuario, id_compra)
 
-    # Validar que la película exista
-    pelicula = buscar_pelicula_por_id_db(pelicula_id)
-    if pelicula is None:
-        raise error_validacion("La película indicada no existe.")
+    if existe_resena_de_compra_db(id_compra):
+        raise error_validacion(f"La compra {id_compra} ya tiene una reseña registrada.")
 
-    # Validar que la puntuación sea un número válido entre 1 y 5
-    if puntuacion is None or not (1 <= int(puntuacion) <= 5):
-        raise error_validacion("La puntuación es obligatoria y debe ser un valor entero entre 1 y 5.")
-
-    # Validar que el usuario haya asistido (QR validado en puerta)
-    asistio = verificar_asistencia_usuario_db(usuario_id, pelicula_id)
-    if not asistio:
-        raise error_validacion("Acceso denegado. Solo los usuarios con asistencia validada (QR escaneado) pueden dejar reseñas.")
-
-    # Insertar la reseña en la base de datos
-    id_reseña = insertar_reseña_db({
-        "pelicula_id": pelicula_id,
-        "usuario_id": usuario_id,
-        "puntuacion": int(puntuacion),
-        "comentario": comentario,
-        "fecha": datetime.now()
-    })
-
-    return _formatear_reseña(buscar_reseña_por_id_db(id_reseña))
-    pass
+    id_resena = insertar_resena_db(
+        {
+            "id_usuario": id_usuario,
+            "id_pelicula": id_pelicula,
+            "id_compra": id_compra,
+            "puntuacion": datos["puntuacion"],
+            "comentario": datos["comentario"],
+            "creada_en": ahora_local(),
+        }
+    )
+    return _formatear_resena(buscar_resena_por_id_db(id_resena))
