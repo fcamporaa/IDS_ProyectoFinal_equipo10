@@ -48,3 +48,22 @@ def ejecutar_mutacion(sql: str, parametros: dict = None) -> int:
         raise
     finally:
         conexion.close()
+
+#Esta es una operación generica que se usa en [Generos/Peliculas] y que sirve para otras "transacciones" de compras. por ejemplo.
+def ejecutar_transaccion(operacion):
+    """
+    Ejecuta `operacion(cursor)` dentro de una única transacción: si termina bien
+    confirma todo, si lanza una excepción deshace todo y la relanza.
+    Devuelve lo que devuelva `operacion`.
+    """
+    conexion = obtener_conexion()
+    try:
+        with conexion.cursor() as cursor:
+            resultado = operacion(cursor)
+        conexion.commit()
+        return resultado
+    except Exception:
+        conexion.rollback()
+        raise
+    finally:
+        conexion.close()

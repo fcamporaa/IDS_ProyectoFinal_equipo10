@@ -1,0 +1,64 @@
+/* ========================================================
+   Cinema Paradiso - Design Tokens (DESIGN.md)
+   Estética: Cinematic Precision (Dark Theme de Cine Real)
+   ======================================================== */
+
+:root {
+    /* 1. Superficies y Fondos Escalonados */
+    --color-bg-main: #121316;              /* Fondo de aplicación base */
+    --color-bg-surface-lowest: #0d0e11;    /* Fondo más profundo */
+    --color-bg-surface-low: #1b1b1f;       /* Paneles estructurales y barras secundarias */
+    --color-bg-surface: #1f1f23;           /* Tarjetas y contenedores estándar */
+    --color-bg-surface-high: #292a2d;      /* Elementos elevados, hover y botones secundarios */
+    --color-bg-surface-highest: #343538;   /* Bordes activos y chips destacados */
+    --color-bg-header: rgba(18, 19, 22, 0.95); /* Header sticky con blur */
+
+    /* 2. Bordes Estructurales Nítidos */
+    --color-border: #26272b;               /* Borde divisor sutil de 1px */
+    --color-border-card: #323742;          /* Borde nítido para tarjetas */
+    --color-border-focus: #e50914;          /* Borde rojo en foco */
+    --color-border-highlight: #4b5563;     /* Borde para hover interactivo */
+
+    /* 3. Acentos de Marca */
+    --color-accent-red: #e50914;           /* Rojo Cinema Paradiso (CTAs principales) */
+    --color-accent-red-hover: #b80710;
+    --color-accent-red-active: #99060d;
+
+    --color-accent-gold: #f59e0b;          /* Dorado ámbar (estrellas, formatos y VIP) */
+    --color-accent-gold-hover: #d97706;
+
+    --color-accent-blue: #0072d7;          /* Azul cinematográfico */
+
+    /* 4. Tipografía y Textos */
+    --font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --color-text-main: #f3f4f6;            /* Blanco tiza de máxima legibilidad */
+    --color-text-muted: #9ca3af;           /* Gris plateado para metadatos y subtítulos */
+    --color-text-dim: #6b7280;             /* Texto terciario para legal y footer */
+
+    /* 5. Semántica Operacional */
+    --color-success: #10b981;              /* Butacas disponibles / Confirmado */
+    --color-warning: #f59e0b;              /* Pocas butacas / Reservado temporal */
+    --color-danger: #ef4444;               /* Agotado / Cancelado */
+
+    /* 6. Radios de Borde Arquitectónicos */
+    --radius-sm: 4px;                      /* Botones, inputs y chips */
+    --radius-md: 6px;                      /* Tarjetas estándar */
+    --radius-lg: 8px;                      /* Modales y posters */
+    --radius-full: 9999px;                 /* Píldoras y badges circulares */
+
+    /* 7. Sombras Cinematográficas */
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.65);
+    --shadow-red: 0 0 18px rgba(229, 9, 20, 0.35);
+
+    /* 8. Transiciones */
+    --transition-fast: 0.15s ease;
+    --transition-base: 0.25s ease;
+
+    /* 9. Estados de Butacas */
+    --seat-available: #242830;
+    --seat-selected: #f59e0b;
+    --seat-occupied: #1b1b1f;
+    --seat-vip: #ee9800;
+}

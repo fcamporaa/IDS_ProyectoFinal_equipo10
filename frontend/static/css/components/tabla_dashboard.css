@@ -1,0 +1,99 @@
+/* ========================================================
+   Componente: Sección y Tabla de Métricas (.dashboard-section)
+   ======================================================== */
+
+.dashboard-section {
+    background-color: var(--color-bg-surface-low, #1b1b1f);
+    border: 1px solid var(--color-border, #26272b);
+    border-radius: var(--radius-lg, 8px);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.dashboard-section__header {
+    margin-bottom: 1.25rem;
+}
+
+.dashboard-section__header h2 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--color-text-main, #f3f4f6);
+}
+
+.dashboard-section__header p {
+    margin-top: 0.35rem;
+    font-size: 0.85rem;
+    color: var(--color-text-muted, #9ca3af);
+}
+
+.dashboard-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.dashboard-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+}
+
+.dashboard-table th,
+.dashboard-table td {
+    padding: 0.7rem 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--color-border, #26272b);
+    vertical-align: middle;
+}
+
+.dashboard-table th {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--color-text-dim, #6b7280);
+    white-space: nowrap;
+}
+
+.dashboard-table tbody tr:hover {
+    background-color: var(--color-bg-surface-high, #292a2d);
+}
+
+.dashboard-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.metric-bar {
+    display: inline-block;
+    width: 90px;
+    height: 6px;
+    margin-right: 0.5rem;
+    background-color: var(--color-bg-surface-highest, #343538);
+    border-radius: var(--radius-full, 9999px);
+    overflow: hidden;
+    vertical-align: middle;
+}
+
+.metric-bar span {
+    display: block;
+    height: 100%;
+    background-color: var(--color-accent-gold, #f59e0b);
+    border-radius: inherit;
+}
+
+.metric-value {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.dashboard-empty {
+    padding: 1.5rem 0;
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--color-text-dim, #6b7280);
+}
+
+@media (max-width: 640px) {
+    .dashboard-section {
+        padding: 1rem;
+    }
+}

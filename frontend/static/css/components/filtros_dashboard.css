@@ -1,0 +1,77 @@
+/* ========================================================
+   Componente: Filtros del Dashboard (.dashboard-filters)
+   ======================================================== */
+
+.dashboard-filters {
+    display: flex;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 1rem;
+    background-color: var(--color-bg-surface, #1f1f23);
+    border: 1px solid var(--color-border-card, #323742);
+    border-radius: var(--radius-md, 6px);
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.dashboard-filters__field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 170px;
+    flex: 1;
+}
+
+.dashboard-filters__field label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--color-text-muted, #9ca3af);
+}
+
+.dashboard-filters__field input,
+.dashboard-filters__field select {
+    width: 100%;
+    background-color: var(--color-bg-main, #121316);
+    border: 1px solid var(--color-border, #26272b);
+    border-radius: var(--radius-sm, 4px);
+    color: var(--color-text-main, #f3f4f6);
+    font-family: inherit;
+    font-size: 0.88rem;
+    padding: 0.55rem 0.7rem;
+    outline: none;
+    transition: border-color var(--transition-fast, 0.15s ease);
+}
+
+.dashboard-filters__field input:focus,
+.dashboard-filters__field select:focus {
+    border-color: var(--color-border-focus, #e50914);
+}
+
+.dashboard-filters__actions {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+}
+
+.dashboard-filters__clear {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-text-muted, #9ca3af);
+}
+
+.dashboard-filters__clear:hover {
+    color: var(--color-text-main, #f3f4f6);
+}
+
+@media (max-width: 640px) {
+    .dashboard-filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .dashboard-filters__actions {
+        justify-content: flex-start;
+    }
+}

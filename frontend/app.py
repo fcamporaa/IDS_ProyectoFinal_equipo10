@@ -1,9 +1,11 @@
 import os
 from dotenv import load_dotenv
-from flask import Flask
+from flask import Flask, session
 
+from routes.dashboard_routes import dashboard_bp
 from routes.home_routes import home_bp
 from routes.compras_routes import compras_bp
+from routes.peliculas_routes import peliculas_bp
 
 load_dotenv()
 
@@ -17,8 +19,23 @@ app.config["SECRET_KEY"] = os.environ["SECRET_KEY"]
 # Registro de rutas (Blueprints)
 app.register_blueprint(home_bp)
 app.register_blueprint(compras_bp)
+app.register_blueprint(peliculas_bp)
+app.register_blueprint(dashboard_bp)
+
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+
+
+@app.context_processor
+def inyectar_contexto_sesion():
+    """Expone la sesión activa a todos los templates (navbar y permisos)."""
+    usuario_activo = session.get("usuario")
+    return {
+        "usuario_activo": usuario_activo,
+        "es_admin": bool(
+            usuario_activo and usuario_activo.get("rol") == "ADMINISTRADOR"
+        ),
+    }
 
 
 if __name__ == "__main__":

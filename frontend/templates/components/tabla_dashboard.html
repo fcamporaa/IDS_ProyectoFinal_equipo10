@@ -1,0 +1,53 @@
+{# Componente reutilizable: sección con tabla de métricas.
+   Parámetros:
+   - titulo: título de la sección
+   - descripcion: texto introductorio opcional
+   - columnas: lista de dicts con clave, etiqueta y tipo opcional
+     (texto | entero | moneda | porcentaje)
+   - filas: lista de dicts con los datos
+   - vacio: mensaje cuando no hay filas
+#}
+<section class="dashboard-section">
+    <header class="dashboard-section__header">
+        <h2>{{ titulo }}</h2>
+        {% if descripcion %}
+        <p>{{ descripcion }}</p>
+        {% endif %}
+    </header>
+
+    {% if filas %}
+    <div class="dashboard-table-wrapper">
+        <table class="dashboard-table">
+            <thead>
+                <tr>
+                    {% for columna in columnas %}
+                    <th scope="col">{{ columna.etiqueta }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for fila in filas %}
+                <tr>
+                    {% for columna in columnas %}
+                    <td>
+                        {% if columna.tipo == 'porcentaje' %}
+                        <div class="metric-bar">
+                            <span style="width: {{ fila[columna.clave] }}%"></span>
+                        </div>
+                        <span class="metric-value">{{ "%.2f"|format(fila[columna.clave]) }}%</span>
+                        {% elif columna.tipo == 'moneda' %}
+                        <span class="metric-value">$ {{ "%.2f"|format(fila[columna.clave]) }}</span>
+                        {% else %}
+                        {{ fila[columna.clave] }}
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="dashboard-empty">{{ vacio | default('No hay datos para el período seleccionado.') }}</p>
+    {% endif %}
+</section>
