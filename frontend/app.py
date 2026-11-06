@@ -6,6 +6,7 @@ from routes.dashboard_routes import dashboard_bp
 from routes.home_routes import home_bp
 from routes.compras_routes import compras_bp
 from routes.peliculas_routes import peliculas_bp
+from routes.compra_routes import compra_bp
 
 load_dotenv()
 

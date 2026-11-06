@@ -1,0 +1,430 @@
+{% extends 'layout.html' %}
+
+{% block title %}Reserva Confirmada #{{ c.id_transaccion }} - {{ c.pelicula.titulo }} | Cinema Paradiso{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/confirmacion_compra.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="confirmation-page">
+    <div class="container confirmation-container">
+
+        <!-- 1. Stepper del Embudo de Compra (Paso 4 Confirmado) -->
+        {% with paso_actual=4 %}
+            {% include 'components/stepper_compra.html' %}
+        {% endwith %}
+
+        <!-- 2. Banner de Reserva Confirmada con Éxito -->
+        <header class="confirmation-success-banner">
+            <div class="success-banner-left">
+                <div class="success-icon-box">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                </div>
+                <div class="success-banner-texts">
+                    <div class="success-title-line">
+                        <h1>¡Reserva Confirmada con Éxito!</h1>
+                        <span class="badge-payment-approved">PAGO APROBADO</span>
+                    </div>
+                    <p class="success-subtitle">
+                        ID Transacción: <strong>{{ c.id_transaccion }}</strong> • Enviamos las entradas electrónicas y el comprobante fiscal a <strong>{{ c.email_comprador }}</strong>
+                    </p>
+                </div>
+            </div>
+            <div class="success-banner-actions">
+                <button type="button" class="btn-banner-action" onclick="window.print();" title="Imprimir comprobante">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                        <rect x="6" y="14" width="12" height="8"></rect>
+                    </svg>
+                    <span>Imprimir</span>
+                </button>
+                <a href="#voucherQrArea" class="btn-banner-action btn-highlight-qr" title="Ver código QR de acceso">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="14" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                        <path d="M7 17h.01"></path>
+                        <path d="M17 17h.01"></path>
+                        <path d="M7 7h.01"></path>
+                        <path d="M17 7h.01"></path>
+                    </svg>
+                    <span>Ver QR</span>
+                </a>
+            </div>
+        </header>
+
+        <!-- 3. Grid Principal: Voucher de Acceso (Izq) y Detalles de Facturación (Der) -->
+        <div class="confirmation-main-grid">
+
+            <!-- Columna Izquierda: Voucher Digital y Código QR -->
+            <section class="voucher-column" aria-label="Comprobante de Acceso a Sala">
+                <div class="voucher-digital-card" id="voucherQrArea">
+
+                    <!-- Encabezado del Voucher -->
+                    <div class="voucher-top-bar">
+                        <div class="voucher-brand-info">
+                            <span class="voucher-cinema-icon">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="#e50914">
+                                    <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                                    <line x1="2" y1="8" x2="22" y2="8"></line>
+                                    <line x1="6" y1="4" x2="6" y2="8"></line>
+                                    <line x1="10" y1="4" x2="10" y2="8"></line>
+                                    <line x1="14" y1="4" x2="14" y2="8"></line>
+                                    <line x1="18" y1="4" x2="18" y2="8"></line>
+                                </svg>
+                            </span>
+                            <div class="voucher-brand-texts">
+                                <span class="voucher-brand-name">CINEMA <strong>PARADISO</strong></span>
+                                <span class="voucher-room-name">{{ c.pelicula.sala_nombre }}</span>
+                            </div>
+                        </div>
+                        <span class="direct-access-badge">
+                            <span class="access-dot"></span>
+                            <span>ACCESO DIRECTO HABILITADO</span>
+                        </span>
+                    </div>
+
+                    <!-- Ficha de Película y Metadatos de Función -->
+                    <div class="voucher-movie-block">
+                        <div class="voucher-poster-wrap">
+                            <img src="{{ c.pelicula.poster_url }}" 
+                                 alt="Póster de {{ c.pelicula.titulo }}" 
+                                 class="voucher-poster-img">
+                            <span class="poster-overlay-badge">{{ c.pelicula.badge_poster }}</span>
+                        </div>
+                        <div class="voucher-movie-details">
+                            <div class="movie-tags-list">
+                                <span class="badge-meta">{{ c.pelicula.clasificacion }}</span>
+                                <span class="badge-meta">{{ c.pelicula.duracion }}</span>
+                                <span class="badge-meta badge-highlight-purple">{{ c.pelicula.formato_sala }}</span>
+                                <span class="badge-meta">{{ c.pelicula.idioma }}</span>
+                            </div>
+                            <h2 class="voucher-movie-title">{{ c.pelicula.titulo }}</h2>
+                            <p class="voucher-movie-direction">{{ c.pelicula.direccion_sonido }}</p>
+
+                            <div class="function-triad-grid">
+                                <div class="triad-item">
+                                    <span class="triad-label">FECHA</span>
+                                    <span class="triad-value">{{ c.pelicula.fecha }}</span>
+                                </div>
+                                <div class="triad-item">
+                                    <span class="triad-label">HORARIO</span>
+                                    <span class="triad-value text-amber-bold">{{ c.pelicula.horario }}</span>
+                                </div>
+                                <div class="triad-item">
+                                    <span class="triad-label">COMPLEJO</span>
+                                    <span class="triad-value">{{ c.pelicula.complejo }}</span>
+                                </div>
+                            </div>
+
+                            <div class="selected-seats-strip">
+                                <div class="seats-strip-left">
+                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="#f59e0b">
+                                        <path d="M4 18v3h3v-3h10v3h3v-3h1a1 1 0 0 0 1-1v-8a4 4 0 0 0-4-4h-1V3a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v2H6a4 4 0 0 0-4 4v8a1 1 0 0 0 1 1h1z"/>
+                                    </svg>
+                                    <div class="seats-strip-text">
+                                        <span class="seats-strip-label">BUTACAS SELECCIONADAS</span>
+                                        <span class="seats-strip-value">{{ c.pelicula.butacas }}</span>
+                                    </div>
+                                </div>
+                                <span class="badge-vip-box">{{ c.pelicula.badge_butacas }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sección Central del Código QR -->
+                    <div class="qr-access-section">
+                        <span class="qr-section-instruction">ESCANEAR PARA ACCESO DIRECTO A SALA 1</span>
+                        
+                        <!-- Contenedor QR con puntito central Cinema Paradiso -->
+                        <div class="qr-code-wrapper">
+                            <svg class="qr-svg-graphic" viewBox="0 0 220 220" width="180" height="180">
+                                <!-- Fondo blanco del QR -->
+                                <rect width="220" height="220" fill="#ffffff" rx="10"/>
+                                
+                                <!-- Patrones esquineros característicos de QR -->
+                                <rect x="20" y="20" width="50" height="50" fill="#000000" rx="4"/>
+                                <rect x="28" y="28" width="34" height="34" fill="#ffffff" rx="2"/>
+                                <rect x="36" y="36" width="18" height="18" fill="#000000" rx="1"/>
+
+                                <rect x="150" y="20" width="50" height="50" fill="#000000" rx="4"/>
+                                <rect x="158" y="28" width="34" height="34" fill="#ffffff" rx="2"/>
+                                <rect x="166" y="36" width="18" height="18" fill="#000000" rx="1"/>
+
+                                <rect x="20" y="150" width="50" height="50" fill="#000000" rx="4"/>
+                                <rect x="28" y="158" width="34" height="34" fill="#ffffff" rx="2"/>
+                                <rect x="36" y="166" width="18" height="18" fill="#000000" rx="1"/>
+
+                                <!-- Módulos de datos simulados -->
+                                <rect x="80" y="20" width="10" height="10" fill="#000000"/>
+                                <rect x="100" y="20" width="10" height="20" fill="#000000"/>
+                                <rect x="120" y="20" width="20" height="10" fill="#000000"/>
+                                <rect x="80" y="40" width="20" height="10" fill="#000000"/>
+                                <rect x="110" y="40" width="10" height="10" fill="#000000"/>
+                                <rect x="130" y="40" width="10" height="20" fill="#000000"/>
+                                <rect x="80" y="60" width="10" height="10" fill="#000000"/>
+                                <rect x="100" y="60" width="20" height="10" fill="#000000"/>
+
+                                <!-- Módulos centrales -->
+                                <rect x="20" y="80" width="10" height="20" fill="#000000"/>
+                                <rect x="40" y="80" width="20" height="10" fill="#000000"/>
+                                <rect x="70" y="80" width="10" height="10" fill="#000000"/>
+                                <rect x="90" y="80" width="10" height="20" fill="#000000"/>
+                                <rect x="120" y="80" width="10" height="10" fill="#000000"/>
+                                <rect x="140" y="80" width="20" height="10" fill="#000000"/>
+                                <rect x="170" y="80" width="10" height="20" fill="#000000"/>
+                                <rect x="190" y="80" width="10" height="10" fill="#000000"/>
+
+                                <rect x="30" y="100" width="10" height="20" fill="#000000"/>
+                                <rect x="50" y="100" width="10" height="10" fill="#000000"/>
+                                <rect x="70" y="100" width="20" height="10" fill="#000000"/>
+                                <rect x="130" y="100" width="20" height="10" fill="#000000"/>
+                                <rect x="160" y="100" width="10" height="20" fill="#000000"/>
+                                <rect x="180" y="100" width="20" height="10" fill="#000000"/>
+
+                                <!-- Isotipo central rojo Cinema Paradiso -->
+                                <rect x="98" y="98" width="24" height="24" fill="#e50914" rx="4"/>
+                                <rect x="104" y="104" width="12" height="12" fill="#ffffff" rx="2"/>
+
+                                <!-- Módulos inferiores -->
+                                <rect x="80" y="130" width="10" height="20" fill="#000000"/>
+                                <rect x="100" y="130" width="20" height="10" fill="#000000"/>
+                                <rect x="130" y="130" width="10" height="20" fill="#000000"/>
+                                <rect x="150" y="130" width="20" height="10" fill="#000000"/>
+                                <rect x="180" y="130" width="10" height="10" fill="#000000"/>
+
+                                <rect x="80" y="160" width="20" height="10" fill="#000000"/>
+                                <rect x="110" y="160" width="10" height="20" fill="#000000"/>
+                                <rect x="130" y="160" width="20" height="10" fill="#000000"/>
+                                <rect x="160" y="160" width="10" height="10" fill="#000000"/>
+                                <rect x="180" y="160" width="20" height="10" fill="#000000"/>
+
+                                <rect x="80" y="180" width="10" height="20" fill="#000000"/>
+                                <rect x="100" y="180" width="20" height="10" fill="#000000"/>
+                                <rect x="130" y="180" width="10" height="10" fill="#000000"/>
+                                <rect x="150" y="180" width="20" height="20" fill="#000000"/>
+                                <rect x="180" y="180" width="10" height="20" fill="#000000"/>
+                            </svg>
+                        </div>
+
+                        <span class="qr-alphanumeric-code">{{ c.codigo_qr }}</span>
+                        <p class="qr-hint-text">
+                            Presentá este código directamente en el molinete o lector óptico del personal de sala. No requiere canje por ticket impreso.
+                        </p>
+                    </div>
+
+                    <!-- Servicios & Adicionales Incluidos -->
+                    <div class="voucher-services-block">
+                        <div class="services-block-header">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="#f59e0b">
+                                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14h-2v-4H6v-2h4V7h2v4h4v2h-4v4z"/>
+                            </svg>
+                            <h3>Servicios & Adicionales Incluidos en esta Reserva</h3>
+                        </div>
+
+                        <div class="services-mini-cards-grid">
+                            {% for add in c.adicionales %}
+                                <div class="service-mini-card">
+                                    <div class="mini-card-icon">
+                                        {% if add.icono == 'combo' %}
+                                            <svg viewBox="0 0 24 24" width="18" height="18" fill="#f59e0b">
+                                                <path d="M7 5a2.5 2.5 0 0 1 4.9-0.7A2.5 2.5 0 0 1 17 5a2.5 2.5 0 0 1 2 2.4V8H5V7.4A2.5 2.5 0 0 1 7 5zm-1 5h12l-1.5 11h-9L6 10zm4 2v6h2v-6h-2zm4 0v6h2v-6h-2z"/>
+                                            </svg>
+                                        {% else %}
+                                            <span class="parking-letter">P</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="mini-card-body">
+                                        <div class="mini-card-title-line">
+                                            <span class="mini-card-title">{{ add.nombre }}</span>
+                                            <span class="badge-mini-status">{{ add.estado }}</span>
+                                        </div>
+                                        <span class="mini-card-detail">{{ add.detalle }}</span>
+                                        {% if add.subdetalle %}
+                                            <span class="mini-card-patent">{{ add.subdetalle }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Botones de Acción Rápida del Voucher -->
+                    <div class="voucher-actions-bar">
+                        <button type="button" class="btn-voucher-action" onclick="window.print();">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            <span>Descargar PDF</span>
+                        </button>
+                        <button type="button" class="btn-voucher-action" onclick="alert('Pase guardado en Apple Wallet / Google Wallet');">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                                <path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
+                            </svg>
+                            <span>Guardar en Wallet</span>
+                        </button>
+                        <button type="button" class="btn-voucher-action" onclick="alert('Comprobante reenviado a tu correo');">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                                <polyline points="22,6 12,13 2,6"></polyline>
+                            </svg>
+                            <span>Reenviar Email</span>
+                        </button>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- Columna Derecha: Facturación, Cancelación e Instrucciones -->
+            <aside class="details-column" aria-label="Detalles de Facturación y Normativas">
+
+                <!-- Bloque 1: Detalle de Facturación AFIP -->
+                <div class="confirmation-card-block">
+                    <div class="card-block-header">
+                        <div class="header-title-row">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="#e50914">
+                                <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                            </svg>
+                            <h3>Detalle de Facturación</h3>
+                        </div>
+                        <span class="afip-badge">{{ c.facturacion.tipo }}</span>
+                    </div>
+
+                    <div class="billing-items-list">
+                        {% for fi in c.facturacion['items'] %}
+                            <div class="billing-row">
+                                <span class="billing-name">{{ fi.descripcion }}</span>
+                                <span class="billing-price">{{ fi.monto }}</span>
+                            </div>
+                        {% endfor %}
+                        <div class="billing-row">
+                            <span class="billing-name fee-free-text">Cargo por Servicio Web 100% BONIFICADO</span>
+                            <span class="billing-price fee-free-text">{{ c.facturacion.cargo_servicio_monto }}</span>
+                        </div>
+                    </div>
+
+                    <div class="billing-totals-row">
+                        <span class="billing-total-label">Total Abonado</span>
+                        <span class="billing-total-amount">{{ c.facturacion.total }}</span>
+                    </div>
+
+                    <div class="billing-iva-row">
+                        <span>IVA Responsable Inscripto (21%) incluido</span>
+                        <span class="billing-iva-amount">{{ c.facturacion.iva_discriminado }}</span>
+                    </div>
+
+                    <div class="card-payment-receipt">
+                        <div class="receipt-card-left">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="#9ca3af">
+                                <path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-0.9-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>
+                            </svg>
+                            <div class="receipt-card-texts">
+                                <span class="receipt-card-name">{{ c.facturacion.tarjeta_info }}</span>
+                                <span class="receipt-card-quota">{{ c.facturacion.cuotas_info }}</span>
+                            </div>
+                        </div>
+                        <span class="receipt-status-check">✓</span>
+                    </div>
+
+                    <div class="cae-footer-line">
+                        <span>{{ c.facturacion.cae }} • {{ c.facturacion.vto_cae }}</span>
+                    </div>
+                </div>
+
+                <!-- Bloque 2: Política de Cancelación -->
+                <div class="confirmation-card-block">
+                    <div class="card-block-header">
+                        <div class="header-title-row">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#f59e0b" stroke-width="2">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                            </svg>
+                            <h3>Política de Cancelación</h3>
+                        </div>
+                    </div>
+
+                    <div class="cancellation-policy-body">
+                        <div class="cancellation-tag-row">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#f59e0b" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                            <span>Cancelación gratuita habilitada</span>
+                        </div>
+                        <p class="cancellation-desc">
+                            Podés autogestionar la cancelación de tu reserva hasta <strong>2 horas antes</strong> del inicio de la función (<strong>{{ c.cancelacion.limite_texto }}</strong>). Las butacas se liberan automáticamente en tiempo real y el importe se reintegra al medio de pago original.
+                        </p>
+                        <button type="button" class="btn-cancel-reservation" onclick="confirm('¿Estás seguro de que deseas gestionar o cancelar esta reserva?')">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="15" y1="9" x2="9" y2="15"></line>
+                                <line x1="9" y1="9" x2="15" y2="15"></line>
+                            </svg>
+                            <span>Gestionar o Cancelar Reserva</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Bloque 3: Instrucciones de Ingreso -->
+                <div class="confirmation-card-block">
+                    <div class="card-block-header">
+                        <div class="header-title-row">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#60a5fa" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="16" x2="12" y2="12"></line>
+                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                            </svg>
+                            <h3>Instrucciones de Ingreso</h3>
+                        </div>
+                    </div>
+
+                    <ol class="instructions-steps-list">
+                        <li>
+                            <span class="step-num">1</span>
+                            <div class="step-content">
+                                <strong>Llegada anticipada:</strong> Te recomendamos ingresar 15 minutos antes para retirar tus combos en el Tótem Express de Candy Bar sin filas.
+                            </div>
+                        </li>
+                        <li>
+                            <span class="step-num">2</span>
+                            <div class="step-content">
+                                <strong>Acceso sin contacto:</strong> No es obligatorio imprimir el voucher en papel. El lector óptico escanea la pantalla de tu teléfono aún en modo oscuro.
+                            </div>
+                        </li>
+                        <li>
+                            <span class="step-num">3</span>
+                            <div class="step-content">
+                                <strong>Efectos 4D D-BOX:</strong> Las butacas cuentan con sincronización de movimiento y viento. No se permite apoyar botellas abiertas sobre el apoyabrazos activo.
+                            </div>
+                        </li>
+                    </ol>
+                </div>
+
+            </aside>
+
+        </div>
+
+        <!-- 4. Barra Inferior de Navegación y Respaldo -->
+        <footer class="confirmation-bottom-nav">
+            <div class="consumer-protection-badge">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#10b981" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                    <polyline points="9 12 11 14 15 10"></polyline>
+                </svg>
+                <span>Tu compra está respaldada por Cinema Paradiso Argentina bajo los estándares de defensa del consumidor.</span>
+            </div>
+            <div class="nav-actions-right">
+                <a href="#mis-compras" class="btn-nav-outline">Ir a Mis Compras</a>
+                <a href="{{ url_for('home.index') }}" class="btn-nav-primary">Volver a Cartelera</a>
+            </div>
+        </footer>
+
+    </div>
+</div>
+{% endblock %}
