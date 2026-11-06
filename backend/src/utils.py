@@ -1,6 +1,8 @@
 import urllib.parse
-import datetime
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
+ZONA_HORARIA_LOCAL = ZoneInfo("America/Argentina/Buenos_Aires")
 def construir_error_api(
     code: str, message: str, description: str, level: str = "error"
 ) -> dict:
