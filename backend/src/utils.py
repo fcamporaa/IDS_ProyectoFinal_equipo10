@@ -1,6 +1,8 @@
 import urllib.parse
 from datetime import datetime
 from zoneinfo import ZoneInfo
+from decimal import Decimal, InvalidOperation
+#import para validaciones genericas de datos de entrada. 
 
 from src.constants import ROL_ADMINISTRADOR
 from src.repositories.usuarios_repository import buscar_usuario_por_id_db
