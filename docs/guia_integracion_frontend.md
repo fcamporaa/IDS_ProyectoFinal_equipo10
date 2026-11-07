@@ -136,6 +136,7 @@ def enviar_login_al_backend(email: str, contrasena: str):
 ```python
 from flask import Blueprint, render_template, request, session, redirect, url_for, flash
 from services.auth_service import enviar_login_al_backend
+from utils.errores import extraer_mensaje_error
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 
@@ -156,8 +157,8 @@ def login():
             flash(f"¡Bienvenido, {resultado['usuario']['nombre']}!", "exito")
             return redirect(url_for("home.index"))
         else:
-            # Error devuelto por el backend
-            mensaje_error = resultado.get("message") or "Credenciales inválidas."
+            # 4. Extraer el mensaje oficial del backend o mensaje de red
+            mensaje_error = extraer_mensaje_error(resultado, "Credenciales inválidas.")
             flash(mensaje_error, "error")
 
     return render_template("auth/login.html")
