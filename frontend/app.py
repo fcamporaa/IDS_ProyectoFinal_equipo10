@@ -20,6 +20,7 @@ app.config["SECRET_KEY"] = os.environ["SECRET_KEY"]
 
 # Registro de rutas (Blueprints)
 app.register_blueprint(home_bp)
+app.register_blueprint(compra_bp)
 app.register_blueprint(compras_bp)
 app.register_blueprint(peliculas_bp)
 app.register_blueprint(dashboard_bp)
