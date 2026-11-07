@@ -1,0 +1,19 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: cine_paradiso_db
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_general_ci
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: proyecto_integrador
+    ports:
+      - "3307:3306"
+    volumes:
+      - ./db/init_db.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./db/seed_data.sql:/docker-entrypoint-initdb.d/02_seeds.sql:ro
+      - cine_db_data:/var/lib/mysql
+
+volumes:
+  cine_db_data:
+
