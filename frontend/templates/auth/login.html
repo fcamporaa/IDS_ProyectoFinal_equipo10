@@ -1,0 +1,36 @@
+{% extends 'layout.html' %}
+
+{% block title %}Iniciar sesión | Cinema Paradiso{% endblock %}
+
+{% block content %}
+<section class="auth-page">
+    <div class="auth-shell auth-shell--centered">
+        <div class="auth-panel">
+            <div class="auth-form-wrap">
+                <p class="auth-eyebrow">CUENTA CLIENTE</p>
+                <h1>Qué bueno verte.</h1>
+                <p class="auth-intro">Ingresá a tu cuenta para continuar con tu próxima función.</p>
+
+                {% if mensaje_pendiente %}
+                    <p class="auth-notice" role="status">{{ mensaje_pendiente }}</p>
+                {% endif %}
+
+                <form class="auth-form" action="{{ url_for('auth.login') }}" method="post">
+                    {% with id='login-email', name='email', label='Correo electrónico', input_type='email', autocomplete='email', placeholder='nombre@correo.com', required=true %}
+                        {% include 'components/form_field.html' %}
+                    {% endwith %}
+                    {% with id='login-password', name='contrasena', label='Contraseña', input_type='password', autocomplete='current-password', placeholder='Tu contraseña', required=true %}
+                        {% include 'components/form_field.html' %}
+                    {% endwith %}
+                    {% with texto='Iniciar sesión', tipo='submit', clase_extra='auth-submit' %}
+                        {% include 'components/button.html' %}
+                    {% endwith %}
+                </form>
+
+                <p class="auth-switch">¿Todavía no tenés cuenta? <a href="{{ url_for('auth.registro') }}">Crear una cuenta</a></p>
+                <a class="auth-back-link" href="{{ url_for('home.index') }}">Volver a la cartelera</a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

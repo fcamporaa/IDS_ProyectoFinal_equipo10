@@ -60,9 +60,11 @@
                     <span class="user-name">{{ usuario_activo.nombre | default('Mi Perfil') }}</span>
                 </a>
             {% else %}
-                <a href="#login" class="nav-login-btn">
-                    Iniciar Sesión
-                </a>
+                {% if not ocultar_acceso_login | default(false) %}
+                    <a href="{{ url_for('auth.login') }}" class="nav-login-btn">
+                        Iniciar Sesión
+                    </a>
+                {% endif %}
             {% endif %}
         </div>
     </div>
