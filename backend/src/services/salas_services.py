@@ -6,15 +6,7 @@ from src.repositories.salas_repository import (
     obtener_butacas_por_sala_db,
     actualizar_sala_db,
 )
-from src.utils import construir_error_api
-
-
-def _error_no_encontrado(mensaje: str) -> ValueError:
-    """Helper para lanzar error 404."""
-    return ValueError(
-        construir_error_api("error.recurso.no_encontrado", "Recurso no encontrado", mensaje),
-        404,
-    )
+from src.utils import error_no_encontrado
 
 
 def listar_locales() -> list[dict]:
@@ -36,7 +28,7 @@ def listar_salas_por_local(id_local: int) -> list[dict]:
     # Verificar que el local exista
     local = buscar_local_por_id_db(id_local)
     if not local:
-        raise _error_no_encontrado(f"No existe el complejo con ID {id_local}.")
+        raise error_no_encontrado(f"No existe el complejo con ID {id_local}.")
 
     # Traer las salas del local con su capacidad calculada
     salas = obtener_salas_por_local_db(id_local)
@@ -57,7 +49,7 @@ def obtener_detalle_sala(id_sala: int) -> dict:
     # Verificar que la sala exista
     sala = buscar_sala_por_id_db(id_sala)
     if not sala:
-        raise _error_no_encontrado(f"No existe la sala con ID {id_sala}.")
+        raise error_no_encontrado(f"No existe la sala con ID {id_sala}.")
 
     # Obtener la distribución de butacas
     butacas_db = obtener_butacas_por_sala_db(id_sala)
@@ -87,7 +79,7 @@ def actualizar_configuracion_sala(id_sala: int, datos: dict) -> dict:
     # Verificar que la sala exista antes de actualizar
     sala = buscar_sala_por_id_db(id_sala)
     if not sala:
-        raise _error_no_encontrado(f"No existe la sala con ID {id_sala}.")
+        raise error_no_encontrado(f"No existe la sala con ID {id_sala}.")
 
     # Guardar cambios y devolver los datos actualizados
     actualizar_sala_db(id_sala, datos)
@@ -100,5 +92,3 @@ def actualizar_configuracion_sala(id_sala: int, datos: dict) -> dict:
         "capacidad": int(sala_actualizada["capacidad"] or 0),
         "activa": bool(sala_actualizada["activa"]),
     }
-
-
