@@ -50,7 +50,7 @@ flowchart TD
 
     subgraph Funnel ["Módulo C: Embudo de Compra Cliente"]
         T6["Tarea 6: Detalle Película & Horarios"]
-        T7["Tarea 7: Mapa de Butacas en Vivo"]
+        T7["Tarea 7: Selección de Butacas (Mapa de Sala)"]
         T8["Tarea 8: Selección Servicios Candy"]
         T9["Tarea 9: Checkout Unificado & Voucher QR"]
     end
@@ -184,14 +184,30 @@ flowchart TD
   - `frontend/templates/pelicula_detalle.html`
 - **Qué tiene que cumplir:**
   - La ruta `/peliculas/<id>` carga la información real desde el backend.
+  - **Eliminar fechas hardcodeadas:** Quitar las pestañas fijas de octubre (`"Hoy 24 Oct"`, `"Sábado 26 Oct"`, etc.). Las fechas deben generarse dinámicamente con `datetime.now()` a partir de los horarios reales (`inicio`) de las funciones de MySQL.
   - Agrupa los horarios por complejo (Centro, Palermo, Belgrano) y formato (`2D`, `3D`, `4D`).
   - Al hacer clic en un horario, redirige a `/compra/butacas?id_funcion=<id>`.
 
 ---
 
-#### Tarea 7: Mapa de Butacas en Tiempo Real
+#### Tarea 7: Selección y Disponibilidad de Butacas (Mapa de Sala)
 - **Rama:** `feature/cliente-seleccion-butacas`
-- **Objetivo:** Conectar la pantalla `seleccion_butacas.html` con el endpoint de disponibilidad real. Las butacas ocupadas de la base de datos se marcan no clickeables, y las libres se pueden seleccionar. El submit envía las butacas elegidas al flujo de compra.
+- **Objetivo:** Conectar la pantalla `seleccion_butacas.html` con el endpoint de disponibilidad de la función. Las butacas ocupadas en la base de datos se marcan deshabilitadas y las libres se pueden seleccionar. El submit envía las butacas elegidas al flujo de compra en sesión.
+- **Restricción de Cátedra:** PROHIBIDO el uso de WebSockets (`ws://`, `wss://`, Socket.IO) o peticiones asíncronas en tiempo real.
+- **Cómo funciona el flujo en SSR (Arquitectura Simple y Robusta):**
+  1. **Lectura Inicial (`GET`):** Al ingresar a `/compra/butacas?id_funcion=...`, el servidor Frontend consulta en Python `GET /funciones/<id>/butacas` y renderiza el mapa estático con la disponibilidad actual de MySQL (butacas ocupadas bloqueadas en oscuro y libres clickeables).
+  2. **Interacción y Temporizador Global Persistente:**  
+     - El usuario selecciona sus asientos usando JS puramente visual en el cliente (sin llamadas de red).
+     - **El temporizador no se reinicia al cambiar de página:** Al seleccionar butacas y comenzar la compra, se guarda en sesión el timestamp de expiración (`expira_en = now + 10 minutos`).
+     - El tiempo corre de forma continua y sincronizada a lo largo de todo el embudo (`Butacas` -> `Candy Bar` -> `Checkout`).
+     - **Manejo de Expiración:** Si el contador llega a `00:00` en el navegador (o si el usuario intenta enviar un formulario con tiempo vencido), la reserva temporal se anula y el sistema redirige automáticamente a la ficha de la película (`/peliculas/<id>`) mostrando una alerta clara: `flash("El tiempo asignado para completar tu compra ha expirado. Por favor seleccioná tus butacas nuevamente.", "error")`.
+  3. **Persistencia en Sesión (`POST`):** Al presionar "Continuar al Candy Bar", envía un formulario estándar `POST` con los IDs de butacas elegidas, que se guardan en la sesión de Flask (`session["compra_actual"]`).
+  4. **Garantía contra Venta Duplicada (Concurrencia en BD):**  
+     La regla del enunciado (*"Una butaca no puede venderse dos veces en la misma función"*) está garantizada a nivel transaccional en el Backend:
+     - En `POST /compras`, MySQL ejecuta una transacción con bloqueo `FOR UPDATE` sobre las butacas solicitadas.
+     - Si dos usuarios intentan comprar la misma butaca simultáneamente, el primero que confirma la compra la adquiere.
+     - Para el segundo usuario, el Backend rechaza inmediatamente la transacción con `HTTP 409 Conflicto` ("Una de las butacas acaba de ser reservada").
+     - El Frontend captura ese error 409 y muestra un mensaje `flash("La butaca seleccionada ya fue ocupada por otro usuario. Por favor seleccioná otra.", "error")`, redirigiéndolo nuevamente al mapa de butacas actualizado.
 - **Endpoints a consumir:**
   - `GET /funciones/<id>/butacas`
   - `GET /funciones/<id>`
@@ -199,7 +215,7 @@ flowchart TD
   - `frontend/services/funciones_service.py`
   - `frontend/routes/compra_routes.py`
   - `frontend/templates/seleccion_butacas.html`
-  - `frontend/static/js/seleccion_butacas.js` (solo selección visual y cálculo de subtotal)
+  - `frontend/static/js/seleccion_butacas.js` (solo selección visual, conteo de butacas y cálculo de subtotal sin AJAX)
 - **Qué tiene que cumplir:**
   - Carga la matriz de butacas real para la función indicada.
   - Asientos ocupados en la BD se renderizan bloqueados (sin poder seleccionarse).
@@ -271,19 +287,25 @@ flowchart TD
 
 #### Tarea 11: Navbar, Enlaces Globales y Adaptación Mobile Responsive
 - **Rama:** `feature/ui-navbar-mobile`
-- **Objetivo:** Corregir y enlazar todos los accesos del Navbar (`components/navbar.html`) y Footer: links a Cartelera, Login/Logout, Registro, Perfil de Usuario, Dashboard de Admin y Mi Historial. Implementar menú hamburguesa / drawer responsive en celulares y tablets sin usar AJAX, y pulir el viewport mobile en grillas de cartelera y mapa de butacas.
+- **Objetivo:** Corregir y enlazar todos los accesos del Navbar (`components/navbar.html`) y Footer: links a Cartelera, Login/Logout, Registro, Perfil de Usuario, Dashboard de Admin y Mi Historial. Implementar la **Barra de Navegación Inferior Móvil (Bottom Navigation Bar)** y optimizar grillas y vistas en pantallas celulares y tablets (< 768px).
 - **Archivos a intervenir:**
   - `frontend/templates/components/navbar.html` y `footer.html`
-  - `frontend/static/css/components/navbar.css`
+  - Crear `frontend/templates/components/bottom_nav.html` (o integrar en layout)
+  - `frontend/static/css/components/navbar.css` y `bottom_nav.css`
   - `frontend/static/css/base.css` (media queries para `< 768px`)
-  - `frontend/static/js/navbar.js` (apertura y cierre de menú hamburguesa móvil)
+  - `frontend/static/js/navbar.js`
 - **Qué tiene que cumplir:**
-  - Enlaces de Navbar dinámicos según la sesión:
+  - **Enlaces de Navbar de Escritorio:** Dinámicos según la sesión:
     - Invitado: Cartelera, Iniciar Sesión, Registrarse.
     - Cliente: Cartelera, Mis Compras, Mi Perfil, Cerrar Sesión.
     - Administrador: Cartelera, Dashboard (`/admin/dashboard`), Películas, Funciones, Servicios, Escanear QR, Cerrar Sesión.
-  - En pantallas móviles (< 768px), el Navbar colapsa en un menú hamburguesa funcional.
-  - Grillas de cartelera y pantalla de selección de butacas ajustadas para no desbordar en pantallas pequeñas.
+  - **Barra Inferior Móvil (Bottom Nav Bar):** Según los mockups de Stitch, en dispositivos móviles (< 768px) se muestra una barra fija oscura en la parte inferior con 4 accesos directos con icono y texto:
+    - 🎬 **Cartelera** (`/`)
+    - 🍿 **Candy Bar** (`/compra/servicios` o catálogo)
+    - 🎟️ **Entradas QR** (`/perfil#entradas`)
+    - 👤 **Perfil** (`/perfil` o login si es invitado)
+  - En móviles, el contenido principal debe tener un `padding-bottom` adecuado para que la barra inferior no tape botones ni formularios ("Continuar", "Confirmar").
+  - Grillas de cartelera y pantalla de selección de butacas ajustadas para no desbordar horizontalmente en pantallas pequeñas.
 
 ---
 
@@ -297,7 +319,7 @@ flowchart TD
 | **4** | Validador de Ingreso QR | `feature/admin-validador-qr` | Backoffice Admin |
 | **5** | Conexión Registro de Cliente | `feature/auth-registro-frontend` | Cuentas / Auth |
 | **6** | Detalle Película y Horarios | `feature/cliente-detalle-pelicula` | Embudo Cliente |
-| **7** | Mapa de Butacas en Vivo | `feature/cliente-seleccion-butacas` | Embudo Cliente |
+| **7** | Selección de Butacas (Mapa de Sala) | `feature/cliente-seleccion-butacas` | Embudo Cliente |
 | **8** | Selección Candy Bar | `feature/cliente-seleccion-servicios` | Embudo Cliente |
 | **9** | Checkout y Voucher QR | `feature/cliente-checkout-confirmacion` | Embudo Cliente |
 | **10** | Perfil, Historial y Reseñas | `feature/cliente-perfil-historial` | Cliente / Fidelización |

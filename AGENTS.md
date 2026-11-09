@@ -32,7 +32,7 @@ Actúas como ingeniero de software par (pair-programmer) asistiendo a un equipo 
 
 ## 2. Invariantes y Restricciones Técnicas
 - **Paradigma:** Programación procedural y modular por funciones. Prohibido definir clases (`class`) para modelos, controladores o servicios, y prohibido usar ORMs (SQLAlchemy, etc.).
-- **Comunicación Cliente-Servidor:** Renderizado en servidor (SSR). Prohibido usar `fetch()`, `axios` o AJAX en JavaScript para comunicarse con el Backend. Toda petición del navegador se realiza mediante enlaces o formularios HTML (`GET`/`POST`) hacia `/frontend`.
+- **Comunicación Cliente-Servidor:** Renderizado en servidor (SSR). Prohibido usar `fetch()`, `axios`, AJAX, WebSockets (`ws://`, `wss://`, Socket.IO) o SSE (Server-Sent Events) en JavaScript para comunicarse con el Backend. Toda petición del navegador se realiza mediante enlaces o formularios HTML (`GET`/`POST`) hacia `/frontend`.
 - **Base de Datos:** Fechas y horas deben almacenarse en un único campo `DATETIME` en MySQL (prohibido separar en `DATE` y `TIME`).
 - **Estilo de Código:** Prohibido usar variables globales, ciclos `while True` o comentarios redundantes línea por línea. Comentar únicamente decisiones de diseño no evidentes.
 - **Dependencias:** Python 3.10 a 3.12. Prohibido añadir paquetes en `requirements.txt` sin autorización explícita del usuario.
