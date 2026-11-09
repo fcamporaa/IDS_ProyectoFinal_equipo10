@@ -10,33 +10,7 @@ from src.repositories.servicios_repository import (
     actualizar_servicio_db,
     dar_de_baja_servicio_db,
 )
-from src.validators.auth_validators import validar_token_acceso
-from src.services.auth_services import obtener_perfil_usuario
 from src.utils import construir_error_api
-
-
-def autorizar_administrador(token: str) -> dict:
-    """Valida el token y devuelve el perfil únicamente si el usuario es administrador."""
-    usuario_id = validar_token_acceso(token)
-    if usuario_id is None:
-        return construir_error_api(
-            "error.auth.token_invalido",
-            "Token inválido",
-            "El token es inválido o expiró.",
-        )
-
-    perfil = obtener_perfil_usuario(usuario_id)
-    if "errors" in perfil:
-        return perfil
-
-    if perfil.get("rol") != "ADMINISTRADOR":
-        return construir_error_api(
-            "error.auth.permisos_insuficientes",
-            "Permisos insuficientes",
-            "Se requiere el rol ADMINISTRADOR para realizar esta acción.",
-        )
-
-    return perfil
 
 
 def _serializar_servicio(servicio: dict) -> dict:
