@@ -26,3 +26,9 @@ def formatear_fecha_corta(dia: date) -> str:
 def formatear_hora(momento: datetime) -> str:
     """2026-11-15 20:00 -> '20:00 hs'."""
     return f"{momento:%H:%M} hs"
+
+
+def formatear_precio(valor: float) -> str:
+    """12500 -> '$12.500'; 8500.5 -> '$8.500,50'."""
+    texto = f"{valor:,.0f}" if valor == int(valor) else f"{valor:,.2f}"
+    return "$" + texto.replace(",", "X").replace(".", ",").replace("X", ".")
