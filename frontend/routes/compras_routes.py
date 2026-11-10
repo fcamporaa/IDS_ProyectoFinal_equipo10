@@ -9,7 +9,7 @@ from validators.compras_validators import validar_formulario_compra
 compras_bp = Blueprint("compras", __name__)
 
 
-@compras_bp.route("/compra/checkout", methods=["GET"])
+@compras_bp.route("/compra/checkout-integracion", methods=["GET"])
 def checkout():
     return render_template("client/checkout.html", csrf_token=crear_token_csrf())
 
@@ -23,12 +23,16 @@ def confirmar_compra():
         flash("Necesitás iniciar sesión antes de comprar. El login web pertenece a US-02.", "error")
         return redirect(url_for("home.index"))
     try:
-        datos = validar_formulario_compra(request.form)
+        datos = validar_formulario_compra(
+            request.form,
+            session.get("servicios_seleccionados", []),
+        )
     except ValueError as error:
         flash(str(error), "error")
         return redirect(url_for("compras.checkout"))
     compra, estado = enviar_compra_al_backend(datos, token)
     if estado == 201 and isinstance(compra, dict) and type(compra.get("id_compra")) is int:
+        session.pop("servicios_seleccionados", None)
         return redirect(url_for("compras.compra_exitosa", id_compra=compra["id_compra"]))
     flash("No se pudo confirmar la compra. Revisá la función, las butacas y la sesión.", "error")
     return redirect(url_for("compras.checkout"))

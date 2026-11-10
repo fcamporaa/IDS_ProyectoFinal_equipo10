@@ -118,6 +118,20 @@
     transition: color 0.2s ease, transform 0.2s ease;
 }
 
+button.btn-skip-step-link,
+button.btn-continue-checkout,
+button.link-skip-bottom {
+    border: 0;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+button.btn-skip-step-link,
+button.link-skip-bottom {
+    background: transparent;
+    padding: 0;
+}
+
 .btn-skip-step-link:hover {
     color: #ffffff;
     transform: translateX(2px);

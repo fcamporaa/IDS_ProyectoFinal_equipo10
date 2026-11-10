@@ -1,4 +1,19 @@
-from flask import Blueprint, render_template
+from flask import (
+    Blueprint,
+    flash,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
+)
+
+from services.servicios_service import (
+    formatear_monto,
+    obtener_servicios_disponibles,
+)
+from utils.csrf import crear_token_csrf, validar_token_csrf
+from validators.compras_validators import validar_servicios_seleccionados
 
 compra_bp = Blueprint("compra", __name__, url_prefix="/compra")
 
@@ -154,12 +169,73 @@ def seleccion_butacas():
     return render_template("seleccion_butacas.html", c=datos_compra)
 
 
-@compra_bp.route("/servicios")
+@compra_bp.route("/servicios", methods=["GET", "POST"])
 def seleccion_servicios():
-    """
-    Renderiza la pantalla de selección de servicios complementarios y combos (Candy Bar).
-    Muestra el catálogo con combos, pochoclos, bebidas y extras, junto al resumen de compra acumulado.
-    """
+    """Renderiza Candy Bar y conserva sus cantidades en la sesión Flask."""
+    if request.method == "POST":
+        if not validar_token_csrf(request.form.get("csrf_token", "")):
+            flash("Formulario vencido o CSRF inválido.", "error")
+            return redirect(url_for("compra.seleccion_servicios"))
+
+        if request.form.get("accion") == "omitir":
+            session["servicios_seleccionados"] = []
+            return redirect(url_for("compras.checkout"))
+
+        try:
+            servicios = validar_servicios_seleccionados(
+                request.form.get("servicios_json", "[]")
+            )
+        except ValueError as error:
+            flash(str(error), "error")
+            return redirect(url_for("compra.seleccion_servicios"))
+
+        catalogo = obtener_servicios_disponibles()
+        if catalogo is None:
+            flash("No se pudo validar el catálogo de servicios.", "error")
+            return redirect(url_for("compra.seleccion_servicios"))
+        ids_disponibles = {servicio["id_servicio"] for servicio in catalogo}
+        if any(item["id_servicio"] not in ids_disponibles for item in servicios):
+            flash(
+                "La selección contiene un servicio que ya no está disponible.",
+                "error",
+            )
+            return redirect(url_for("compra.seleccion_servicios"))
+
+        session["servicios_seleccionados"] = servicios
+        return redirect(url_for("compras.checkout"))
+
+    servicios_api = obtener_servicios_disponibles()
+    if servicios_api is None:
+        flash("No se pudo cargar el catálogo de servicios.", "error")
+        servicios_api = []
+
+    cantidades = {
+        item["id_servicio"]: item["cantidad"]
+        for item in session.get("servicios_seleccionados", [])
+    }
+    servicios = [
+        {**servicio, "cantidad": cantidades.get(servicio["id_servicio"], 0)}
+        for servicio in servicios_api
+    ]
+    subtotal_entradas = 17000
+    items_seleccionados = [
+        {
+            "id_servicio": servicio["id_servicio"],
+            "nombre": servicio["nombre"],
+            "descripcion": servicio["descripcion"],
+            "cantidad": servicio["cantidad"],
+            "subtotal_formato": formatear_monto(
+                servicio["precio"] * servicio["cantidad"]
+            ),
+        }
+        for servicio in servicios
+        if servicio["cantidad"] > 0
+    ]
+    subtotal_candy = sum(
+        servicio["precio"] * servicio["cantidad"]
+        for servicio in servicios
+    )
+
     datos_compra = {
         "pelicula": {
             "id_pelicula": 2,
@@ -177,135 +253,44 @@ def seleccion_servicios():
                 {
                     "descripcion": "2x Entrada General 4D",
                     "detalle": "Butacas E-08, E-09",
-                    "subtotal": 17000,
-                    "subtotal_formato": "$17.000",
+                    "subtotal": subtotal_entradas,
+                    "subtotal_formato": formatear_monto(subtotal_entradas),
                 }
             ],
-            "subtotal": 17000,
-            "subtotal_formato": "$17.000",
+            "subtotal": subtotal_entradas,
+            "subtotal_formato": formatear_monto(subtotal_entradas),
         },
         "categorias_filtro": [
-            {"id": "todos", "nombre": "Todos los Combos"},
-            {"id": "pochoclos", "nombre": "Pochoclos"},
-            {"id": "bebidas", "nombre": "Bebidas"},
-            {"id": "snacks", "nombre": "Snacks & Dulces"},
-            {"id": "estacionamiento", "nombre": "Estacionamiento & VIP"},
+            {"id": "todos", "nombre": "Todos los Servicios"},
+            {"id": "comida", "nombre": "COMIDA"},
+            {"id": "bebida", "nombre": "BEBIDA"},
         ],
-        "servicios": [
-            {
-                "id_servicio": 1,
-                "nombre": "Combo Mega Paradiso",
-                "categoria": "combos pochoclos bebidas",
-                "descripcion": "Balde gigante de pochoclos salados o dulces + 2 gaseosas grandes 1L + golosina a elección en candy bar.",
-                "precio": 14500,
-                "precio_formato": "$14.500",
-                "badge_top": "MÁS VENDIDO",
-                "badge_top_tipo": "badge-gold",
-                "badge_image_bottom": "Tamaño Gigante",
-                "cantidad": 1,
-                "imagen_url": "https://images.unsplash.com/photo-1572177812156-58036aae439c?w=600&auto=format&fit=crop&q=80",
-            },
-            {
-                "id_servicio": 2,
-                "nombre": "Combo Clásico Dúo",
-                "categoria": "combos pochoclos bebidas",
-                "descripcion": "1 Balde mediano de pochoclos recién hechos + 2 gaseosas medianas 500ml.",
-                "precio": 10200,
-                "precio_formato": "$10.200",
-                "badge_top": None,
-                "badge_top_tipo": None,
-                "badge_image_bottom": None,
-                "cantidad": 0,
-                "imagen_url": "https://images.unsplash.com/photo-1585647347384-2593bc35786b?w=600&auto=format&fit=crop&q=80",
-            },
-            {
-                "id_servicio": 3,
-                "nombre": "Combo Individual",
-                "categoria": "combos pochoclos bebidas",
-                "descripcion": "1 Bolsa de pochoclos crocantes + 1 gaseosa 500ml línea Coca-Cola.",
-                "precio": 6800,
-                "precio_formato": "$6.800",
-                "badge_top": None,
-                "badge_top_tipo": None,
-                "badge_image_bottom": None,
-                "cantidad": 0,
-                "imagen_url": "https://images.unsplash.com/photo-1505686994434-e3cc5abf1330?w=600&auto=format&fit=crop&q=80",
-            },
-            {
-                "id_servicio": 4,
-                "nombre": "Voucher Estacionamiento Prepago (3 hs cubiertas)",
-                "categoria": "estacionamiento",
-                "descripcion": "Acceso exclusivo cubierto por 3 horas en cochera de Av. Corrientes 1240. Validación automática con QR.",
-                "precio": 4500,
-                "precio_formato": "$4.500",
-                "badge_top": "PARADISO CENTRO",
-                "badge_top_tipo": "badge-cyan",
-                "badge_image_bottom": "3 Horas Cubiertas",
-                "cantidad": 1,
-                "imagen_url": "https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=600&auto=format&fit=crop&q=80",
-            },
-            {
-                "id_servicio": 5,
-                "nombre": "Nachos con Queso Cheddar Caliente",
-                "categoria": "snacks",
-                "descripcion": "Porción generosa de nachos crujientes con queso cheddar fundido caliente en bandeja térmica.",
-                "precio": 5200,
-                "precio_formato": "$5.200",
-                "badge_top": None,
-                "badge_top_tipo": None,
-                "badge_image_bottom": None,
-                "cantidad": 0,
-                "imagen_url": "https://images.unsplash.com/photo-1513456852971-30c0b8199d4d?w=600&auto=format&fit=crop&q=80",
-            },
-            {
-                "id_servicio": 6,
-                "nombre": "Gaseosa Extra Grande (Línea Coca-Cola)",
-                "categoria": "bebidas",
-                "descripcion": "1000ml a elección: Coca-Cola original, Sin Azúcar, Sprite o Fanta con hielo frappe.",
-                "precio": 3500,
-                "precio_formato": "$3.500",
-                "badge_top": None,
-                "badge_top_tipo": None,
-                "badge_image_bottom": None,
-                "cantidad": 0,
-                "imagen_url": "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=600&auto=format&fit=crop&q=80",
-            },
+        "servicios": servicios,
+        "servicios_seleccionados": [
+            item for item in session.get("servicios_seleccionados", [])
         ],
         "candy_seleccionado": {
-            "items": [
-                {
-                    "id_servicio": 1,
-                    "nombre": "Combo Mega Paradiso",
-                    "descripcion": "Balde gigante + 2 gaseosas 1L",
-                    "cantidad": 1,
-                    "subtotal": 14500,
-                    "subtotal_formato": "$14.500",
-                },
-                {
-                    "id_servicio": 4,
-                    "nombre": "Voucher Estacionamiento Prepago (3 hs cubi...",
-                    "descripcion": "3 hs. cubiertas - Centro",
-                    "cantidad": 1,
-                    "subtotal": 4500,
-                    "subtotal_formato": "$4.500",
-                },
-            ],
-            "total_items": 2,
-            "subtotal": 19000,
-            "subtotal_formato": "$19.000",
+            "items": items_seleccionados,
+            "total_items": sum(item["cantidad"] for item in items_seleccionados),
+            "subtotal": subtotal_candy,
+            "subtotal_formato": formatear_monto(subtotal_candy),
         },
         "resumen": {
-            "subtotal_entradas": 17000,
-            "subtotal_entradas_formato": "$17.000",
-            "subtotal_candy": 19000,
-            "subtotal_candy_formato": "$19.000",
+            "subtotal_entradas": subtotal_entradas,
+            "subtotal_entradas_formato": formatear_monto(subtotal_entradas),
+            "subtotal_candy": subtotal_candy,
+            "subtotal_candy_formato": formatear_monto(subtotal_candy),
             "cargos_servicio_texto": "100% Bonificado",
-            "total": 36000,
-            "total_formato": "$36.000",
+            "total": subtotal_entradas + subtotal_candy,
+            "total_formato": formatear_monto(subtotal_entradas + subtotal_candy),
         },
     }
 
-    return render_template("seleccion_servicios.html", c=datos_compra)
+    return render_template(
+        "seleccion_servicios.html",
+        c=datos_compra,
+        csrf_token=crear_token_csrf(),
+    )
 
 
 @compra_bp.route("/checkout")

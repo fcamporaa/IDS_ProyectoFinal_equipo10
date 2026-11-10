@@ -15,6 +15,10 @@
             {% include 'components/stepper_compra.html' %}
         {% endwith %}
 
+        <form id="servicesSelectionForm" method="POST" action="{{ url_for('compra.seleccion_servicios') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" id="servicesSelectionPayload" name="servicios_json" value='{{ c.servicios_seleccionados | tojson | forceescape }}'>
+
         <!-- 2. Grid Principal: Catálogo (Izq) y Resumen Lateral (Der) -->
         <div class="services-main-grid">
 
@@ -38,10 +42,10 @@
                                 <span>TIEMPO RESTANTE:</span>
                                 <strong id="candyCountdown" class="timer-digits">08:40</strong>
                             </div>
-                            <a href="{{ url_for('compra.seleccion_checkout') }}" class="btn-skip-step-link" title="Omitir selección de confitería y avanzar al checkout">
+                            <button type="submit" name="accion" value="omitir" class="btn-skip-step-link" title="Omitir selección de confitería y avanzar al checkout">
                                 <span>Omitir este paso</span>
                                 <span aria-hidden="true">→</span>
-                            </a>
+                            </button>
                         </div>
                     </div>
                     <h1 class="catalog-main-title">Servicios Complementarios & Combos</h1>
@@ -67,6 +71,9 @@
                             {% include 'components/card_servicio.html' %}
                         {% endwith %}
                     {% endfor %}
+                    {% if not c.servicios %}
+                        <p class="summary-empty-state">No hay servicios disponibles en este momento.</p>
+                    {% endif %}
                 </div>
 
                 <!-- Banner Inferior: Entrega Directa en Butaca VIP -->
@@ -194,16 +201,16 @@
                     </div>
 
                     <!-- Botón de Acción Principal -->
-                    <a href="{{ url_for('compra.seleccion_checkout') }}" class="btn-continue-checkout" id="btnContinueCheckout" title="Avanzar a Checkout">
+                    <button type="submit" name="accion" value="continuar" class="btn-continue-checkout" id="btnContinueCheckout" title="Avanzar a Checkout">
                         <span>CONTINUAR AL PAGO</span>
                         <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
                             <line x1="5" y1="12" x2="19" y2="12"></line>
                             <polyline points="12 5 19 12 12 19"></polyline>
                         </svg>
-                    </a>
+                    </button>
 
                     <!-- Enlace Secundario: Omitir Paso -->
-                    <a href="{{ url_for('compra.seleccion_checkout') }}" class="link-skip-bottom">Omitir este paso y pagar entradas</a>
+                    <button type="submit" name="accion" value="omitir" class="link-skip-bottom">Omitir este paso y pagar entradas</button>
 
                     <!-- Leyenda de Compra Oficial Asegurada -->
                     <div class="official-guarantee-note">
@@ -238,6 +245,7 @@
             </aside>
 
         </div>
+        </form>
 
     </div>
 </div>
