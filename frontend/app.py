@@ -11,6 +11,10 @@ from routes.compras_routes import compras_bp
 
 
 
+
+from routes.compra_routes import compra_bp
+from routes.auth_routes import auth_bp
+
 load_dotenv()
 
 app = Flask(__name__)
@@ -22,11 +26,16 @@ app.config["SECRET_KEY"] = os.environ["SECRET_KEY"]
 
 # Registro de rutas (Blueprints)
 app.register_blueprint(home_bp)
+app.register_blueprint(compra_bp)
 app.register_blueprint(compras_bp)
 app.register_blueprint(peliculas_bp)
 app.register_blueprint(dashboard_bp)
+<<<<<<< HEAD
 app.register_blueprint(admin_funciones_bp)
 
+=======
+app.register_blueprint(auth_bp)
+>>>>>>> ba291a7a4f22088523a079f377340b8769ed293c
 
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"

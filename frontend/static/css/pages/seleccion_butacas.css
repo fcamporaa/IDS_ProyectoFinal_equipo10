@@ -1,0 +1,687 @@
+/* ==========================================================================
+   CINEMA PARADISO - SELECCIÓN DE BUTACAS (seleccion_butacas.css)
+   Tokens: tokens.css | Base: base.css | Replicación pixel-perfect del diseño
+   ========================================================================== */
+
+.seats-selection-page {
+    padding-top: 16px;
+    padding-bottom: 60px;
+    background-color: var(--color-bg-main);
+    min-height: 100vh;
+}
+
+.seats-container {
+    max-width: 1260px;
+    margin: 0 auto;
+    padding: 0 24px;
+}
+
+/* --------------------------------------------------------------------------
+   1. Stepper / Barra de Progreso (Definido globalmente en components/stepper.css)
+   -------------------------------------------------------------------------- */
+
+/* --------------------------------------------------------------------------
+   2. Header Superior de Película y Temporizador
+   -------------------------------------------------------------------------- */
+.movie-session-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #16171a;
+    border: 1px solid #26272b;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.session-left-details {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.session-mini-poster {
+    width: 44px;
+    height: 64px;
+    border-radius: 4px;
+    object-fit: cover;
+    border: 1px solid #26272b;
+    flex-shrink: 0;
+}
+
+.session-meta-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.session-badges-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.badge-tag-red {
+    background: #e50914;
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 3px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.badge-tag-dark {
+    background: #26272b;
+    color: #d8b4fe;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 3px;
+    border: 1px solid rgba(168, 85, 247, 0.4);
+    text-transform: uppercase;
+}
+
+.session-sub-specs {
+    font-size: 11.5px;
+    color: #9ca3af;
+}
+
+.session-movie-title {
+    font-size: 20px;
+    font-weight: 800;
+    color: #ffffff;
+    margin: 0;
+    letter-spacing: -0.01em;
+}
+
+.session-location-row {
+    font-size: 12.5px;
+    color: #9ca3af;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.location-dot {
+    color: #4b5563;
+    margin: 0 4px;
+}
+
+.highlight-amber-time {
+    color: #f59e0b;
+    font-weight: 700;
+}
+
+/* Temporizador */
+.session-timer-card {
+    background: #1b1b1f;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-radius: 8px;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.timer-icon-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(245, 158, 11, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #f59e0b;
+}
+
+.timer-texts {
+    display: flex;
+    flex-direction: column;
+}
+
+.timer-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #9ca3af;
+    text-transform: uppercase;
+}
+
+.timer-countdown {
+    font-size: 16px;
+    font-weight: 800;
+    color: #f59e0b;
+    letter-spacing: 0.04em;
+}
+
+/* --------------------------------------------------------------------------
+   3. Grid Principal (Sala 65% + Resumen 35%)
+   -------------------------------------------------------------------------- */
+.seats-main-grid {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 28px;
+    align-items: start;
+}
+
+@media (max-width: 1024px) {
+    .seats-main-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* --------------------------------------------------------------------------
+   4. Columna Izquierda: Sala, Pantalla Curva y Butacas
+   -------------------------------------------------------------------------- */
+.cinema-hall-panel {
+    background: #1b1b1f;
+    border: 1px solid #26272b;
+    border-radius: 12px;
+    padding: 36px 28px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+}
+
+/* Pantalla Curva */
+.hall-screen-wrapper {
+    width: 100%;
+    max-width: 600px;
+    margin-bottom: 40px;
+    text-align: center;
+    position: relative;
+}
+
+.screen-curve-svg {
+    width: 100%;
+    height: 38px;
+    overflow: visible;
+}
+
+.screen-label-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    color: #f59e0b;
+    text-transform: uppercase;
+    margin-top: 6px;
+}
+
+/* Matriz de Asientos */
+.seats-matrix-container {
+    width: 100%;
+    max-width: 680px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 32px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+}
+
+.seat-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+}
+
+.row-letter {
+    font-size: 12px;
+    font-weight: 700;
+    color: #6b7280;
+    width: 16px;
+    text-align: center;
+}
+
+.seat-row.active-row .row-letter {
+    color: #f59e0b;
+}
+
+.seat-group {
+    display: flex;
+    gap: 8px;
+}
+
+/* Diseño Ergonómico de la Butaca */
+.seat-button {
+    width: 28px;
+    height: 32px;
+    border-radius: 4px 4px 2px 2px;
+    background: #23262d;
+    border: 1px solid #2e3440;
+    cursor: pointer;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 800;
+    color: #121316;
+    transition: all var(--transition-fast);
+    padding: 0;
+    user-select: none;
+}
+
+.seat-button:hover:not(.occupied):not(.selected) {
+    background: #323846;
+    border-color: #4c566a;
+    transform: translateY(-2px);
+}
+
+/* Asiento Ocupado */
+.seat-button.occupied {
+    background: #18191d;
+    border-color: #222327;
+    color: #3f424e;
+    cursor: not-allowed;
+}
+
+.seat-button.occupied::after {
+    content: "✕";
+    font-size: 10px;
+    font-weight: 800;
+}
+
+/* Asiento Seleccionado */
+.seat-button.selected {
+    background: #f59e0b;
+    border-color: #f59e0b;
+    color: #121316;
+    box-shadow: 0 0 14px rgba(245, 158, 11, 0.6);
+    transform: translateY(-2px);
+}
+
+/* Asiento VIP D-BOX (Filas F y G) */
+.seat-row.vip-row .seat-button:not(.occupied):not(.selected) {
+    border-bottom: 2px solid #f59e0b;
+}
+
+/* Leyenda de Butacas */
+.seats-legend-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    padding-top: 16px;
+    border-top: 1px solid #26272b;
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+.legend-pill-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11.5px;
+    color: #9ca3af;
+}
+
+.legend-sample-seat {
+    width: 20px;
+    height: 22px;
+    border-radius: 3px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 800;
+}
+
+.legend-sample-seat.sample-free {
+    background: #23262d;
+    border: 1px solid #2e3440;
+}
+
+.legend-sample-seat.sample-selected {
+    background: #f59e0b;
+    color: #121316;
+}
+
+.legend-sample-seat.sample-occupied {
+    background: #18191d;
+    border: 1px solid #222327;
+    color: #3f424e;
+}
+
+.legend-sample-seat.sample-vip {
+    background: #23262d;
+    border: 1px solid #2e3440;
+    border-bottom: 2px solid #f59e0b;
+}
+
+.legend-pill-item.legend-vip-text {
+    color: #f59e0b;
+    font-weight: 600;
+}
+
+/* Banner de Información Sensorial 4D */
+.hall-sensory-notice {
+    width: 100%;
+    background: #16171a;
+    border: 1px solid #26272b;
+    border-radius: 8px;
+    padding: 12px 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 12px;
+    color: #9ca3af;
+}
+
+.sensory-icon {
+    font-size: 16px;
+    color: #c084fc;
+    flex-shrink: 0;
+}
+
+/* --------------------------------------------------------------------------
+   5. Columna Derecha: Sidebar Resumen de Butacas
+   -------------------------------------------------------------------------- */
+.seats-sidebar-column {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    position: sticky;
+    top: calc(var(--navbar-height, 72px) + 16px);
+}
+
+.seats-summary-card {
+    background: #1b1b1f;
+    border: 1px solid #26272b;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.summary-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.summary-card-title {
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    color: #ffffff;
+    text-transform: uppercase;
+    margin: 0;
+}
+
+.summary-seats-count-badge {
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    color: #f59e0b;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 9999px;
+}
+
+/* Película seleccionada en el sidebar */
+.summary-movie-info-block {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #26272b;
+}
+
+.summary-movie-poster {
+    width: 38px;
+    height: 54px;
+    border-radius: 4px;
+    object-fit: cover;
+    border: 1px solid #26272b;
+}
+
+.summary-movie-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.summary-film-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: #ffffff;
+    margin: 0;
+}
+
+.summary-hall-name {
+    font-size: 12px;
+    color: #9ca3af;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.summary-hall-icon {
+    color: #e50914;
+}
+
+.summary-schedule {
+    font-size: 11.5px;
+    color: #9ca3af;
+}
+
+/* Lista de Butacas Asignadas */
+.assigned-seats-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.assigned-seats-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #6b7280;
+    text-transform: uppercase;
+}
+
+.assigned-seat-item {
+    background: #16171a;
+    border: 1px solid #26272b;
+    border-radius: 8px;
+    padding: 12px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.assigned-seat-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.seat-icon-amber {
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    background: rgba(245, 158, 11, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #f59e0b;
+}
+
+.assigned-seat-texts {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.seat-name-title {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.seat-category-sub {
+    font-size: 11px;
+    color: #9ca3af;
+}
+
+.assigned-seat-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.seat-price-val {
+    font-size: 14px;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.btn-remove-seat {
+    background: transparent;
+    border: none;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color var(--transition-fast);
+}
+
+.btn-remove-seat:hover {
+    color: #ef4444;
+}
+
+/* Desglose de Totales */
+.summary-totals-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 14px;
+    border-top: 1px solid #26272b;
+}
+
+.totals-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    color: #9ca3af;
+}
+
+.totals-row.service-fee .fee-free {
+    color: #10b981;
+    font-weight: 600;
+}
+
+.totals-row.total-main {
+    padding-top: 10px;
+    margin-top: 4px;
+    border-top: 1px solid #26272b;
+}
+
+.total-main-label {
+    font-size: 14px;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.total-main-amount {
+    font-size: 18px;
+    font-weight: 800;
+    color: #f59e0b;
+}
+
+/* Botón CTA Continuar y Volver */
+.btn-continue-candy {
+    background: #e50914;
+    border: 1px solid #e50914;
+    color: #ffffff;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 4px 16px rgba(229, 9, 20, 0.4);
+    transition: all var(--transition-fast);
+    text-decoration: none;
+}
+
+.btn-continue-candy:hover {
+    background: #b91c1c;
+    border-color: #b91c1c;
+    box-shadow: 0 6px 22px rgba(229, 9, 20, 0.6);
+    transform: translateY(-1px);
+}
+
+.btn-return-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 12.5px;
+    color: #9ca3af;
+    text-decoration: none;
+    transition: color var(--transition-fast);
+}
+
+.btn-return-link:hover {
+    color: #ffffff;
+}
+
+/* Card de Garantía Anti Duplicación */
+.guarantee-box-card {
+    background: #1b1b1f;
+    border: 1px solid #26272b;
+    border-radius: 10px;
+    padding: 16px 18px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.guarantee-shield-icon {
+    color: #f59e0b;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.guarantee-texts {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.guarantee-title {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #ffffff;
+    margin: 0;
+}
+
+.guarantee-description {
+    font-size: 11.5px;
+    line-height: 1.5;
+    color: #9ca3af;
+    margin: 0;
+}

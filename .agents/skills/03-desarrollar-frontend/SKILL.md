@@ -30,9 +30,10 @@ Desarrollar vistas y pantallas en `/frontend` bajo una arquitectura de diseño a
 5. **Transferencia de Conocimiento:** Explica al usuario qué parámetros recibe cada componente creado o reutilizado y cómo viajan los datos desde la ruta de Flask hasta el componente Jinja2.
 
 # Constraints
-- Prohibido usar `fetch()`, `axios` o AJAX en el navegador para consumir el Backend.
+- Prohibido usar `fetch()`, `axios`, AJAX, WebSockets (`ws://`, `wss://`, Socket.IO) o SSE en el navegador para comunicarse con el Backend. Toda comunicación es mediante peticiones HTTP síncronas estándar (`GET`/`POST`) en arquitectura SSR.
 - Prohibido hardcodear rutas URL o rutas a archivos estáticos sin `url_for()`.
 - Prohibido duplicar estructuras HTML de botones, tarjetas o barras de navegación en múltiples vistas en lugar de parametrizarlas en `templates/components/`.
+- **Navbar Sticky y Espaciado Superior:** El encabezado `.main-header` tiene `position: sticky` (ocupa 68px de forma natural en el flujo). Prohibido usar `calc(var(--navbar-height) + ...)` en el `padding-top` del contenedor de las páginas. Utilizar siempre un respiro estándar de `padding-top: 16px` para evitar generar huecos vacíos gigantes.
 
 # Outputs
 Archivos de componentes en `templates/components/`, estilos en `static/css/`, vistas ensambladas, rutas/servicios en `frontend/` y guía breve de los parámetros que acepta cada componente.

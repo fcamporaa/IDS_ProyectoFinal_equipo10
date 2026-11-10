@@ -23,6 +23,19 @@ SQL_ASOCIAR_GENERO = "INSERT INTO pelicula_generos (id_pelicula, id_genero) VALU
 
 SQL_QUITAR_GENEROS = "DELETE FROM pelicula_generos WHERE id_pelicula = %s;"
 
+SQL_INSERTAR_RESENA = """
+    INSERT INTO resenas (id_usuario, id_pelicula, id_compra, puntuacion, comentario, creada_en)
+    VALUES (%s, %s, %s, %s, %s, %s);
+"""
+
+# Columnas que devuelve cada reseña según el contrato del swagger (ResenaItem)
+SQL_SELECCIONAR_RESENAS = """
+    SELECT r.id_resena, r.id_usuario, u.nombre AS nombre_usuario,
+           r.puntuacion, r.comentario, r.creada_en
+    FROM resenas r
+    JOIN usuarios u ON u.id_usuario = r.id_usuario
+"""
+
 
 def obtener_cartelera_vigente_db(filtros: dict) -> list[dict]:
     """
@@ -198,3 +211,66 @@ def obtener_generos_de_peliculas_db(ids_peliculas: list[int]) -> list[dict]:
         ORDER BY g.nombre;
     """
     return ejecutar_consulta(query, tuple(ids_peliculas))
+
+
+def obtener_resenas_por_pelicula_db(id_pelicula: int) -> list[dict]:
+    """Obtiene las reseñas de una película, de la más reciente a la más antigua."""
+    query = f"""
+        {SQL_SELECCIONAR_RESENAS}
+        WHERE r.id_pelicula = %s
+        ORDER BY r.creada_en DESC, r.id_resena DESC;
+    """
+    return ejecutar_consulta(query, (id_pelicula,))
+
+
+def buscar_resena_por_id_db(id_resena: int) -> dict | None:
+    """Obtiene una reseña (con el nombre de su autor) por su id_resena."""
+    query = f"""
+        {SQL_SELECCIONAR_RESENAS}
+        WHERE r.id_resena = %s;
+    """
+    resultados = ejecutar_consulta(query, (id_resena,))
+    if resultados:
+        return resultados[0]
+    return None
+
+
+def buscar_compra_para_resena_db(id_compra: int) -> dict | None:
+    """
+    Obtiene los datos de una compra necesarios para saber si habilita una reseña:
+    a quién pertenece, su estado, si su QR fue validado en puerta y de qué película es.
+    """
+    query = """
+        SELECT c.id_compra, c.id_usuario, c.estado, c.qr_validado_en, f.id_pelicula
+        FROM compras c
+        JOIN funciones f ON f.id_funcion = c.id_funcion
+        WHERE c.id_compra = %s;
+    """
+    resultados = ejecutar_consulta(query, (id_compra,))
+    if resultados:
+        return resultados[0]
+    return None
+
+
+def existe_resena_de_compra_db(id_compra: int) -> bool:
+    """Indica si la compra ya tiene una reseña registrada."""
+    query = "SELECT id_resena FROM resenas WHERE id_compra = %s LIMIT 1;"
+    return len(ejecutar_consulta(query, (id_compra,))) > 0
+
+
+def insertar_resena_db(datos: dict) -> int:
+    """
+    Inserta una reseña y retorna su id_resena. Espera id_usuario, id_pelicula,
+    id_compra, puntuacion, comentario (puede ser None) y creada_en (datetime).
+    """
+    return ejecutar_mutacion(
+        SQL_INSERTAR_RESENA,
+        (
+            datos["id_usuario"],
+            datos["id_pelicula"],
+            datos["id_compra"],
+            datos["puntuacion"],
+            datos["comentario"],
+            datos["creada_en"],
+        ),
+    )

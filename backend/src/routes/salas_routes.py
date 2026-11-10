@@ -5,7 +5,7 @@ from src.services.salas_services import (
     obtener_detalle_sala,
     actualizar_configuracion_sala,
 )
-from src.validators.auth_validators import validar_autorizacion_admin
+from src.utils import validar_admin
 from src.validators.salas_validators import (
     validar_id_local,
     validar_id_sala,
@@ -46,10 +46,7 @@ def register_salas_routes(app):
         """
         PUT /salas/{id}: Habilita/deshabilita una sala o actualiza su configuración (Solo Admin).
         """
-        # Verificar permisos de administrador
-        autorizacion = validar_autorizacion_admin(request.headers.get("Authorization"))
-        if "errors" in autorizacion:
-            return jsonify({"errors": autorizacion["errors"]}), autorizacion.get("status", 401)
+        validar_admin(request.headers.get("Authorization"))
 
         id_sala = validar_id_sala(id)
         datos = request.get_json(silent=True)

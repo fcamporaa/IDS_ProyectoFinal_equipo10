@@ -1,0 +1,14 @@
+<div class="auth-field">
+    <label for="{{ id }}">{{ label }}{% if required | default(false) %}<span aria-hidden="true"> *</span>{% endif %}</label>
+    <input
+        id="{{ id }}"
+        name="{{ name }}"
+        type="{{ input_type | default('text') }}"
+        autocomplete="{{ autocomplete }}"
+        {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+        {% if required | default(false) %}required{% endif %}
+        {% if minlength %}minlength="{{ minlength }}"{% endif %}
+        {% if maxlength %}maxlength="{{ maxlength }}"{% endif %}
+    >
+    {% if hint %}<small>{{ hint }}</small>{% endif %}
+</div>

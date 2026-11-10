@@ -59,10 +59,15 @@
                     <span class="user-avatar">👤</span>
                     <span class="user-name">{{ usuario_activo.nombre | default('Mi Perfil') }}</span>
                 </a>
-            {% else %}
-                <a href="#login" class="nav-login-btn">
-                    Iniciar Sesión
+                <a href="{{ url_for('auth.logout') }}" class="nav-logout-btn" title="Cerrar sesión" style="color: #9ca3af; margin-left: 0.75rem; text-decoration: none; font-size: 0.875rem;">
+                    Salir
                 </a>
+            {% else %}
+                {% if not ocultar_acceso_login | default(false) %}
+                    <a href="{{ url_for('auth.login') }}" class="nav-login-btn">
+                        Iniciar Sesión
+                    </a>
+                {% endif %}
             {% endif %}
         </div>
     </div>

@@ -1,10 +1,13 @@
 import urllib.parse
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from decimal import Decimal, InvalidOperation
+#import para validaciones genericas de datos de entrada. 
 
-from src.constants import ZONA_HORARIA_LOCAL
+from src.constants import ROL_ADMINISTRADOR
+from src.repositories.usuarios_repository import buscar_usuario_por_id_db
 
-
+ZONA_HORARIA_LOCAL = ZoneInfo("America/Argentina/Buenos_Aires")
 def construir_error_api(
     code: str, message: str, description: str, level: str = "error"
 ) -> dict:
@@ -168,6 +171,69 @@ def error_conflicto(descripcion: str) -> ValueError:
     return crear_error_http(
         "error.recurso.conflicto", "Conflicto", descripcion, 409
     )
+
+
+# ==========================================
+# Autenticación y autorización
+# ==========================================
+def validar_usuario(encabezado: str | None) -> dict:
+    """
+    Exige un usuario autenticado y activo, de cualquier rol. Pensada para reutilizarse
+    en cualquier endpoint que pida BearerAuth (ver swagger: respuesta 401).
+
+    Uso en una ruta, antes de validar el cuerpo o los parámetros:
+        usuario = validar_usuario(request.headers.get("Authorization"))
+
+    - Header ausente/mal formado, token inválido o vencido, o usuario inexistente/inactivo: 401.
+    - Si todo está bien devuelve el usuario (id_usuario, nombre, email, rol, ...).
+
+    Lanza ValueError con el payload estándar y el código HTTP; app.py lo convierte en JSON.
+    """
+    # Import local: auth_validators ya importa utils, y un import arriba sería circular.
+    from src.validators.auth_validators import validar_autorizacion
+
+    autorizacion = validar_autorizacion(encabezado)
+    if "errors" in autorizacion:
+        error = autorizacion["errors"][0]
+        raise crear_error_http(
+            error["code"], error["message"], error["description"], 401
+        )
+
+    usuario = buscar_usuario_por_id_db(autorizacion["usuario_id"])
+    if not usuario or not usuario["activo"]:
+        raise crear_error_http(
+            "error.auth.token_invalido",
+            "Token inválido",
+            "El usuario asociado al token no existe o está inactivo.",
+            401,
+        )
+    return usuario
+
+
+def validar_admin(encabezado: str | None) -> dict:
+    """
+    Exige que la petición venga de un usuario ADMINISTRADOR. Pensada para reutilizarse
+    en cualquier endpoint "Solo Admin" (ver swagger: respuestas 401 y 403).
+
+    Uso en una ruta, antes de validar el cuerpo o los parámetros:
+        admin = validar_admin(request.headers.get("Authorization"))
+
+    - Mismos 401 que validar_usuario.
+    - Usuario válido sin rol ADMINISTRADOR: 403.
+    - Si todo está bien devuelve el usuario, por si la ruta necesita saber qué admin
+      hizo la acción (ej. auditoría).
+
+    Lanza ValueError con el payload estándar y el código HTTP; app.py lo convierte en JSON.
+    """
+    usuario = validar_usuario(encabezado)
+    if usuario["rol"] != ROL_ADMINISTRADOR:
+        raise crear_error_http(
+            "error.auth.prohibido",
+            "Acceso denegado",
+            "El usuario no tiene rol ADMINISTRADOR para ejecutar esta acción.",
+            403,
+        )
+    return usuario
 
 
 # ==========================================

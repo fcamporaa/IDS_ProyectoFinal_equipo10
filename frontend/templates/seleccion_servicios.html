@@ -1,0 +1,248 @@
+{% extends 'layout.html' %}
+
+{% block title %}Servicios Complementarios & Candy Bar - {{ c.pelicula.titulo }} | Cinema Paradiso{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/seleccion_servicios.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="services-selection-page">
+    <div class="container services-container">
+
+        <!-- 1. Stepper / Barra de Progreso del Embudo de Compra -->
+        {% with paso_actual=2 %}
+            {% include 'components/stepper_compra.html' %}
+        {% endwith %}
+
+        <!-- 2. Grid Principal: Catálogo (Izq) y Resumen Lateral (Der) -->
+        <div class="services-main-grid">
+
+            <!-- Columna Izquierda: Catálogo de Servicios y Combos -->
+            <section class="services-catalog-column" aria-label="Catálogo de Candy Bar y Servicios">
+
+                <!-- Header de Sección -->
+                <header class="catalog-header">
+                    <div class="catalog-header-top">
+                        <div class="badge-candy-bar-official">
+                            <span class="badge-text-gold">CANDY BAR OFICIAL</span>
+                            <span class="badge-status-dot"></span>
+                            <span class="badge-status-text">Retiro express con QR en mostrador</span>
+                        </div>
+                        <div class="catalog-header-actions">
+                            <div class="checkout-timer-pill" title="Tiempo asignado para completar la compra">
+                                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polyline points="12 6 12 12 16 14"></polyline>
+                                </svg>
+                                <span>TIEMPO RESTANTE:</span>
+                                <strong id="candyCountdown" class="timer-digits">08:40</strong>
+                            </div>
+                            <a href="{{ url_for('compra.seleccion_checkout') }}" class="btn-skip-step-link" title="Omitir selección de confitería y avanzar al checkout">
+                                <span>Omitir este paso</span>
+                                <span aria-hidden="true">→</span>
+                            </a>
+                        </div>
+                    </div>
+                    <h1 class="catalog-main-title">Servicios Complementarios & Combos</h1>
+                </header>
+
+                <!-- Barra de Filtros por Categoría -->
+                <nav class="services-filter-nav" aria-label="Filtros de servicios">
+                    <div class="filter-pills-list">
+                        {% for cat in c.categorias_filtro %}
+                            <button type="button" 
+                                    class="filter-pill {% if loop.first %}active{% endif %}" 
+                                    data-filter="{{ cat.id }}">
+                                {{ cat.nombre }}
+                            </button>
+                        {% endfor %}
+                    </div>
+                </nav>
+
+                <!-- Grilla de Tarjetas de Servicios -->
+                <div class="services-cards-grid" id="servicesCardsGrid">
+                    {% for servicio in c.servicios %}
+                        {% with s=servicio %}
+                            {% include 'components/card_servicio.html' %}
+                        {% endwith %}
+                    {% endfor %}
+                </div>
+
+                <!-- Banner Inferior: Entrega Directa en Butaca VIP -->
+                <div class="vip-delivery-banner">
+                    <div class="vip-banner-left">
+                        <div class="vip-star-icon">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="#f59e0b">
+                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                            </svg>
+                        </div>
+                        <div class="vip-banner-texts">
+                            <h4 class="vip-banner-title">¿Querés entrega directa en tu butaca?</h4>
+                            <p class="vip-banner-desc">Disponible para filas VIP y funciones seleccionadas sin cargo adicional.</p>
+                        </div>
+                    </div>
+                    <div class="vip-banner-right">
+                        <span class="vip-included-tag">INCLUIDO CON BUTACA VIP</span>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- Columna Derecha: Resumen de Compra Lateral Sticky -->
+            <aside class="services-summary-column" aria-label="Resumen de compra">
+                <div class="services-summary-card">
+
+                    <!-- Header del Resumen -->
+                    <div class="summary-card-header">
+                        <div class="summary-header-title">
+                            <span class="summary-cart-icon">
+                                <svg viewBox="0 0 24 24" width="20" height="20" fill="#e50914">
+                                    <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/>
+                                </svg>
+                            </span>
+                            <h2>RESUMEN DE COMPRA</h2>
+                        </div>
+                        <span class="room-format-badge">{{ c.pelicula.sala_badge }}</span>
+                    </div>
+
+                    <!-- Mini Card de la Película y Función -->
+                    <div class="summary-movie-card">
+                        <img src="{{ c.pelicula.poster_url }}" 
+                             alt="Póster de {{ c.pelicula.titulo }}" 
+                             class="summary-movie-poster">
+                        <div class="summary-movie-info">
+                            <h3 class="summary-movie-title">{{ c.pelicula.titulo }}</h3>
+                            <span class="summary-movie-time">{{ c.pelicula.horario_etiqueta }}</span>
+                            <span class="summary-movie-complex">{{ c.pelicula.complejo }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Sección 1: Entradas de Cine Asignadas -->
+                    <div class="summary-section">
+                        <div class="summary-section-header">
+                            <span class="summary-section-title">1. ENTRADAS DE CINE</span>
+                            <span class="badge-status-assigned">ASIGNADAS</span>
+                        </div>
+                        <div class="summary-items-list">
+                            {% for entrada in c.entradas['items'] %}
+                                <div class="summary-item-row">
+                                    <div class="summary-item-left">
+                                        <span class="summary-item-name">{{ entrada.descripcion }}</span>
+                                        <span class="summary-item-sub">{{ entrada.detalle }}</span>
+                                    </div>
+                                    <div class="summary-item-right">
+                                        <span class="summary-item-price">{{ entrada.subtotal_formato }}</span>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Sección 2: Candy Bar & Extras -->
+                    <div class="summary-section">
+                        <div class="summary-section-header">
+                            <span class="summary-section-title">2. CANDY BAR & EXTRAS</span>
+                            <span class="badge-items-count" id="candyItemsCountBadge">{{ c.candy_seleccionado.total_items }} ITEMS</span>
+                        </div>
+                        <div class="summary-items-list" id="candySummaryItemsList" data-subtotal-entradas="{{ c.entradas.subtotal }}">
+                            {% for item in c.candy_seleccionado['items'] %}
+                                <div class="summary-item-row" data-summary-id="{{ item.id_servicio }}">
+                                    <div class="summary-item-left">
+                                        <span class="summary-item-name">{{ item.cantidad }}x {{ item.nombre }}</span>
+                                        <span class="summary-item-sub">{{ item.descripcion }}</span>
+                                    </div>
+                                    <div class="summary-item-right">
+                                        <span class="summary-item-price text-gold">{{ item.subtotal_formato }}</span>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Desglose de Totales -->
+                    <div class="summary-totals-breakdown">
+                        <div class="totals-line">
+                            <span class="totals-label">Subtotal Entradas:</span>
+                            <span class="totals-val" id="displaySubtotalEntradas">{{ c.resumen.subtotal_entradas_formato }}</span>
+                        </div>
+                        <div class="totals-line">
+                            <span class="totals-label">Subtotal Candy & Extras:</span>
+                            <span class="totals-val" id="displaySubtotalCandy">{{ c.resumen.subtotal_candy_formato }}</span>
+                        </div>
+                        <div class="totals-line">
+                            <span class="totals-label">Cargos de servicio e IVA:</span>
+                            <span class="totals-val text-green">{{ c.resumen.cargos_servicio_texto }}</span>
+                        </div>
+
+                        <!-- Caja de Total Acumulado -->
+                        <div class="total-accumulated-box">
+                            <div class="total-box-left">
+                                <span class="total-box-label">TOTAL ACUMULADO</span>
+                                <div class="rate-protected-pill">
+                                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                    </svg>
+                                    <span>Tarifa protegida 10 min</span>
+                                </div>
+                            </div>
+                            <div class="total-box-right">
+                                <span class="total-box-amount" id="displayTotalAcumulado">{{ c.resumen.total_formato }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botón de Acción Principal -->
+                    <a href="{{ url_for('compra.seleccion_checkout') }}" class="btn-continue-checkout" id="btnContinueCheckout" title="Avanzar a Checkout">
+                        <span>CONTINUAR AL PAGO</span>
+                        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                    </a>
+
+                    <!-- Enlace Secundario: Omitir Paso -->
+                    <a href="{{ url_for('compra.seleccion_checkout') }}" class="link-skip-bottom">Omitir este paso y pagar entradas</a>
+
+                    <!-- Leyenda de Compra Oficial Asegurada -->
+                    <div class="official-guarantee-note">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                            <polyline points="9 12 11 14 15 10"></polyline>
+                        </svg>
+                        <span>Compra oficial asegurada Cinema Paradiso</span>
+                    </div>
+
+                </div>
+
+                <!-- Banner Informativo QR Exclusivo para Candy Bar -->
+                <div class="candy-qr-info-card">
+                    <div class="qr-info-icon">
+                        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="14" width="7" height="7"></rect>
+                            <rect x="3" y="14" width="7" height="7"></rect>
+                            <path d="M7 17h.01"></path>
+                            <path d="M17 17h.01"></path>
+                            <path d="M7 7h.01"></path>
+                            <path d="M17 7h.01"></path>
+                        </svg>
+                    </div>
+                    <div class="qr-info-text">
+                        <p>Al completar la compra recibirás un <strong>QR exclusivo para Candy Bar</strong> con retiro express en mostrador sin filas.</p>
+                    </div>
+                </div>
+
+            </aside>
+
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/seleccion_servicios.js') }}"></script>
+{% endblock %}

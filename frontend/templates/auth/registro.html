@@ -1,0 +1,47 @@
+{% extends 'layout.html' %}
+
+{% block title %}Crear cuenta | Cinema Paradiso{% endblock %}
+
+{% block content %}
+<section class="auth-page">
+    <div class="auth-shell auth-shell--centered">
+        <div class="auth-panel">
+            <div class="auth-form-wrap">
+                <p class="auth-eyebrow">UN NUEVO COMIENZO</p>
+                <h1>Creá tu cuenta.</h1>
+                <p class="auth-intro">Unos datos y ya estás más cerca de la pantalla grande.</p>
+
+                {% if mensaje_pendiente %}
+                    <p class="auth-notice" role="status">{{ mensaje_pendiente }}</p>
+                {% endif %}
+
+                <form class="auth-form" id="register-form" action="{{ url_for('auth.registro') }}" method="post">
+                    {% with id='register-name', name='nombre', label='Nombre y apellido', input_type='text', autocomplete='name', placeholder='Cómo te llamás', required=true, maxlength=120 %}
+                        {% include 'components/form_field.html' %}
+                    {% endwith %}
+                    {% with id='register-email', name='email', label='Correo electrónico', input_type='email', autocomplete='email', placeholder='nombre@correo.com', required=true, maxlength=255 %}
+                        {% include 'components/form_field.html' %}
+                    {% endwith %}
+                    {% with id='register-password', name='contrasena', label='Contraseña', input_type='password', autocomplete='new-password', placeholder='Al menos 8 caracteres', required=true, minlength=8, hint='Usá mayúscula, minúscula y un número.' %}
+                        {% include 'components/form_field.html' %}
+                    {% endwith %}
+                    {% with id='register-password-confirm', name='confirmar_contrasena', label='Repetir contraseña', input_type='password', autocomplete='new-password', placeholder='Volvé a escribir tu contraseña', required=true, minlength=8 %}
+                        {% include 'components/form_field.html' %}
+                    {% endwith %}
+                    <p class="auth-field-error" id="password-mismatch" role="alert" hidden>Las contraseñas no coinciden.</p>
+                    {% with texto='Crear cuenta', tipo='submit', clase_extra='auth-submit' %}
+                        {% include 'components/button.html' %}
+                    {% endwith %}
+                </form>
+
+                <p class="auth-switch">¿Ya tenés cuenta? <a href="{{ url_for('auth.login') }}">Iniciar sesión</a></p>
+                <a class="auth-back-link" href="{{ url_for('home.index') }}">Volver a la cartelera</a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/registro.js') }}"></script>
+{% endblock %}

@@ -1,3 +1,4 @@
+import os
 import pymysql
 from pymysql.cursors import DictCursor
 from .constants import DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME
@@ -5,16 +6,20 @@ from .constants import DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME
 
 def obtener_conexion():
     """Crea y retorna una nueva conexión MySQL nativa usando DictCursor."""
-    return pymysql.connect(
-        host=DB_HOST,
-        port=DB_PORT,
-        user=DB_USER,
-        password=DB_PASSWORD,
-        database=DB_NAME,
-        charset="utf8mb4",
-        cursorclass=DictCursor,
-        autocommit=False,
-    )
+    kwargs = {
+        "host": DB_HOST,
+        "port": DB_PORT,
+        "user": DB_USER,
+        "password": DB_PASSWORD,
+        "database": DB_NAME,
+        "charset": "utf8mb4",
+        "cursorclass": DictCursor,
+        "autocommit": False,
+    }
+    if os.getenv("DB_SSL", "false").lower() == "true":
+        kwargs["ssl_verify_cert"] = True
+        kwargs["ssl_verify_identity"] = True
+    return pymysql.connect(**kwargs)
 
 
 def ejecutar_consulta(sql: str, parametros: dict = None) -> list[dict]:
