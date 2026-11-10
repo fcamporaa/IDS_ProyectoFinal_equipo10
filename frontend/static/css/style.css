@@ -19,6 +19,7 @@
 @import "components/kpi_card.css";
 @import "components/tabla_dashboard.css";
 @import "components/filtros_dashboard.css";
+@import "components/modal.css";
 
 /* 4. Estilos de Páginas Específicas */
 @import "pages/home.css";

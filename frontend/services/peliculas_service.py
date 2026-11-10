@@ -55,3 +55,8 @@ def obtener_detalle_pelicula(id_pelicula: int):
     if status == 200 and isinstance(respuesta, dict):
         return respuesta
     return None
+
+
+def obtener_generos():
+    """Consume GET /generos y devuelve (datos, código HTTP) para que la ruta decida."""
+    return consultar_backend("/generos", metodo="GET")
