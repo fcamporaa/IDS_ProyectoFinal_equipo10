@@ -45,11 +45,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Selector de Horarios
     const showtimeCards = document.querySelectorAll('.showtime-select-card');
+    const btnContinueSeats = document.getElementById('btnContinueSeats');
     showtimeCards.forEach(function (btn) {
         btn.addEventListener('click', function () {
             showtimeCards.forEach(function (b) { b.classList.remove('active'); });
             btn.classList.add('active');
 
+            const funcId = btn.getAttribute('data-func-id');
             const time = btn.getAttribute('data-func-time');
             const badge = btn.getAttribute('data-hall-badge');
             const price = btn.getAttribute('data-hall-price');
@@ -58,6 +60,10 @@ document.addEventListener('DOMContentLoaded', function () {
             if (displayTime) displayTime.textContent = time;
             if (displayHall) displayHall.textContent = hallName.split('—')[0].trim() + ' (' + badge + ')';
             if (displayPrice) displayPrice.textContent = price;
+
+            if (btnContinueSeats && funcId) {
+                btnContinueSeats.href = '/compra/butacas?id_funcion=' + encodeURIComponent(funcId);
+            }
         });
     });
 

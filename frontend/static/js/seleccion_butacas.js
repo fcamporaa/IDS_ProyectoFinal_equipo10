@@ -1,27 +1,33 @@
-/* Interactividad de Selección de Butacas (Sin peticiones AJAX ni fetch) */
+/* Interactividad de Selección de Butacas (Sin peticiones AJAX ni WebSockets - SSR Nativo) */
 document.addEventListener('DOMContentLoaded', function () {
     const seatsMatrix = document.getElementById('seatsMatrix');
     const assignedList = document.getElementById('assignedSeatsList');
     const countBadge = document.getElementById('seatsCountBadge');
     const displaySubtotal = document.getElementById('displaySubtotal');
     const displayTotal = document.getElementById('displayTotal');
+    const inputHidden = document.getElementById('inputButacasSeleccionadas');
+    const formSeleccion = document.getElementById('formSeleccionButacas');
 
     if (!seatsMatrix || !assignedList || !countBadge) return;
 
-    let selectedSeats = [
-        { id: 'E-7', fila: 'E', butaca: 7, categoria: 'General 4D', precio: 8500 },
-        { id: 'E-8', fila: 'E', butaca: 8, categoria: 'General 4D', precio: 8500 }
-    ];
+    let selectedSeats = [];
 
     function formatMoney(amount) {
         return '$' + amount.toLocaleString('es-AR');
+    }
+
+    function syncHiddenInput() {
+        if (inputHidden) {
+            const ids = selectedSeats.map(function (s) { return s.id_butaca; });
+            inputHidden.value = JSON.stringify(ids);
+        }
     }
 
     function updateSidebar() {
         // Actualizar badge
         countBadge.textContent = selectedSeats.length + (selectedSeats.length === 1 ? ' Butaca' : ' Butacas');
 
-        // Renderizar items
+        // Renderizar items en la columna lateral
         assignedList.innerHTML = '';
         let total = 0;
 
@@ -55,23 +61,29 @@ document.addEventListener('DOMContentLoaded', function () {
             assignedList.appendChild(item);
         });
 
-        // Actualizar montos
+        // Actualizar montos en pantalla
         if (displaySubtotal) displaySubtotal.textContent = formatMoney(total);
         if (displayTotal) displayTotal.textContent = formatMoney(total);
 
-        // Re-vincular botones de quitar
+        // Sincronizar el campo del formulario POST
+        syncHiddenInput();
+
+        // Re-vincular botones de eliminar del sidebar
         bindRemoveButtons();
     }
 
     function toggleSeat(btn) {
-        const seatId = btn.getAttribute('data-seat-id');
+        const seatId = parseInt(btn.getAttribute('data-seat-id'), 10);
+        const seatCode = btn.getAttribute('data-seat-code') || btn.getAttribute('data-seat-id');
         const row = btn.getAttribute('data-seat-row');
         const num = parseInt(btn.getAttribute('data-seat-num'), 10);
         const isVip = btn.getAttribute('data-seat-vip') === 'true';
         const price = parseInt(btn.getAttribute('data-seat-price'), 10) || 0;
-        const category = isVip ? 'VIP D-BOX' : 'General 4D';
+        const category = isVip ? 'VIP D-BOX' : 'General';
 
-        const existingIndex = selectedSeats.findIndex(function (s) { return s.id === seatId; });
+        const existingIndex = selectedSeats.findIndex(function (s) {
+            return s.id_butaca === seatId;
+        });
 
         if (existingIndex >= 0) {
             // Deseleccionar
@@ -81,7 +93,8 @@ document.addEventListener('DOMContentLoaded', function () {
         } else {
             // Seleccionar
             selectedSeats.push({
-                id: seatId,
+                id_butaca: seatId,
+                id: seatCode,
                 fila: row,
                 butaca: num,
                 categoria: category,
@@ -94,10 +107,11 @@ document.addEventListener('DOMContentLoaded', function () {
         updateSidebar();
     }
 
-    // Delegación de clicks en la matriz
+    // Delegación de clicks en la matriz de la sala
     seatsMatrix.addEventListener('click', function (e) {
         const btn = e.target.closest('.seat-button');
-        if (!btn || btn.classList.contains('occupied')) return;
+        // Si no es un botón de asiento o está ocupado/deshabilitado, no hacer nada
+        if (!btn || btn.classList.contains('occupied') || btn.disabled) return;
         toggleSeat(btn);
     });
 
@@ -107,7 +121,8 @@ document.addEventListener('DOMContentLoaded', function () {
         removeBtns.forEach(function (b) {
             b.addEventListener('click', function () {
                 const removeId = b.getAttribute('data-remove-id');
-                const seatBtn = document.querySelector(`.seat-button[data-seat-id="${removeId}"]`);
+                const seatBtn = document.querySelector(`.seat-button[data-seat-code="${removeId}"]`) ||
+                                document.querySelector(`.seat-button[data-seat-id="${removeId}"]`);
                 if (seatBtn) {
                     toggleSeat(seatBtn);
                 }
@@ -115,10 +130,32 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    bindRemoveButtons();
+    // Cargar selección inicial de butacas si la página ya las renderizó marcadas desde Flask
+    const initialButtons = seatsMatrix.querySelectorAll('.seat-button.selected');
+    initialButtons.forEach(function (btn) {
+        selectedSeats.push({
+            id_butaca: parseInt(btn.getAttribute('data-seat-id'), 10),
+            id: btn.getAttribute('data-seat-code') || btn.getAttribute('data-seat-id'),
+            fila: btn.getAttribute('data-seat-row'),
+            butaca: parseInt(btn.getAttribute('data-seat-num'), 10),
+            categoria: btn.getAttribute('data-seat-vip') === 'true' ? 'VIP D-BOX' : 'General',
+            precio: parseInt(btn.getAttribute('data-seat-price'), 10) || 0
+        });
+    });
+    updateSidebar();
+
+    // Validación al enviar el formulario (POST nativo)
+    if (formSeleccion) {
+        formSeleccion.addEventListener('submit', function (e) {
+            if (selectedSeats.length === 0) {
+                e.preventDefault();
+                alert('Por favor seleccioná al menos una butaca libre para continuar.');
+            }
+        });
+    }
 
     // Cuenta regresiva visual del temporizador (10 minutos)
-    let totalSeconds = 8 * 60 + 40;
+    let totalSeconds = 10 * 60;
     const countdownEl = document.getElementById('timerCountdown');
     if (countdownEl) {
         setInterval(function () {
@@ -131,4 +168,3 @@ document.addEventListener('DOMContentLoaded', function () {
         }, 1000);
     }
 });
-
