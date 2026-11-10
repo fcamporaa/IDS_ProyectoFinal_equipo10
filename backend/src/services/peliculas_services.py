@@ -1,13 +1,20 @@
+import re
+
 import requests
 
 from src.constants import (
     OMDB_API_KEY,
-    OMDB_URL,
-    OMDB_TIMEOUT_SEGUNDOS,
+    OMDB_ERROR_PELICULA_NO_ENCONTRADA,
     OMDB_ERRORES_SIN_RESULTADOS,
+    OMDB_TIPO_PELICULA,
+    OMDB_TIMEOUT_SEGUNDOS,
+    OMDB_TRAMA_COMPLETA,
+    OMDB_URL,
+    OMDB_VALOR_NO_DISPONIBLE,
 )
 from src.repositories.peliculas_repository import (
     obtener_cartelera_vigente_db,
+    obtener_peliculas_admin_db,
     buscar_pelicula_por_id_db,
     buscar_pelicula_por_api_db,
     obtener_funciones_vigentes_por_pelicula_db,
@@ -53,6 +60,11 @@ def listar_cartelera(filtros: dict) -> list[dict]:
     """Lista las películas actualmente en cartelera con sus géneros."""
     peliculas = obtener_cartelera_vigente_db({**filtros, "vigentes_desde": ahora_local()})
     return _formatear_peliculas(peliculas)
+
+
+def listar_peliculas_admin() -> list[dict]:
+    """Lista todas las películas (activas e inactivas) con sus géneros para el ABM."""
+    return _formatear_peliculas(obtener_peliculas_admin_db())
 
 
 def _obtener_pelicula_o_404(id_pelicula: int) -> dict:
@@ -144,21 +156,8 @@ def _api_externa_no_disponible(descripcion: str) -> ValueError:
     )
 
 
-def _formatear_resultado_externo(item: dict) -> dict:
-    """Pasa un resultado de OMDb (Title, Year, imdbID, Poster) al formato del contrato."""
-    anio = str(item.get("Year", ""))[:4]
-    poster = item.get("Poster")
-    return {
-        "id_api": item["imdbID"],
-        "titulo": item["Title"],
-        "anio": int(anio) if anio.isdigit() else None,
-        "poster": None if poster in (None, "N/A") else poster,
-        "origen": "OMDB",
-    }
-
-
-def buscar_peliculas_externas(filtros: dict) -> list[dict]:
-    """Consulta la API externa (OMDb) por título y devuelve los resultados con el formato del contrato."""
+def _verificar_configuracion_omdb() -> None:
+    """Lanza 500 si falta la API key de OMDb, sin exponerla en la respuesta."""
     if not OMDB_API_KEY:
         raise crear_error_http(
             "error.configuracion.api_externa",
@@ -167,13 +166,79 @@ def buscar_peliculas_externas(filtros: dict) -> list[dict]:
             500,
         )
 
-    parametros = {"apikey": OMDB_API_KEY, "s": filtros["query"], "type": "movie"}
+
+def _consultar_omdb(parametros: dict) -> dict:
+    """Consulta OMDb y convierte las fallas de transporte o de JSON en un 502 estándar."""
     try:
-        datos = requests.get(OMDB_URL, params=parametros, timeout=OMDB_TIMEOUT_SEGUNDOS).json()
+        datos = requests.get(
+            OMDB_URL, params=parametros, timeout=OMDB_TIMEOUT_SEGUNDOS
+        ).json()
     except (requests.RequestException, ValueError):
         datos = None
     if not isinstance(datos, dict):
         raise _api_externa_no_disponible("No se pudo obtener una respuesta válida de OMDb.")
+    return datos
+
+
+def _texto_omdb(valor) -> str | None:
+    """Normaliza textos de OMDb: None, 'N/A' y texto vacío se convierten en None."""
+    if valor is None:
+        return None
+    texto = str(valor).strip()
+    if not texto or texto == OMDB_VALOR_NO_DISPONIBLE:
+        return None
+    return texto
+
+
+def _entero_omdb(valor) -> int | None:
+    """Extrae el primer número de un campo de OMDb ('166 min' -> 166)."""
+    texto = _texto_omdb(valor)
+    if texto is None:
+        return None
+    coincidencia = re.search(r"\d+", texto)
+    return int(coincidencia.group()) if coincidencia else None
+
+
+def _formatear_resultado_externo(item: dict) -> dict:
+    """Pasa un resultado de OMDb (Title, Year, imdbID, Poster) al formato del contrato."""
+    return {
+        "id_api": item["imdbID"],
+        "titulo": item["Title"],
+        "anio": _entero_omdb(item.get("Year")),
+        "poster": _texto_omdb(item.get("Poster")),
+        "origen": "OMDB",
+    }
+
+
+def _formatear_detalle_externo(item: dict) -> dict:
+    """Normaliza el detalle completo de OMDb al contrato del backoffice."""
+    generos = _texto_omdb(item.get("Genre"))
+    return {
+        "id_api": item.get("imdbID"),
+        "titulo": _texto_omdb(item.get("Title")),
+        "anio_estreno": _entero_omdb(item.get("Year")),
+        "poster_url": _texto_omdb(item.get("Poster")),
+        "sinopsis": _texto_omdb(item.get("Plot")),
+        "duracion_min": _entero_omdb(item.get("Runtime")),
+        "clasificacion": _texto_omdb(item.get("Rated")),
+        "generos": (
+            [genero.strip() for genero in generos.split(",") if genero.strip()]
+            if generos
+            else []
+        ),
+        "origen_api": "OMDB",
+    }
+
+
+def buscar_peliculas_externas(filtros: dict) -> list[dict]:
+    """Consulta la API externa (OMDb) por título y devuelve los resultados con el formato del contrato."""
+    _verificar_configuracion_omdb()
+    parametros = {
+        "apikey": OMDB_API_KEY,
+        "s": filtros["query"],
+        "type": OMDB_TIPO_PELICULA,
+    }
+    datos = _consultar_omdb(parametros)
 
     if datos.get("Response") != "True":
         error = datos.get("Error")
@@ -186,6 +251,29 @@ def buscar_peliculas_externas(filtros: dict) -> list[dict]:
         for item in datos.get("Search", [])
         if item.get("imdbID") and item.get("Title")
     ]
+
+
+def obtener_pelicula_externa(id_api: str) -> dict:
+    """Consulta el detalle de una película en OMDb y lo normaliza para precargar el formulario."""
+    _verificar_configuracion_omdb()
+    parametros = {
+        "apikey": OMDB_API_KEY,
+        "i": id_api,
+        "plot": OMDB_TRAMA_COMPLETA,
+    }
+    datos = _consultar_omdb(parametros)
+
+    if datos.get("Response") != "True":
+        error = datos.get("Error")
+        if error == OMDB_ERROR_PELICULA_NO_ENCONTRADA:
+            raise error_no_encontrado(
+                f"No se encontró una película externa con id_api {id_api}."
+            )
+        raise _api_externa_no_disponible(f"OMDb respondió con un error: {error}")
+
+    detalle = _formatear_detalle_externo(datos)
+    detalle["id_api"] = detalle["id_api"] or id_api
+    return detalle
 
 
 def listar_generos() -> list[dict]:

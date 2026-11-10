@@ -1,0 +1,180 @@
+{% extends 'layout.html' %}
+
+{% block title %}Gestión de películas | Cinema Paradiso{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/admin_peliculas.css') }}">
+{% endblock %}
+
+{% block content %}
+{% set peliculas_por_id_api = {} %}
+{% for pelicula in peliculas %}
+  {% if pelicula.origen_api == 'OMDB' and pelicula.id_api %}
+    {% set _ = peliculas_por_id_api.update({pelicula.id_api: pelicula}) %}
+  {% endif %}
+{% endfor %}
+
+<div class="admin-peliculas container">
+  <header class="admin-peliculas__header">
+    <div>
+      <p class="admin-peliculas__eyebrow">Backoffice</p>
+      <h1>Gestión de películas</h1>
+      <p class="admin-peliculas__subtitle">
+        Buscá una ficha en OMDb, completá sus datos y administrá el catálogo local.
+      </p>
+    </div>
+    <div class="admin-peliculas__header-links">
+      <a href="{{ url_for('dashboard.index') }}" class="admin-peliculas__back">← Volver al dashboard</a>
+      <a href="{{ url_for('home.index') }}" class="admin-peliculas__back">← Volver a la cartelera</a>
+    </div>
+  </header>
+
+  {% if error_backend %}
+  <div class="admin-peliculas__alert" role="alert">{{ error_backend }}</div>
+  {% endif %}
+
+  <section class="admin-peliculas__search-section">
+    <header class="admin-peliculas__section-header">
+      <h2>Buscar en OMDb</h2>
+      <p>Buscá por título para importar sinopsis, póster, duración y clasificación.</p>
+    </header>
+    <form class="admin-peliculas__search" method="get" action="{{ url_for('admin_peliculas.index') }}">
+      {% with nombre='busqueda', etiqueta='Título a buscar', valor=busqueda %}
+        {% include 'components/campo_formulario.html' %}
+      {% endwith %}
+      {% with texto='Buscar en OMDb', tipo='submit' %}
+        {% include 'components/button.html' %}
+      {% endwith %}
+      {% if busqueda %}
+      {% with texto='Limpiar', url_destino=url_for('admin_peliculas.index'), variante='secondary' %}
+        {% include 'components/button.html' %}
+      {% endwith %}
+      {% endif %}
+    </form>
+  </section>
+
+  {% if busqueda %}
+  <section class="admin-peliculas__results-section">
+    <header class="admin-peliculas__section-header">
+      <h2>Resultados en OMDb</h2>
+      <p>Elegí una ficha para precargar el formulario antes de guardarla.</p>
+    </header>
+    {% if resultados_externos %}
+    <div class="admin-peliculas__results">
+      {% for resultado in resultados_externos %}
+        {% set pelicula_existente = peliculas_por_id_api.get(resultado.id_api) %}
+        {% with resultado=resultado,
+                busqueda=busqueda,
+                ya_existe=pelicula_existente is not none,
+                id_pelicula_existente=pelicula_existente.id_pelicula if pelicula_existente else none,
+                pelicula_existente=pelicula_existente %}
+          {% include 'components/pelicula_externa_resultado.html' %}
+        {% endwith %}
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="admin-peliculas__empty">No se encontraron películas con ese título.</p>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  {% include 'components/formulario_pelicula.html' %}
+
+  <section class="admin-peliculas__table-section">
+    <header class="admin-peliculas__section-header">
+      <h2>Películas registradas</h2>
+      <p>Incluye películas activas e inactivas. La baja es lógica.</p>
+    </header>
+
+    {% if peliculas %}
+    <div class="admin-peliculas__table-wrapper">
+      <table class="admin-peliculas__table">
+        <thead>
+          <tr>
+            <th scope="col">Póster</th>
+            <th scope="col">Título</th>
+            <th scope="col">Año</th>
+            <th scope="col">Duración</th>
+            <th scope="col">Clasificación</th>
+            <th scope="col">Géneros</th>
+            <th scope="col">Origen</th>
+            <th scope="col">Estado</th>
+            <th scope="col">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for pelicula in peliculas %}
+          <tr>
+            <td>
+              <div class="admin-peliculas__table-poster">
+                {% if pelicula.poster_url %}
+                <img src="{{ pelicula.poster_url }}" alt="Póster de {{ pelicula.titulo }}" loading="lazy">
+                {% else %}
+                <span class="admin-peliculas__poster-empty">Sin póster</span>
+                {% endif %}
+              </div>
+            </td>
+            <td class="admin-peliculas__title-cell">{{ pelicula.titulo }}</td>
+            <td>{{ pelicula.anio_estreno or '—' }}</td>
+            <td>{{ pelicula.duracion_min or '—' }} min</td>
+            <td>{{ pelicula.clasificacion or '—' }}</td>
+            <td>{{ pelicula.generos | map(attribute='nombre') | join(', ') }}</td>
+            <td>{{ pelicula.origen_api }}</td>
+            <td>
+              <span class="admin-peliculas__badge {% if not pelicula.activa %}admin-peliculas__badge--inactiva{% endif %}">
+                {{ 'Activa' if pelicula.activa else 'Inactiva' }}
+              </span>
+            </td>
+            <td>
+              <div class="admin-peliculas__actions">
+                {% with texto='Editar',
+                        url_destino=url_for('admin_peliculas.editar', id_pelicula=pelicula.id_pelicula),
+                        variante='secondary',
+                        clase_extra='admin-peliculas__action' %}
+                  {% include 'components/button.html' %}
+                {% endwith %}
+
+                {% if pelicula.activa %}
+                <form method="post"
+                      action="{{ url_for('admin_peliculas.eliminar', id_pelicula=pelicula.id_pelicula) }}"
+                      data-confirmar-baja
+                      data-titulo-pelicula="{{ pelicula.titulo }}"
+                      data-modal-destino="modal-confirmar-baja">
+                  {% with texto='Dar de baja', tipo='submit', variante='danger', clase_extra='admin-peliculas__action' %}
+                    {% include 'components/button.html' %}
+                  {% endwith %}
+                </form>
+                {% else %}
+                <form method="post"
+                      action="{{ url_for('admin_peliculas.reactivar', id_pelicula=pelicula.id_pelicula) }}">
+                  {% with texto='Reactivar', tipo='submit', variante='secondary', clase_extra='admin-peliculas__action' %}
+                    {% include 'components/button.html' %}
+                  {% endwith %}
+                </form>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="admin-peliculas__empty">No hay películas registradas.</p>
+    {% endif %}
+  </section>
+
+  {% with id_modal='modal-confirmar-baja',
+          titulo='Confirmar baja',
+          mensaje='La película dejará de mostrarse en la cartelera. Si tiene funciones programadas, primero deben cancelarse. ¿Querés continuar?',
+          accion=url_for('admin_peliculas.index'),
+          texto_confirmar='Confirmar baja',
+          texto_cancelar='Cancelar' %}
+    {% include 'components/modal_confirmacion.html' %}
+  {% endwith %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/admin_peliculas.js') }}"></script>
+{% endblock %}

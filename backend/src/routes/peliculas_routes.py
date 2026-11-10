@@ -1,11 +1,13 @@
 from flask import jsonify, request
 from src.services.peliculas_services import (
     listar_cartelera,
+    listar_peliculas_admin,
     obtener_detalle_pelicula,
     crear_pelicula,
     actualizar_pelicula,
     eliminar_pelicula,
     buscar_peliculas_externas,
+    obtener_pelicula_externa,
     listar_generos,
     listar_resenas_pelicula,
     crear_resena_pelicula,
@@ -13,6 +15,7 @@ from src.services.peliculas_services import (
 from src.utils import validar_admin, validar_usuario
 from src.validators.peliculas_validators import (
     validar_id_pelicula,
+    validar_id_externo,
     validar_filtros_cartelera,
     validar_crear_pelicula,
     validar_actualizar_pelicula,
@@ -30,6 +33,14 @@ def register_peliculas_routes(app):
         """
         filtros = validar_filtros_cartelera(request.args)
         return jsonify(listar_cartelera(filtros)), 200
+
+    @app.route("/peliculas/admin", methods=["GET"])
+    def get_peliculas_admin():
+        """
+        GET /peliculas/admin: Lista todas las películas, activas e inactivas, para el ABM (Solo Admin).
+        """
+        validar_admin(request.headers.get("Authorization"))
+        return jsonify(listar_peliculas_admin()), 200
 
     @app.route("/peliculas/<int:id>", methods=["GET"])
     def get_pelicula(id):
@@ -76,6 +87,15 @@ def register_peliculas_routes(app):
         validar_admin(request.headers.get("Authorization"))
         filtros = validar_busqueda_externa(request.args)
         return jsonify(buscar_peliculas_externas(filtros)), 200
+
+    @app.route("/peliculas/externas/<string:id_api>", methods=["GET"])
+    def get_pelicula_externa(id_api):
+        """
+        GET /peliculas/externas/{id_api}: Detalle de una película en OMDb para precargar la ficha (Solo Admin).
+        """
+        validar_admin(request.headers.get("Authorization"))
+        id_api = validar_id_externo(id_api)
+        return jsonify(obtener_pelicula_externa(id_api)), 200
 
     @app.route("/generos", methods=["GET"])
     def get_generos():

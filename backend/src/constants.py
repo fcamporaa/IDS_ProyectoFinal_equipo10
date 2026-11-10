@@ -65,8 +65,12 @@ HTTP_NO_IMPLEMENTADO = 501
 OMDB_API_KEY = os.getenv("OMDB_API_KEY", "")
 OMDB_URL = "https://www.omdbapi.com/"
 OMDB_TIMEOUT_SEGUNDOS = 10
+OMDB_VALOR_NO_DISPONIBLE = "N/A"
+OMDB_TIPO_PELICULA = "movie"
+OMDB_TRAMA_COMPLETA = "full"
 # Respuestas de OMDb que significan "sin resultados" y no un error del servicio
 OMDB_ERRORES_SIN_RESULTADOS = {"Movie not found!", "Too many results."}
+OMDB_ERROR_PELICULA_NO_ENCONTRADA = "Movie not found!"
 # """ OJITO, NO OLVIDEN DE PONER UNA KEY DE OMDb. SI NO SALTA 500 """
 
 

@@ -1,0 +1,452 @@
+/* ========================================================
+   Página: ABM de películas del backoffice (.admin-peliculas)
+   Solo usa los tokens definidos en tokens.css.
+   ======================================================== */
+
+.admin-peliculas {
+    padding-top: 2.5rem;
+    padding-bottom: 3rem;
+}
+
+.admin-peliculas__header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.75rem;
+}
+
+.admin-peliculas__eyebrow {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--color-accent-gold);
+}
+
+.admin-peliculas__header h1 {
+    margin-top: 0.25rem;
+    font-size: 1.9rem;
+    font-weight: 800;
+    color: var(--color-text-main);
+}
+
+.admin-peliculas__subtitle {
+    margin-top: 0.4rem;
+    max-width: 62ch;
+    font-size: 0.92rem;
+    color: var(--color-text-muted);
+}
+
+.admin-peliculas__header-links {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.admin-peliculas__back {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+}
+
+.admin-peliculas__back:hover {
+    color: var(--color-accent-gold);
+}
+
+.admin-peliculas__alert {
+    background-color: var(--color-bg-surface-low);
+    border: 1px solid var(--color-danger);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-main);
+    font-size: 0.9rem;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.admin-peliculas__search-section,
+.admin-peliculas__results-section,
+.admin-peliculas__form-section,
+.admin-peliculas__table-section {
+    margin-bottom: 1.75rem;
+}
+
+.admin-peliculas__section-header {
+    margin-bottom: 1rem;
+}
+
+.admin-peliculas__section-header h2 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--color-text-main);
+}
+
+.admin-peliculas__section-header p {
+    margin-top: 0.35rem;
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+}
+
+.admin-peliculas__search {
+    display: flex;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding: 1.25rem;
+    background-color: var(--color-bg-surface-low);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+}
+
+.admin-peliculas__search .form-field {
+    flex: 1 1 320px;
+}
+
+.admin-peliculas .form-field {
+    display: grid;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+}
+
+.admin-peliculas .form-field input,
+.admin-peliculas .form-field textarea,
+.admin-peliculas .form-field select {
+    width: 100%;
+    padding: 0.7rem 0.8rem;
+    background-color: var(--color-bg-main);
+    color: var(--color-text-main);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 400;
+}
+
+.admin-peliculas .form-field textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+.admin-peliculas .form-field input:focus-visible,
+.admin-peliculas .form-field textarea:focus-visible,
+.admin-peliculas .form-field select:focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
+}
+
+.admin-peliculas__results {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1rem;
+}
+
+.admin-peliculas__result-card {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+    background-color: var(--color-bg-surface-low);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+}
+
+.admin-peliculas__result-poster {
+    flex: 0 0 92px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 92px;
+    aspect-ratio: 2 / 3;
+    overflow: hidden;
+    background-color: var(--color-bg-main);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+}
+
+.admin-peliculas__result-poster img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.admin-peliculas__result-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    min-width: 0;
+}
+
+.admin-peliculas__result-info h3 {
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: var(--color-text-main);
+}
+
+.admin-peliculas__result-meta {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    overflow-wrap: anywhere;
+}
+
+.admin-peliculas__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.6rem;
+    background-color: var(--color-bg-surface-high);
+    border-radius: var(--radius-full);
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--color-success);
+}
+
+.admin-peliculas__badge--inactiva {
+    color: var(--color-danger);
+}
+
+.admin-peliculas__empty {
+    padding: 1.25rem 0;
+    font-size: 0.9rem;
+    color: var(--color-text-dim);
+}
+
+.admin-peliculas__notice {
+    padding: 0.75rem 1rem;
+    background-color: var(--color-bg-surface-low);
+    border: 1px solid var(--color-warning);
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    color: var(--color-text-main);
+}
+
+.admin-peliculas__form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem 1.25rem;
+    padding: 1.5rem;
+    background-color: var(--color-bg-surface-low);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+}
+
+.admin-peliculas__field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    min-width: 0;
+}
+
+.admin-peliculas__field--full {
+    grid-column: 1 / -1;
+}
+
+.admin-peliculas__poster-preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 140px;
+    aspect-ratio: 2 / 3;
+    overflow: hidden;
+    background-color: var(--color-bg-main);
+    border: 1px dashed var(--color-border-highlight);
+    border-radius: var(--radius-md);
+}
+
+.admin-peliculas__poster-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.admin-peliculas__poster-empty {
+    padding: 0.5rem;
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--color-text-dim);
+}
+
+.admin-peliculas__genres {
+    padding: 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+}
+
+.admin-peliculas__genres legend {
+    padding: 0 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--color-text-muted);
+}
+
+.admin-peliculas__genres-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.6rem;
+}
+
+.admin-peliculas__genre-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.65rem;
+    background-color: var(--color-bg-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.admin-peliculas__genre-option:hover {
+    border-color: var(--color-border-highlight);
+}
+
+.admin-peliculas__genre-option input {
+    accent-color: var(--color-accent-red);
+}
+
+.admin-peliculas__checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.88rem;
+    color: var(--color-text-main);
+    cursor: pointer;
+}
+
+.admin-peliculas__checkbox input {
+    accent-color: var(--color-accent-red);
+}
+
+.admin-peliculas__form-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.admin-peliculas__table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    background-color: var(--color-bg-surface-low);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+}
+
+.admin-peliculas__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+
+.admin-peliculas__table th,
+.admin-peliculas__table td {
+    padding: 0.7rem 0.75rem;
+    text-align: left;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.admin-peliculas__table th {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--color-text-dim);
+    white-space: nowrap;
+}
+
+.admin-peliculas__table tbody tr:hover {
+    background-color: var(--color-bg-surface-high);
+}
+
+.admin-peliculas__table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.admin-peliculas__table-poster {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    aspect-ratio: 2 / 3;
+    overflow: hidden;
+    background-color: var(--color-bg-main);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+}
+
+.admin-peliculas__table-poster img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.admin-peliculas__title-cell {
+    min-width: 180px;
+    font-weight: 600;
+    color: var(--color-text-main);
+}
+
+.admin-peliculas__actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.admin-peliculas__actions form {
+    display: inline-flex;
+}
+
+.admin-peliculas__action {
+    padding: 0.45rem 0.7rem;
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+    .admin-peliculas__form {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .admin-peliculas {
+        padding-top: 1.5rem;
+    }
+
+    .admin-peliculas__header h1 {
+        font-size: 1.5rem;
+    }
+
+    .admin-peliculas__header-links {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .admin-peliculas__search,
+    .admin-peliculas__form-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .admin-peliculas__search .btn,
+    .admin-peliculas__form-actions .btn {
+        width: 100%;
+    }
+
+    .admin-peliculas__results {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-peliculas__form,
+    .admin-peliculas__search {
+        padding: 1rem;
+    }
+}
