@@ -59,16 +59,21 @@
                     <span class="showtimes-label">Hoy:</span>
                     <div class="showtime-chips">
                         {% for h in p.horarios %}
-                            <a href="{{ url_for('peliculas.detalle_pelicula', id_pelicula=1) }}" class="hero-time-chip">
-                                <span class="time-text">{{ h.hora }}</span>
-                                <span class="hall-text">{{ h.sala }}</span>
+                            <a href="{{ url_for('peliculas.detalle_pelicula', id_pelicula=p.id_pelicula | default(1)) }}" class="hero-time-chip">
+                                {% if h is mapping %}
+                                    <span class="time-text">{{ h.hora }}</span>
+                                    <span class="hall-text">{{ h.sala }}</span>
+                                {% else %}
+                                    <span class="time-text">{{ h }}</span>
+                                    <span class="hall-text">{{ p.sala_principal | default('Sala 1') }}</span>
+                                {% endif %}
                             </a>
                         {% endfor %}
                     </div>
                 </div>
 
                 <!-- Botón CTA Primario -->
-                <a href="{{ url_for('peliculas.detalle_pelicula', id_pelicula=1) }}" class="hero-cta-btn">
+                <a href="{{ url_for('peliculas.detalle_pelicula', id_pelicula=p.id_pelicula | default(1)) }}" class="hero-cta-btn">
                     <span class="cta-icon">🎟️</span>
                     <span>Comprar Entradas</span>
                 </a>

@@ -8,11 +8,13 @@ home_bp = Blueprint("home", __name__)
 def index():
     """
     Ruta principal (Cartelera / Home).
-    Consume el catálogo real del Backend mediante el servicio de películas.
-    Si el backend responde con éxito, provee las películas dinámicas.
-    Si el backend no está disponible o falla, renderiza el fallback integrado del template.
+    Consume exclusivamente el catálogo real del Backend.
+    Si el backend responde vacío o falla, refleja el estado real sin inventar datos.
     """
     peliculas = obtener_cartelera_vigente()
-    if peliculas:
-        return render_template("index.html", peliculas=peliculas)
-    return render_template("index.html")
+    backend_disponible = peliculas is not None
+    return render_template(
+        "index.html",
+        peliculas=peliculas or [],
+        backend_disponible=backend_disponible,
+    )
