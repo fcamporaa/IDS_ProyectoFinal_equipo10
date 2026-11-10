@@ -16,3 +16,6 @@ def iniciar_sesion(email: str, contrasena: str):
 def obtener_perfil(token: str):
     """Obtiene el perfil del usuario autenticado para validar su rol."""
     return consultar_backend("/auth/me", token=token, metodo="GET")
+
+def registrar_usuario(datos: dict):
+    return consultar_backend("/auth/register", metodo="POST", datos=datos)
