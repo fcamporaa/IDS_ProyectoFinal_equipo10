@@ -1,0 +1,315 @@
+/* Estilos de la página de gestión de servicios */
+.admin-servicios {
+  padding: 2rem 1rem 4rem;
+  background-color: var(--color-background, #121216);
+  min-height: calc(100vh - 70px);
+  color: var(--color-text, #ffffff);
+}
+
+.admin-servicios__container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.admin-servicios__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--color-border, #2a2a35);
+}
+
+.admin-servicios__eyebrow {
+  display: inline-block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-primary, #e50914);
+  margin-bottom: 0.25rem;
+}
+
+.admin-servicios__title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+}
+
+.admin-servicios__subtitle {
+  color: var(--color-text-muted, #9ca3af);
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.admin-servicios__header-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* Formulario desplegable */
+.admin-servicios__form-container {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.35s ease, opacity 0.35s ease, margin 0.35s ease;
+  margin-bottom: 0;
+}
+
+.admin-servicios__form-container--activo {
+  max-height: 800px;
+  opacity: 1;
+  margin-bottom: 2rem;
+}
+
+.formulario-servicio-card {
+  background-color: var(--color-surface, #1e1e24);
+  border: 1px solid var(--color-border, #2a2a35);
+  border-radius: var(--border-radius-lg, 12px);
+  padding: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.formulario-servicio-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--color-border, #2a2a35);
+}
+
+.formulario-servicio-card__header h2 {
+  font-size: 1.25rem;
+  margin: 0;
+}
+
+.formulario-servicio-card__cerrar {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--color-text-muted, #9ca3af);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.formulario-servicio-card__cerrar:hover {
+  color: var(--color-text, #ffffff);
+}
+
+.formulario-servicio__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.formulario-servicio__campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.formulario-servicio__campo--checkbox {
+  grid-column: 1 / -1;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
+}
+
+.form-label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--color-text, #ffffff);
+}
+
+.form-control {
+  background-color: var(--color-background, #121216);
+  border: 1px solid var(--color-border, #2a2a35);
+  border-radius: var(--border-radius-sm, 6px);
+  padding: 0.75rem 1rem;
+  color: var(--color-text, #ffffff);
+  font-size: 0.95rem;
+  width: 100%;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--color-primary, #e50914);
+}
+
+.form-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.formulario-servicio__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border, #2a2a35);
+}
+
+/* Listado de servicios */
+.admin-servicios__listado {
+  background-color: var(--color-surface, #1e1e24);
+  border: 1px solid var(--color-border, #2a2a35);
+  border-radius: var(--border-radius-lg, 12px);
+  overflow: hidden;
+}
+
+.admin-servicios__table-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--color-border, #2a2a35);
+}
+
+.admin-servicios__table-header h2 {
+  font-size: 1.25rem;
+  margin: 0;
+}
+
+.admin-servicios__table-wrapper {
+  overflow-x: auto;
+}
+
+.admin-servicios__table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.95rem;
+}
+
+.admin-servicios__table th,
+.admin-servicios__table td {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--color-border, #2a2a35);
+}
+
+.admin-servicios__table th {
+  background-color: rgba(0, 0, 0, 0.2);
+  font-weight: 600;
+  color: var(--color-text-muted, #9ca3af);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.admin-servicios__table tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.admin-servicios__table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.font-weight-bold {
+  font-weight: 600;
+}
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.6rem;
+  border-radius: 50px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.badge-tipo--comida {
+  background-color: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+}
+
+.badge-tipo--bebida {
+  background-color: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+}
+
+.badge-estado--activo {
+  background-color: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+}
+
+.badge-estado--inactivo {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+
+/* Acciones en tabla */
+.admin-servicios__actions-cell {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.btn-action {
+  background: none;
+  border: none;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--border-radius-sm, 4px);
+  text-decoration: none;
+  transition: background-color 0.2s;
+}
+
+.btn-action--edit {
+  color: var(--color-primary, #e50914);
+}
+.btn-action--edit:hover {
+  background-color: rgba(229, 9, 20, 0.1);
+}
+
+.btn-action--delete {
+  color: #f87171;
+}
+.btn-action--delete:hover {
+  background-color: rgba(248, 113, 113, 0.1);
+}
+
+.btn-action--reactivate {
+  color: #34d399;
+}
+.btn-action--reactivate:hover {
+  background-color: rgba(52, 211, 153, 0.1);
+}
+
+.inline-form {
+  display: inline;
+  margin: 0;
+}
+
+.admin-servicios__empty {
+  padding: 3rem;
+  text-align: center;
+  color: var(--color-text-muted, #9ca3af);
+}
+
+@media (max-width: 768px) {
+  .admin-servicios__header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .admin-servicios__header-actions {
+    justify-content: stretch;
+  }
+  .admin-servicios__header-actions a {
+    flex: 1;
+    text-align: center;
+  }
+}
