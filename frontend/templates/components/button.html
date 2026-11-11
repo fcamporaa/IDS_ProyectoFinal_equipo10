@@ -5,10 +5,11 @@
    - url_destino: si se informa, renderiza un enlace en lugar de un botón
    - tipo: tipo del botón cuando no hay url_destino (default: button)
    - clase_extra: clases adicionales opcionales
+   - atributos: atributos HTML adicionales opcionales (ej. data-modal-close)
 #}
 {% set variante_final = variante | default('primary') %}
 {% if url_destino %}
-<a href="{{ url_destino }}" class="btn btn--{{ variante_final }} {{ clase_extra | default('') }}">{{ texto }}</a>
+<a href="{{ url_destino }}" class="btn btn--{{ variante_final }} {{ clase_extra | default('') }}" {{ atributos | default('') | safe }}>{{ texto }}</a>
 {% else %}
-<button type="{{ tipo | default('button') }}" class="btn btn--{{ variante_final }} {{ clase_extra | default('') }}">{{ texto }}</button>
+<button type="{{ tipo | default('button') }}" class="btn btn--{{ variante_final }} {{ clase_extra | default('') }}" {{ atributos | default('') | safe }}>{{ texto }}</button>
 {% endif %}

@@ -57,6 +57,7 @@ def obtener_detalle_pelicula(id_pelicula: int):
     return None
 
 
+
 def obtener_resenas_pelicula(id_pelicula: int, token: str):
     """Obtiene reseñas para identificar la reseña propia de un usuario."""
     return consultar_backend(
@@ -72,3 +73,8 @@ def crear_resena_pelicula(id_pelicula: int, token: str, datos: dict):
         metodo="POST",
         datos=datos,
     )
+  
+def obtener_generos():
+    """Consume GET /generos y devuelve (datos, código HTTP) para que la ruta decida."""
+    return consultar_backend("/generos", metodo="GET")
+

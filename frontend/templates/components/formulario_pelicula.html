@@ -1,0 +1,119 @@
+{# Formulario parametrizado de alta y edición de películas.
+   Parámetros: modo_formulario, accion_formulario, borrador, generos, abrir_formulario.
+   El borrador siempre trae todas las claves del contrato, aunque estén vacías. #}
+<section class="admin-peliculas__form-section">
+  <header class="admin-peliculas__section-header">
+    <h2>{{ 'Nueva película' if modo_formulario == 'crear' else 'Editar película' }}</h2>
+    <p>
+      {{ 'Cargá una ficha manual o importala desde OMDb.' if modo_formulario == 'crear'
+         else 'Modificá los datos locales. La ficha externa no se vuelve a consultar.' }}
+    </p>
+  </header>
+
+  <form id="form-pelicula" class="admin-peliculas__form" method="post"
+        action="{{ accion_formulario }}"
+        data-abrir-formulario="{{ 'true' if abrir_formulario else 'false' }}">
+    {% if modo_formulario == 'crear' %}
+    <input type="hidden" name="origen_api" value="{{ borrador.origen_api or 'CUSTOM' }}">
+    <input type="hidden" name="id_api" value="{{ borrador.id_api or '' }}">
+    {% endif %}
+
+    {% if borrador.generos_no_mapeados %}
+    <div class="admin-peliculas__notice admin-peliculas__field--full" role="status">
+      Géneros de OMDb sin equivalente local: {{ borrador.generos_no_mapeados | join(', ') }}.
+      Elegí manualmente entre los géneros disponibles.
+    </div>
+    {% endif %}
+
+    <div class="admin-peliculas__field admin-peliculas__field--full">
+      {% with nombre='titulo', etiqueta='Título', valor=borrador.titulo, obligatorio=true, maxlength=250 %}
+        {% include 'components/campo_formulario.html' %}
+      {% endwith %}
+    </div>
+
+    <div class="admin-peliculas__field">
+      {% with nombre='anio_estreno', etiqueta='Año de estreno', tipo='number', minimo=1888, maximo=anio_maximo, valor=borrador.anio_estreno %}
+        {% include 'components/campo_formulario.html' %}
+      {% endwith %}
+    </div>
+
+    <div class="admin-peliculas__field">
+      {% with nombre='duracion_min', etiqueta='Duración (minutos)', tipo='number', minimo=1, obligatorio=true, valor=borrador.duracion_min %}
+        {% include 'components/campo_formulario.html' %}
+      {% endwith %}
+    </div>
+
+    <div class="admin-peliculas__field">
+      {% with nombre='clasificacion', etiqueta='Clasificación', maxlength=20, lista='clasificaciones-pelicula', valor=borrador.clasificacion %}
+        {% include 'components/campo_formulario.html' %}
+      {% endwith %}
+      <datalist id="clasificaciones-pelicula">
+        {% for clasificacion in clasificaciones %}
+        <option value="{{ clasificacion }}"></option>
+        {% endfor %}
+      </datalist>
+    </div>
+
+    <div class="admin-peliculas__field">
+      {% if modo_formulario == 'editar' %}
+      <label class="admin-peliculas__checkbox" for="activa">
+        <input id="activa" type="checkbox" name="activa" {% if borrador.activa %}checked{% endif %}>
+        <span>Película activa</span>
+      </label>
+      {% endif %}
+    </div>
+
+    <div class="admin-peliculas__field admin-peliculas__field--full">
+      {% with nombre='poster_url', etiqueta='URL del póster', tipo='url', maxlength=1000, valor=borrador.poster_url %}
+        {% include 'components/campo_formulario.html' %}
+      {% endwith %}
+      <div class="admin-peliculas__poster-preview" data-poster-preview>
+        <img data-poster-preview-img
+             src="{{ borrador.poster_url or '' }}"
+             alt="Vista previa del póster"
+             {% if not borrador.poster_url %}hidden{% endif %}>
+        <p class="admin-peliculas__poster-empty" data-poster-preview-empty {% if borrador.poster_url %}hidden{% endif %}>
+          Sin póster
+        </p>
+      </div>
+    </div>
+
+    <div class="admin-peliculas__field admin-peliculas__field--full">
+      {% with nombre='sinopsis', etiqueta='Sinopsis', tipo='textarea', maxlength=10000, valor=borrador.sinopsis %}
+        {% include 'components/campo_formulario.html' %}
+      {% endwith %}
+    </div>
+
+    <div class="admin-peliculas__field admin-peliculas__field--full">
+      {% with nombre='trailer_url', etiqueta='URL del tráiler', tipo='url', maxlength=1000, valor=borrador.trailer_url %}
+        {% include 'components/campo_formulario.html' %}
+      {% endwith %}
+    </div>
+
+    <fieldset class="admin-peliculas__genres admin-peliculas__field--full">
+      <legend>Géneros *</legend>
+      {% if generos %}
+      <div class="admin-peliculas__genres-grid">
+        {% for genero in generos %}
+        <label class="admin-peliculas__genre-option">
+          <input type="checkbox" name="generos_ids" value="{{ genero.id_genero }}"
+                 {% if genero.id_genero in borrador.generos_ids %}checked{% endif %}>
+          <span>{{ genero.nombre }}</span>
+        </label>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="admin-peliculas__empty">No se pudieron cargar los géneros disponibles.</p>
+      {% endif %}
+    </fieldset>
+
+    <div class="admin-peliculas__form-actions admin-peliculas__field--full">
+      {% with texto='Guardar película' if modo_formulario == 'crear' else 'Guardar cambios', tipo='submit' %}
+        {% include 'components/button.html' %}
+      {% endwith %}
+      {% with texto='Cancelar', url_destino=url_for('admin_peliculas.index'), variante='secondary' %}
+        {% include 'components/button.html' %}
+      {% endwith %}
+    </div>
+  </form>
+</section>

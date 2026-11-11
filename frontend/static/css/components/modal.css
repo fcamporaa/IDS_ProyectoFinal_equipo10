@@ -1,0 +1,104 @@
+/* ========================================================
+   Componente: Modal de confirmación reutilizable
+   ======================================================== */
+
+.modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+}
+
+.modal[hidden] {
+    display: none;
+}
+
+.modal--abierto {
+    display: flex;
+}
+
+.modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background-color: var(--color-bg-surface-lowest);
+    opacity: 0.8;
+}
+
+.modal__dialog {
+    position: relative;
+    width: 100%;
+    max-width: 520px;
+    padding: 1.5rem;
+    background-color: var(--color-bg-surface);
+    border: 1px solid var(--color-border-card);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+}
+
+.modal__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.modal__header h2 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--color-text-main);
+}
+
+.modal__close {
+    padding: 0.15rem 0.45rem;
+    border: none;
+    background-color: transparent;
+    color: var(--color-text-muted);
+    font-size: 1.25rem;
+    line-height: 1;
+}
+
+.modal__close:hover {
+    color: var(--color-text-main);
+}
+
+.modal__body {
+    margin-bottom: 1.25rem;
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+}
+
+.modal__movie {
+    margin-top: 0.5rem;
+    font-weight: 700;
+    color: var(--color-text-main);
+}
+
+.modal__actions {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+body.modal-abierto {
+    overflow: hidden;
+}
+
+@media (max-width: 640px) {
+    .modal {
+        padding: 1rem;
+    }
+
+    .modal__actions {
+        flex-direction: column-reverse;
+        align-items: stretch;
+    }
+
+    .modal__actions .btn {
+        width: 100%;
+    }
+}
