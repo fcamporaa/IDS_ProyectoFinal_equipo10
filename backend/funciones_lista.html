@@ -1,0 +1,44 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Gestión de Funciones</h2>
+        <!-- Este botón llama a la ruta crear_funcion que armaste en tu Python -->
+        <a href="{{ url_for('admin_funciones.crear_funcion') }}" class="btn btn-primary">
+            + Crear Nueva Función
+        </a>
+    </div>
+
+    <table class="table table-striped table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>ID</th>
+                <th>Película</th>
+                <th>Sala</th>
+                <th>Fecha y Hora</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for funcion in funciones %}
+            <tr>
+                <!-- Ajustá estas variables (funcion.id, etc.) según cómo las devuelva tu backend -->
+                <td>{{ funcion.id }}</td>
+                <td>{{ funcion.pelicula_titulo }}</td>
+                <td>{{ funcion.sala_nombre }}</td>
+                <td>{{ funcion.fecha_hora }}</td>
+                <td>
+                    <button class="btn btn-sm btn-warning">Editar</button>
+                    <button class="btn btn-sm btn-danger">Eliminar</button>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" class="text-center">No hay funciones programadas en el sistema.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
