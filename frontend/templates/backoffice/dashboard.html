@@ -19,6 +19,9 @@
             {% with texto='Gestionar servicios', url_destino=url_for('admin_servicios.index') %}
                 {% include 'components/button.html' %}
             {% endwith %}
+            {% with texto='Validador QR', url_destino=url_for('validaciones.index') %}
+                {% include 'components/button.html' %}
+            {% endwith %}
             <a href="{{ url_for('home.index') }}" class="dashboard-page__back">
                 ← Volver a la cartelera
             </a>

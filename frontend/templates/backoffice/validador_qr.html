@@ -1,0 +1,288 @@
+{% extends 'layout.html' %}
+
+{% block title %}Validador QR | Cinema Paradiso{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/validador_qr.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="validador-qr container">
+    <header class="validador-qr__header">
+        <div>
+            <p class="validador-qr__eyebrow">Backoffice · Recepción</p>
+            <h1>Validador de ingreso QR</h1>
+            <p class="validador-qr__subtitle">
+                Ingresá el código de la entrada o activá la cámara para verificar la función y registrar el acceso a sala.
+            </p>
+        </div>
+        <div class="validador-qr__header-links">
+            <a href="{{ url_for('dashboard.index') }}" class="validador-qr__back">← Volver al dashboard</a>
+            <a href="{{ url_for('home.index') }}" class="validador-qr__back">← Volver a la cartelera</a>
+        </div>
+    </header>
+
+    {% if error_backend %}
+    <div class="validador-qr__alert" role="alert">{{ error_backend }}</div>
+    {% endif %}
+
+    <section class="validador-qr__workspace" aria-label="Control de acceso por QR">
+        <article class="validador-qr__card validador-qr__scanner-card">
+            <header class="validador-qr__card-header validador-qr__scanner-header">
+                <div>
+                    <h2>Control de entrada</h2>
+                    <p>Lector USB, ingreso manual o cámara web.</p>
+                </div>
+                <span id="qrSensorBadge" class="validador-qr__sensor-pill">
+                    <span class="validador-qr__sensor-dot" aria-hidden="true"></span>
+                    <span id="qrSensorTexto">MODO MANUAL</span>
+                </span>
+            </header>
+
+            <div class="validador-qr__scanner-flow">
+                <!-- Bloque Cámara (protagonista en mobile; desplegable bajo demanda en desktop) -->
+                <div id="qrCameraSection" class="validador-qr__camera-section">
+                    <div id="qrVisor" class="validador-qr__visor">
+                        <video id="qrVideo" class="validador-qr__video" playsinline muted></video>
+                        <div class="validador-qr__frame" aria-hidden="true">
+                            <span class="validador-qr__corner validador-qr__corner--tl"></span>
+                            <span class="validador-qr__corner validador-qr__corner--tr"></span>
+                            <span class="validador-qr__corner validador-qr__corner--bl"></span>
+                            <span class="validador-qr__corner validador-qr__corner--br"></span>
+                            <span class="validador-qr__scan-line"></span>
+                        </div>
+                        <div id="qrPlaceholder" class="validador-qr__visor-placeholder">
+                            <span class="validador-qr__visor-icon" aria-hidden="true">📷</span>
+                            <p>Activá la cámara para apuntar al código QR del voucher.</p>
+                        </div>
+                    </div>
+
+                    <p id="qrCamaraMensaje" class="validador-qr__camera-msg" hidden role="status"></p>
+
+                    <button
+                        type="button"
+                        id="btnToggleCamara"
+                        class="btn btn--secondary validador-qr__control-btn"
+                        aria-pressed="false"
+                    >
+                        Escanear con cámara
+                    </button>
+                </div>
+
+                <!-- Bloque Manual / Lector USB (protagonista en desktop; contingencia debajo en mobile) -->
+                <div class="validador-qr__manual-section">
+                    <div class="validador-qr__manual-divider">
+                        <span>Ingreso manual / lector USB</span>
+                    </div>
+
+                    <form
+                        id="validadorQrForm"
+                        class="validador-qr__form"
+                        method="post"
+                        action="{{ url_for('validaciones.index') }}"
+                    >
+                        <div class="validador-qr__field">
+                            <label for="qr_token">Código QR de la entrada</label>
+                            <input
+                                type="text"
+                                id="qr_token"
+                                name="qr_token"
+                                placeholder="Escaneá o pegá el token QR..."
+                                minlength="8"
+                                maxlength="160"
+                                pattern="[A-Za-z0-9_-]{8,160}"
+                                autocomplete="off"
+                                required
+                            >
+                        </div>
+
+                        {% if salas %}
+                        <div class="validador-qr__field">
+                            <label for="id_sala">Sala de control (opcional)</label>
+                            <select id="id_sala" name="id_sala">
+                                <option value="">Cualquier sala (sin filtrar)</option>
+                                {% for sala in salas %}
+                                <option
+                                    value="{{ sala.id_sala }}"
+                                    {% if sala_seleccionada == sala.id_sala %}selected{% endif %}
+                                >
+                                    {{ sala.etiqueta }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% endif %}
+
+                        <div class="validador-qr__form-actions">
+                            {% with texto='Validar ingreso', variante='primary', tipo='submit', clase_extra='validador-qr__submit' %}
+                                {% include 'components/button.html' %}
+                            {% endwith %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </article>
+
+        <article
+            class="validador-qr__card validador-qr__result-card {% if resultado_validacion %}{% if resultado_validacion.autorizado %}validador-qr__result-card--valid{% else %}validador-qr__result-card--invalid{% endif %}{% else %}validador-qr__result-card--idle{% endif %}"
+            aria-live="polite"
+            role="{% if resultado_validacion %}alert{% else %}status{% endif %}"
+        >
+            {% if resultado_validacion %}
+                {% if resultado_validacion.autorizado %}
+                <div class="validador-qr__alarm-banner validador-qr__alarm-banner--valid">
+                    <span class="validador-qr__alarm-icon" aria-hidden="true">✓</span>
+                    <div>
+                        <p class="validador-qr__alarm-title">ENTRADA VÁLIDA · INGRESO AUTORIZADO</p>
+                        <p class="validador-qr__alarm-subtitle">{{ resultado_validacion.mensaje }}</p>
+                    </div>
+                </div>
+
+                <dl class="validador-qr__details">
+                    <div class="validador-qr__detail-item">
+                        <dt>Película</dt>
+                        <dd>{{ resultado_validacion.pelicula }}</dd>
+                    </div>
+                    <div class="validador-qr__detail-item">
+                        <dt>Entradas validadas</dt>
+                        <dd>{{ resultado_validacion.entradas_validadas }}</dd>
+                    </div>
+                    <div class="validador-qr__detail-item">
+                        <dt>Compra N.º</dt>
+                        <dd>#{{ resultado_validacion.id_compra }}</dd>
+                    </div>
+                    <div class="validador-qr__detail-item">
+                        <dt>Validado el</dt>
+                        <dd>{{ resultado_validacion.fecha_validacion }}</dd>
+                    </div>
+                </dl>
+                {% else %}
+                <div class="validador-qr__alarm-banner validador-qr__alarm-banner--invalid">
+                    <span class="validador-qr__alarm-icon" aria-hidden="true">✕</span>
+                    <div>
+                        <p class="validador-qr__alarm-title">
+                            {{ 'QR YA UTILIZADO' if resultado_validacion.resultado == 'REUTILIZADO' else 'ENTRADA INVÁLIDA · RECHAZADA' }}
+                        </p>
+                        <p class="validador-qr__alarm-subtitle">{{ resultado_validacion.mensaje }}</p>
+                    </div>
+                </div>
+                <p class="validador-qr__token-ref">
+                    Código evaluado: <code>{{ resultado_validacion.qr_token }}</code>
+                </p>
+                {% endif %}
+
+                <div class="validador-qr__result-footer">
+                    <span class="validador-qr__badge validador-qr__badge--{{ resultado_validacion.resultado | lower }}">
+                        {{ resultado_validacion.resultado }}
+                    </span>
+                    <a
+                        href="{{ url_for('validaciones.index', id_sala=sala_seleccionada) }}"
+                        class="validador-qr__clear"
+                    >
+                        Limpiar resultado
+                    </a>
+                </div>
+            {% else %}
+                <div class="validador-qr__idle-state">
+                    <span class="validador-qr__idle-icon" aria-hidden="true">🎟️</span>
+                    <h2>Esperando lectura de QR</h2>
+                    <p>
+                        Al escanear o enviar un código, acá verás al instante si el acceso está habilitado o el motivo del rechazo.
+                    </p>
+                </div>
+            {% endif %}
+        </article>
+    </section>
+
+    <section class="validador-qr__history" aria-label="Historial de validaciones recientes">
+        <header class="validador-qr__history-header">
+            <div>
+                <h2>Historial de puerta</h2>
+                <p>Últimas validaciones registradas por el personal del complejo.</p>
+            </div>
+
+            <form class="validador-qr__filters" method="get" action="{{ url_for('validaciones.index') }}">
+                {% if sala_seleccionada %}
+                <input type="hidden" name="id_sala" value="{{ sala_seleccionada }}">
+                {% endif %}
+
+                <div class="validador-qr__filter-field">
+                    <label for="filtro-resultado">Resultado</label>
+                    <select id="filtro-resultado" name="resultado">
+                        <option value="">Todos</option>
+                        {% for estado in resultados_disponibles %}
+                        <option
+                            value="{{ estado }}"
+                            {% if filtros.get('resultado') == estado %}selected{% endif %}
+                        >
+                            {{ estado }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="validador-qr__filter-field">
+                    <label for="filtro-compra">Compra N.º</label>
+                    <input
+                        type="number"
+                        id="filtro-compra"
+                        name="id_compra"
+                        min="1"
+                        placeholder="Ej: 12"
+                        value="{{ filtros.get('id_compra', '') }}"
+                    >
+                </div>
+
+                <div class="validador-qr__filter-actions">
+                    {% with texto='Filtrar', variante='secondary', tipo='submit' %}
+                        {% include 'components/button.html' %}
+                    {% endwith %}
+                    {% if filtros %}
+                    <a href="{{ url_for('validaciones.index', id_sala=sala_seleccionada) }}" class="validador-qr__clear">
+                        Limpiar
+                    </a>
+                    {% endif %}
+                </div>
+            </form>
+        </header>
+
+        {% if historial %}
+        <div class="validador-qr__table-wrapper">
+            <table class="validador-qr__table">
+                <thead>
+                    <tr>
+                        <th scope="col">ID</th>
+                        <th scope="col">Compra</th>
+                        <th scope="col">Resultado</th>
+                        <th scope="col">Validado por</th>
+                        <th scope="col">Fecha y hora</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in historial %}
+                    <tr>
+                        <td>#{{ item.id_validacion }}</td>
+                        <td>#{{ item.id_compra }}</td>
+                        <td>
+                            <span class="validador-qr__badge validador-qr__badge--{{ item.resultado | lower }}">
+                                {{ item.resultado }}
+                            </span>
+                        </td>
+                        <td>{{ item.nombre_administrador }}</td>
+                        <td>{{ item.fecha_legible }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="validador-qr__empty">No hay validaciones registradas para los filtros seleccionados.</p>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js" defer></script>
+<script src="{{ url_for('static', filename='js/validador_qr.js') }}" defer></script>
+{% endblock %}
