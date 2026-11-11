@@ -17,5 +17,11 @@ def obtener_perfil(token: str):
     """Obtiene el perfil del usuario autenticado para validar su rol."""
     return consultar_backend("/auth/me", token=token, metodo="GET")
 
+
+def actualizar_perfil(token: str, datos: dict):
+    """Actualiza el nombre o la contraseña del usuario autenticado."""
+    return consultar_backend("/auth/me", token=token, metodo="PUT", datos=datos)
+
+
 def registrar_usuario(datos: dict):
     return consultar_backend("/auth/register", metodo="POST", datos=datos)

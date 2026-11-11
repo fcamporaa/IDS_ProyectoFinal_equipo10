@@ -55,3 +55,20 @@ def obtener_detalle_pelicula(id_pelicula: int):
     if status == 200 and isinstance(respuesta, dict):
         return respuesta
     return None
+
+
+def obtener_resenas_pelicula(id_pelicula: int, token: str):
+    """Obtiene reseñas para identificar la reseña propia de un usuario."""
+    return consultar_backend(
+        f"/peliculas/{id_pelicula}/resenas", token=token, metodo="GET"
+    )
+
+
+def crear_resena_pelicula(id_pelicula: int, token: str, datos: dict):
+    """Envía una reseña de compra al backend para validar asistencia y guardarla."""
+    return consultar_backend(
+        f"/peliculas/{id_pelicula}/resenas",
+        token=token,
+        metodo="POST",
+        datos=datos,
+    )
