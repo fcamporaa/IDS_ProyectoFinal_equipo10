@@ -8,7 +8,9 @@ from routes.compras_routes import compras_bp
 from routes.peliculas_routes import peliculas_bp
 from routes.compra_routes import compra_bp
 from routes.auth_routes import auth_bp
+from routes.perfil_routes import perfil_bp
 from routes.admin_peliculas_routes import admin_peliculas_bp
+
 
 load_dotenv()
 
@@ -26,6 +28,7 @@ app.register_blueprint(compras_bp)
 app.register_blueprint(peliculas_bp)
 app.register_blueprint(dashboard_bp)
 app.register_blueprint(auth_bp)
+app.register_blueprint(perfil_bp)
 app.register_blueprint(admin_peliculas_bp)
 
 app.config["SESSION_COOKIE_HTTPONLY"] = True

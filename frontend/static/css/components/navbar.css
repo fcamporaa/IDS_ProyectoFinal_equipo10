@@ -250,4 +250,9 @@
 @media (max-width: 768px) {
     .nav-links { display: none; }
     .complex-selector-wrapper { display: none; }
+    .header-container { gap: 0.5rem; }
+    .header-actions { gap: 0.35rem; }
+    .nav-user-chip { padding: 0.35rem 0.55rem; }
+    .nav-user-chip .user-name { display: none; }
+    .nav-logout-btn { margin-left: 0 !important; font-size: 0.75rem !important; }
 }
