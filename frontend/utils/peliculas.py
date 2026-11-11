@@ -110,6 +110,9 @@ def adaptar_pelicula_para_card(p: dict) -> dict:
     """
     nombres = [g["nombre"] for g in p.get("generos", []) if g.get("nombre")]
     return {
+        "sinopsis": p.get("sinopsis"),
+        "backdrop_url": p.get("backdrop_url") or p.get("poster_url"),
+        "anio_estreno": p.get("anio_estreno"),
         "id_pelicula": p["id_pelicula"],
         "titulo": p["titulo"],
         "poster_url": p.get("poster_url"),
