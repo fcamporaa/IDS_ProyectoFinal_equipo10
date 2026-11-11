@@ -1,0 +1,22 @@
+<div id="{{ id_modal }}" class="modal" role="dialog" aria-modal="true" aria-labelledby="{{ id_modal }}-title" hidden>
+  <div class="modal__backdrop" data-modal-close></div>
+  <div class="modal__dialog">
+    <div class="modal__header">
+      <h3 id="{{ id_modal }}-title" class="modal__title">{{ titulo }}</h3>
+      <button type="button" class="modal__close" data-modal-close aria-label="Cerrar modal">&times;</button>
+    </div>
+    <div class="modal__body">
+      <p>{{ mensaje }}</p>
+    </div>
+    <div class="modal__actions">
+      <form method="POST" action="{{ accion }}">
+        {% with texto=texto_cancelar | default('Cancelar'), variante_clase='btn-secondary', tipo='button', atributos='data-modal-close' %}
+          {% include 'components/button.html' %}
+        {% endwith %}
+        {% with texto=texto_confirmar | default('Confirmar'), variante_clase='btn-danger', tipo='submit' %}
+          {% include 'components/button.html' %}
+        {% endwith %}
+      </form>
+    </div>
+  </div>
+</div>

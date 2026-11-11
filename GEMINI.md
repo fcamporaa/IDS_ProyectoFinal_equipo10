@@ -6,7 +6,7 @@ Este proyecto se rige de manera obligatoria e inmutable por la Constitución Té
 
 ### Resumen de Cumplimiento Obligatorio:
 1. **Paradigma procedural**: Prohibido usar clases (`class`) para modelos, controladores o servicios. Prohibido usar ORMs. SQL explícito con `%s`.
-2. **Arquitectura SSR**: Prohibido el uso de `fetch()`, `axios` o AJAX en JavaScript. Toda comunicación navegador-servidor es vía HTML (`GET`/`POST`). Frontend consume backend en Python mediante `requests`.
+2. **Arquitectura SSR**: Prohibido el uso de `fetch()`, `axios`, AJAX, WebSockets o SSE en JavaScript. Toda comunicación navegador-servidor es vía HTML (`GET`/`POST`). Frontend consume backend en Python mediante `requests`.
 3. **Estructura Backend en 4 Capas**: `routes` -> `validators` -> `services` -> `repositories`.
 4. **Fechas y Horas**: Almacenamiento unificado en campos `DATETIME`.
 5. **Protocolo de Skills**:

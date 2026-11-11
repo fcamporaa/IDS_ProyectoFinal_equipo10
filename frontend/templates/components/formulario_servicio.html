@@ -1,0 +1,56 @@
+<div class="formulario-servicio-card {% if abrir_formulario %}formulario-servicio-card--abierto{% endif %}" id="seccion-formulario-servicio">
+  <div class="formulario-servicio-card__header">
+    <h2>{% if modo_formulario == 'editar' %}Editar Servicio #{{ id_servicio_editando }}{% else %}Nuevo Servicio / Combo{% endif %}</h2>
+    <a href="{{ url_for('admin_servicios.index') }}" class="formulario-servicio-card__cerrar" aria-label="Cerrar">&times;</a>
+  </div>
+
+  <form method="POST" action="{{ accion_formulario }}" class="formulario-servicio">
+    <div class="formulario-servicio__grid">
+      
+      <!-- Nombre -->
+      <div class="formulario-servicio__campo">
+        <label for="nombre" class="form-label">Nombre del servicio o combo *</label>
+        <input type="text" id="nombre" name="nombre" class="form-control" value="{{ borrador.nombre }}" required maxlength="50" placeholder="Ej: Combo Mega Popcorn">
+      </div>
+
+      <!-- Tipo de servicio -->
+      <div class="formulario-servicio__campo">
+        <label for="tipo" class="form-label">Tipo *</label>
+        <select id="tipo" name="tipo" class="form-control" required>
+          <option value="COMIDA" {% if borrador.tipo == "COMIDA" %}selected{% endif %}>Comida</option>
+          <option value="BEBIDA" {% if borrador.tipo == "BEBIDA" %}selected{% endif %}>Bebida</option>
+          <option value="COMBO" {% if borrador.tipo == "COMBO" %}selected{% endif %}>Combo</option>
+          <option value="OBJETO" {% if borrador.tipo == "OBJETO" %}selected{% endif %}>Objeto</option>
+          <option value="PROMOCION" {% if borrador.tipo == "PROMOCION" %}selected{% endif %}>Promoción</option>
+        </select>
+      </div>
+
+      <!-- Precio -->
+      <div class="formulario-servicio__campo">
+        <label for="precio" class="form-label">Precio ($) *</label>
+        <input type="number" id="precio" name="precio" class="form-control" value="{{ borrador.precio }}" required min="0.01" step="0.01" max="99999999.99" placeholder="Ej: 8500.00">
+      </div>
+
+      <!-- Activo (solo en edición) -->
+      {% if modo_formulario == 'editar' %}
+        <div class="formulario-servicio__campo formulario-servicio__campo--checkbox">
+          <label class="form-checkbox-label">
+            <input type="checkbox" name="activo" {% if borrador.activo %}checked{% endif %}>
+            Servicio activo y disponible para la venta
+          </label>
+        </div>
+      {% endif %}
+
+    </div>
+
+    <div class="formulario-servicio__actions">
+      {% with url_destino=url_for('admin_servicios.index'), texto='Cancelar', variante_clase='btn-secondary' %}
+        {% include 'components/button.html' %}
+      {% endwith %}
+
+      {% with texto=('Guardar cambios' if modo_formulario == 'editar' else 'Crear servicio'), variante_clase='btn-primary', tipo='submit' %}
+        {% include 'components/button.html' %}
+      {% endwith %}
+    </div>
+  </form>
+</div>

@@ -55,7 +55,7 @@
             {% endif %}
 
             {% if usuario_activo %}
-                <a href="#perfil" class="nav-user-chip">
+                <a href="{{ url_for('perfil.index') }}" class="nav-user-chip">
                     <span class="user-avatar">👤</span>
                     <span class="user-name">{{ usuario_activo.nombre | default('Mi Perfil') }}</span>
                 </a>

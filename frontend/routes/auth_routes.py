@@ -1,5 +1,5 @@
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
-from services.auth_service import iniciar_sesion
+from services.auth_service import iniciar_sesion, registrar_usuario
 from utils.errores import extraer_mensaje_error
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
@@ -46,9 +46,34 @@ def logout():
 
 @auth_bp.route("/registro", methods=["GET", "POST"])
 def registro():
-    mensaje_pendiente = (
-        "El registro todavía no está conectado."
-        if request.method == "POST"
-        else None
+    mensaje_pendiente = None
+
+    if request.method == "POST":
+        contrasena = request.form.get("contrasena", "")
+        confirmar_contrasena = request.form.get("confirmar_contrasena", "")
+
+        if contrasena != confirmar_contrasena:
+            mensaje_pendiente = "Las contraseñas no coinciden."
+        else:
+            datos = {
+                "nombre": request.form.get("nombre", "").strip(),
+                "email": request.form.get("email", "").strip(),
+                "contrasena": contrasena,
+            }
+            respuesta, estado = registrar_usuario(datos)
+
+            if estado == 201:
+                return redirect(url_for("auth.login"))
+
+            errores = respuesta.get("errors", [])
+            mensaje_pendiente = (
+                errores[0].get("description")
+                if errores
+                else respuesta.get("error", "No se pudo completar el registro.")
+            )
+
+    return render_template(
+        "auth/registro.html",
+        mensaje_pendiente=mensaje_pendiente,
     )
-    return render_template("auth/registro.html", mensaje_pendiente=mensaje_pendiente)
+

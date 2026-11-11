@@ -1,0 +1,38 @@
+{# Tarjeta de un resultado de OMDb.
+   Parámetros: resultado, busqueda, ya_existe, id_pelicula_existente, pelicula_existente. #}
+<article class="admin-peliculas__result-card">
+  <div class="admin-peliculas__result-poster">
+    {% if resultado.poster %}
+    <img src="{{ resultado.poster }}" alt="Póster de {{ resultado.titulo }}" loading="lazy">
+    {% else %}
+    <span class="admin-peliculas__poster-empty">Sin póster</span>
+    {% endif %}
+  </div>
+
+  <div class="admin-peliculas__result-info">
+    <h3>{{ resultado.titulo }}</h3>
+    <p class="admin-peliculas__result-meta">
+      {{ resultado.anio or 'Año no disponible' }} · {{ resultado.id_api }}
+    </p>
+    <span class="admin-peliculas__badge">{{ resultado.origen }}</span>
+
+    {% if ya_existe %}
+    <span class="admin-peliculas__badge admin-peliculas__badge--inactiva">Ya cargada</span>
+    {% if pelicula_existente and not pelicula_existente.activa %}
+    <form method="post" action="{{ url_for('admin_peliculas.reactivar', id_pelicula=id_pelicula_existente) }}">
+      {% with texto='Reactivar', tipo='submit', variante='secondary' %}
+        {% include 'components/button.html' %}
+      {% endwith %}
+    </form>
+    {% else %}
+    {% with texto='Editar película', url_destino=url_for('admin_peliculas.editar', id_pelicula=id_pelicula_existente), variante='secondary' %}
+      {% include 'components/button.html' %}
+    {% endwith %}
+    {% endif %}
+    {% else %}
+    {% with texto='Usar esta ficha', url_destino=url_for('admin_peliculas.index', busqueda=busqueda, id_api=resultado.id_api) %}
+      {% include 'components/button.html' %}
+    {% endwith %}
+    {% endif %}
+  </div>
+</article>

@@ -1,0 +1,48 @@
+<article class="perfil-seen-item">
+    <div class="perfil-seen-item__poster">
+        {% if pelicula.poster_url %}
+        <img src="{{ pelicula.poster_url }}" alt="Póster de {{ pelicula.titulo|default('película') }}" loading="lazy">
+        {% else %}
+        <span aria-hidden="true">CP</span>
+        {% endif %}
+    </div>
+    <div class="perfil-seen-item__content">
+        <div class="perfil-seen-item__heading">
+            <h3>{{ pelicula.titulo|default('Película', true) }}</h3>
+            {% if pelicula.puntuacion is defined and pelicula.puntuacion is not none %}
+            <span class="perfil-rating" aria-label="Puntuación {{ pelicula.puntuacion }} de 5">{{ pelicula.puntuacion }}/5</span>
+            {% endif %}
+        </div>
+        {% if pelicula.fecha_funcion %}<p class="perfil-seen-item__date">Vista el {{ pelicula.fecha_funcion }}</p>{% endif %}
+        {% if pelicula.comentario or pelicula.resena %}
+        <p class="perfil-seen-item__review">{{ pelicula.comentario|default(pelicula.resena, true) }}</p>
+        {% else %}
+        <p class="perfil-seen-item__review perfil-seen-item__review--muted">Aún no escribiste una reseña.</p>
+        {% endif %}
+        {% if pelicula.puede_resenar %}
+        <form class="perfil-review-form" method="post"
+            action="{{ url_for('perfil.crear_resena', id_pelicula=pelicula.id_pelicula) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="id_compra" value="{{ pelicula.id_compra }}">
+            <fieldset class="perfil-rating-fieldset">
+                <legend>Tu puntuación</legend>
+                <div class="perfil-rating-options">
+                    {% for puntuacion in range(1, 6) %}
+                    <label>
+                        <input type="radio" name="puntuacion" value="{{ puntuacion }}" required>
+                        <span>{{ puntuacion }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </fieldset>
+            <label class="perfil-field">
+                <span>Reseña <small>(opcional)</small></span>
+                <textarea name="comentario" rows="3" maxlength="1000"></textarea>
+            </label>
+            <button class="perfil-action perfil-action--secondary" type="submit">Publicar reseña</button>
+        </form>
+        {% elif pelicula.puntuacion is not none %}
+        <p class="perfil-review-saved">Ya calificaste esta función.</p>
+        {% endif %}
+    </div>
+</article>

@@ -65,13 +65,13 @@ INSERT INTO `pelicula_generos` (`id_pelicula`, `id_genero`) VALUES
 (3, 1)  -- Spider-Man: Acción
 ON DUPLICATE KEY UPDATE `id_pelicula` = VALUES(`id_pelicula`);
 
--- 8. Funciones (Horarios futuros usando DATE_ADD para vigencia perpetua de testeo)
+-- 8. Funciones (Horarios futuros usando DATE_ADD para vigencia prolongada)
 INSERT INTO `funciones` (`id_funcion`, `id_pelicula`, `id_sala`, `inicio`, `fin`, `formato`, `idioma`, `subtitulada`, `precio_entrada`, `estado`) VALUES
-(1, 1, 1, DATE_ADD(NOW(), INTERVAL 1 DAY), DATE_ADD(NOW(), INTERVAL 1 DAY) + INTERVAL 166 MINUTE, '4D', 'Inglés', 1, 6500.00, 'PROGRAMADA'),
-(2, 1, 1, DATE_ADD(NOW(), INTERVAL 2 DAY), DATE_ADD(NOW(), INTERVAL 2 DAY) + INTERVAL 166 MINUTE, '4D', 'Inglés', 1, 6500.00, 'PROGRAMADA'),
-(3, 2, 2, DATE_ADD(NOW(), INTERVAL 1 DAY), DATE_ADD(NOW(), INTERVAL 1 DAY) + INTERVAL 180 MINUTE, '2D', 'Inglés', 1, 4800.00, 'PROGRAMADA'),
-(4, 3, 3, DATE_ADD(NOW(), INTERVAL 1 DAY), DATE_ADD(NOW(), INTERVAL 1 DAY) + INTERVAL 140 MINUTE, '3D', 'Español', 0, 5200.00, 'PROGRAMADA')
-ON DUPLICATE KEY UPDATE `estado` = VALUES(`estado`);
+(1, 1, 1, DATE_ADD(NOW(), INTERVAL 7 DAY), DATE_ADD(NOW(), INTERVAL 7 DAY) + INTERVAL 166 MINUTE, '4D', 'Inglés', 1, 6500.00, 'PROGRAMADA'),
+(2, 1, 1, DATE_ADD(NOW(), INTERVAL 14 DAY), DATE_ADD(NOW(), INTERVAL 14 DAY) + INTERVAL 166 MINUTE, '4D', 'Inglés', 1, 6500.00, 'PROGRAMADA'),
+(3, 2, 2, DATE_ADD(NOW(), INTERVAL 10 DAY), DATE_ADD(NOW(), INTERVAL 10 DAY) + INTERVAL 180 MINUTE, '2D', 'Inglés', 1, 4800.00, 'PROGRAMADA'),
+(4, 3, 3, DATE_ADD(NOW(), INTERVAL 15 DAY), DATE_ADD(NOW(), INTERVAL 15 DAY) + INTERVAL 140 MINUTE, '3D', 'Español', 0, 5200.00, 'PROGRAMADA')
+ON DUPLICATE KEY UPDATE `inicio` = VALUES(`inicio`), `fin` = VALUES(`fin`), `estado` = VALUES(`estado`);
 
 -- 9. Entradas disponibles para las funciones
 INSERT INTO `entradas` (`id_entrada`, `id_funcion`, `id_butaca`, `precio_unitario`, `estado`) VALUES

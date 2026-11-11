@@ -1,4 +1,4 @@
-"""Cliente del backend para el módulo de películas: cartelera, detalle, géneros y reseñas (todos endpoints públicos)."""
+"""Cliente del backend para el módulo de películas: cartelera, detalle, géneros y reseñas."""
 from services.api_client import consultar_backend
 
 
@@ -12,11 +12,23 @@ def obtener_detalle_pelicula(id_pelicula: int):
     return consultar_backend(f"/peliculas/{id_pelicula}")
 
 
+def obtener_resenas_pelicula(id_pelicula: int, token: str | None = None):
+    """Obtiene las reseñas y puntuaciones de una película. Con token, permite identificar la reseña propia."""
+    return consultar_backend(
+        f"/peliculas/{id_pelicula}/resenas", token=token, metodo="GET"
+    )
+
+
+def crear_resena_pelicula(id_pelicula: int, token: str, datos: dict):
+    """Envía una reseña de compra al backend para validar asistencia y guardarla."""
+    return consultar_backend(
+        f"/peliculas/{id_pelicula}/resenas",
+        token=token,
+        metodo="POST",
+        datos=datos,
+    )
+
+
 def obtener_generos():
-    """Obtiene el listado de géneros para armar el filtro de la cartelera."""
-    return consultar_backend("/generos")
-
-
-def obtener_resenas(id_pelicula: int):
-    """Obtiene las reseñas y puntuaciones de una película."""
-    return consultar_backend(f"/peliculas/{id_pelicula}/resenas")
+    """Consume GET /generos y devuelve (datos, código HTTP) para que la ruta decida."""
+    return consultar_backend("/generos", metodo="GET")

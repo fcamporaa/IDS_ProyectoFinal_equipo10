@@ -1,5 +1,6 @@
-"""Prepara los datos de películas del backend para los templates (agrupa las funciones por complejo y día)."""
+"""Prepara los datos de películas del backend para los templates (agrupa funciones y mapea géneros)."""
 from datetime import datetime
+import unicodedata
 
 from utils.formatos import (
     formatear_duracion,
@@ -7,6 +8,60 @@ from utils.formatos import (
     formatear_hora,
     formatear_precio,
 )
+
+
+# Géneros de OMDb (normalizados sin acentos y en minúsculas) -> nombre local.
+MAPEO_GENEROS_OMDB = {
+    "action": "Acción",
+    "adventure": "Aventura",
+    "animation": "Animación",
+    "comedy": "Comedia",
+    "drama": "Drama",
+    "horror": "Terror",
+    "sci-fi": "Ciencia Ficción",
+    "science fiction": "Ciencia Ficción",
+    "thriller": "Suspenso",
+    "mystery": "Suspenso",
+    "crime": "Suspenso",
+}
+
+
+def _normalizar_genero(nombre: str) -> str:
+    """Quita acentos, espacios sobrantes y mayúsculas para comparar nombres de género."""
+    sin_acentos = unicodedata.normalize("NFKD", str(nombre or ""))
+    return "".join(
+        letra for letra in sin_acentos if not unicodedata.combining(letra)
+    ).strip().lower()
+
+
+def mapear_generos_externos(
+    nombres_externos: list[str], generos_disponibles: list[dict]
+) -> tuple[list[int], list[str]]:
+    """
+    Traduce los géneros de OMDb a ids locales.
+    Devuelve (ids_sugeridos, nombres_sin_equivalente). No falla si falta un género.
+    """
+    ids_por_nombre = {
+        _normalizar_genero(genero.get("nombre")): genero.get("id_genero")
+        for genero in generos_disponibles
+        if isinstance(genero, dict)
+    }
+    ids_sugeridos = []
+    sin_equivalente = []
+
+    for nombre_externo in nombres_externos or []:
+        clave = _normalizar_genero(nombre_externo)
+        nombre_local = MAPEO_GENEROS_OMDB.get(clave) or nombre_externo
+        id_genero = ids_por_nombre.get(_normalizar_genero(nombre_local))
+
+        if id_genero is None:
+            if nombre_externo not in sin_equivalente:
+                sin_equivalente.append(nombre_externo)
+            continue
+        if id_genero not in ids_sugeridos:
+            ids_sugeridos.append(id_genero)
+
+    return ids_sugeridos, sin_equivalente
 
 
 def agrupar_funciones(funciones: list[dict]) -> list[dict]:
