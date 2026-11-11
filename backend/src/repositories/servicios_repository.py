@@ -51,6 +51,8 @@ def insertar_servicio_db(datos: dict) -> int:
         INSERT INTO servicios (nombre, tipo, precio, activo)
         VALUES (%(nombre)s, %(tipo)s, %(precio)s, %(activo)s)
     """
+    if "activo" not in datos:
+        datos = dict(datos, activo=1)
     return ejecutar_mutacion(query, datos)
 
 

@@ -10,10 +10,10 @@
     </div>
     <div class="modal__actions">
       <form method="POST" action="{{ accion }}">
-        {% with url_destino='#', texto=texto_cancelar | default('Cancelar'), variante_clase='btn-secondary', tipo='button' %}
+        {% with texto=texto_cancelar | default('Cancelar'), variante_clase='btn-secondary', tipo='button', atributos='data-modal-close' %}
           {% include 'components/button.html' %}
         {% endwith %}
-        {% with url_destino='#', texto=texto_confirmar | default('Confirmar'), variante_clase='btn-danger', tipo='submit' %}
+        {% with texto=texto_confirmar | default('Confirmar'), variante_clase='btn-danger', tipo='submit' %}
           {% include 'components/button.html' %}
         {% endwith %}
       </form>

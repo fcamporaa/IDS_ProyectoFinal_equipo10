@@ -13,15 +13,14 @@
     <!-- Cabecera de página -->
     <header class="admin-servicios__header">
       <div>
-        <span class="admin-servicios__eyebrow">Backoffice de Administración</span>
+        <span class="admin-servicios__eyebrow">Backoffice</span>
         <h1 class="admin-servicios__title">Gestión de Servicios (Candy Bar)</h1>
         <p class="admin-servicios__subtitle">Administrá combos, bebidas y alimentos disponibles para los clientes.</p>
       </div>
       <div class="admin-servicios__header-actions">
-        {% with url_destino=url_for('dashboard.index'), texto='← Volver al Dashboard', variante_clase='btn-secondary' %}
-          {% include 'components/button.html' %}
-        {% endwith %}
-        {% with url_destino=url_for('admin_servicios.index') ~ '?nuevo=1', texto='+ Nuevo Servicio', variante_clase='btn-primary' %}
+        <a href="{{ url_for('dashboard.index') }}" class="admin-servicios__back">← Volver al dashboard</a>
+        <a href="{{ url_for('home.index') }}" class="admin-servicios__back">← Volver a la cartelera</a>
+        {% with url_destino=url_for('admin_servicios.index') ~ '?nuevo=1', texto='+ Nuevo servicio', variante_clase='btn-primary' %}
           {% include 'components/button.html' %}
         {% endwith %}
       </div>
@@ -79,17 +78,16 @@
                     {% endif %}
                   </td>
                   <td class="text-right admin-servicios__actions-cell">
-                    <a href="{{ url_for('admin_servicios.editar', id=servicio.id_servicio) }}" class="btn-action btn-action--edit" title="Editar">
-                      Editar
-                    </a>
+                    {% with texto='Editar', url_destino=url_for('admin_servicios.editar', id=servicio.id_servicio), variante='secondary', clase_extra='admin-servicios__action' %}
+                      {% include 'components/button.html' %}
+                    {% endwith %}
                     
                     {% if servicio.activo %}
-                      <button type="button" 
-                              class="btn-action btn-action--delete" 
-                              data-modal-target="modal-baja-{{ servicio.id_servicio }}"
-                              title="Dar de baja">
-                        Dar de baja
-                      </button>
+                      <form method="POST" action="{{ url_for('admin_servicios.eliminar', id=servicio.id_servicio) }}" data-confirmar-baja data-modal-destino="modal-baja-{{ servicio.id_servicio }}" class="confirm-baja-form">
+                        {% with texto='Dar de baja', tipo='submit', variante='danger', clase_extra='admin-servicios__action' %}
+                          {% include 'components/button.html' %}
+                        {% endwith %}
+                      </form>
                     {% else %}
                       <form method="POST" action="{{ url_for('admin_servicios.reactivar', id=servicio.id_servicio) }}" class="inline-form">
                         <button type="submit" class="btn-action btn-action--reactivate" title="Reactivar">
@@ -125,6 +123,6 @@
 </main>
 {% endblock %}
 
-{% block extra_js %}
+{% block extra_scripts %}
 <script src="{{ url_for('static', filename='js/admin_servicios.js') }}"></script>
 {% endblock %}

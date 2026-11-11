@@ -13,13 +13,15 @@
         <input type="text" id="nombre" name="nombre" class="form-control" value="{{ borrador.nombre }}" required maxlength="50" placeholder="Ej: Combo Mega Popcorn">
       </div>
 
-      <!-- Tipo -->
+      <!-- Tipo de servicio -->
       <div class="formulario-servicio__campo">
-        <label for="tipo" class="form-label">Tipo de servicio *</label>
+        <label for="tipo" class="form-label">Tipo *</label>
         <select id="tipo" name="tipo" class="form-control" required>
-          {% for t in tipos_servicio %}
-            <option value="{{ t }}" {% if borrador.tipo == t %}selected{% endif %}>{{ t }}</option>
-          {% endfor %}
+          <option value="COMIDA" {% if borrador.tipo == "COMIDA" %}selected{% endif %}>Comida</option>
+          <option value="BEBIDA" {% if borrador.tipo == "BEBIDA" %}selected{% endif %}>Bebida</option>
+          <option value="COMBO" {% if borrador.tipo == "COMBO" %}selected{% endif %}>Combo</option>
+          <option value="OBJETO" {% if borrador.tipo == "OBJETO" %}selected{% endif %}>Objeto</option>
+          <option value="PROMOCION" {% if borrador.tipo == "PROMOCION" %}selected{% endif %}>Promoción</option>
         </select>
       </div>
 
@@ -46,7 +48,7 @@
         {% include 'components/button.html' %}
       {% endwith %}
 
-      {% with url_destino='#', texto=('Guardar cambios' if modo_formulario == 'editar' else 'Crear servicio'), variante_clase='btn-primary', tipo='submit' %}
+      {% with texto=('Guardar cambios' if modo_formulario == 'editar' else 'Crear servicio'), variante_clase='btn-primary', tipo='submit' %}
         {% include 'components/button.html' %}
       {% endwith %}
     </div>

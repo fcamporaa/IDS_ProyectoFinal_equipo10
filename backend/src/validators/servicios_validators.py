@@ -81,18 +81,18 @@ def validar_crear_servicio(datos: dict) -> dict:
         )
 
     tipo = datos.get("tipo")
-    if not isinstance(tipo, str) or tipo not in TIPOS_SERVICIO:
+    if not isinstance(tipo, str) or not tipo.strip() or len(tipo.strip()) > 50:
         return construir_error_api(
             "error.validacion.tipo_servicio",
             "Tipo de servicio inválido",
-            "El tipo debe ser COMIDA o BEBIDA.",
+            "El tipo de servicio es obligatorio y debe tener hasta 50 caracteres.",
         )
 
     precio = validar_precio_servicio(datos.get("precio"))
     if isinstance(precio, dict):
         return precio
 
-    return {"nombre": nombre.strip(), "tipo": tipo, "precio": precio, "activo": 1}
+    return {"nombre": nombre.strip(), "tipo": tipo.strip().upper(), "precio": precio, "activo": 1}
 
 
 def validar_actualizar_servicio(datos: dict) -> dict:
@@ -133,13 +133,13 @@ def validar_actualizar_servicio(datos: dict) -> dict:
 
     if "tipo" in datos:
         tipo = datos["tipo"]
-        if not isinstance(tipo, str) or tipo not in TIPOS_SERVICIO:
+        if not isinstance(tipo, str) or not tipo.strip() or len(tipo.strip()) > 50:
             return construir_error_api(
                 "error.validacion.tipo_servicio",
                 "Tipo de servicio inválido",
-                "El tipo debe ser COMIDA o BEBIDA.",
+                "El tipo de servicio es obligatorio y debe tener hasta 50 caracteres.",
             )
-        datos_validados["tipo"] = tipo
+        datos_validados["tipo"] = tipo.strip().upper()
 
     if "precio" in datos:
         precio = validar_precio_servicio(datos["precio"])

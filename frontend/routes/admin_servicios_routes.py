@@ -14,7 +14,7 @@ admin_servicios_bp = Blueprint(
     "admin_servicios", __name__, url_prefix="/admin/servicios"
 )
 
-TIPOS_SERVICIO = ("COMIDA", "BEBIDA")
+TIPOS_SERVICIO = ("COMIDA", "BEBIDA", "OBJETO")
 
 
 def _redirigir_sesion_expirada():
@@ -35,7 +35,7 @@ def _borrador_vacio() -> dict:
     }
 
 
-def _leer_formulario(form) -> dict:
+def _leer_formulario(form, incluir_activo: bool = False) -> dict:
     """Lee el formulario de alta o edición."""
     nombre = (form.get("nombre") or "").strip()
     tipo = (form.get("tipo") or "COMIDA").strip()
@@ -53,8 +53,8 @@ def _leer_formulario(form) -> dict:
         "tipo": tipo,
         "precio": precio,
     }
-    if "activo" in form:
-        datos["activo"] = form.get("activo") == "on"
+    if incluir_activo:
+        datos["activo"] = "activo" in form
 
     return datos
 
@@ -110,7 +110,7 @@ def crear():
     """Crea un nuevo servicio."""
     token = session["access_token"]
     try:
-        datos = _leer_formulario(request.form)
+        datos = _leer_formulario(request.form, incluir_activo=False)
     except ValueError as e:
         flash(str(e), "error")
         return _renderizar_pagina(
@@ -175,7 +175,7 @@ def actualizar(id):
     """Actualiza los datos de un servicio existente."""
     token = session["access_token"]
     try:
-        datos = _leer_formulario(request.form)
+        datos = _leer_formulario(request.form, incluir_activo=True)
     except ValueError as e:
         flash(str(e), "error")
         return _renderizar_pagina(
