@@ -338,7 +338,7 @@ def seleccion_servicios():
 
         if request.form.get("accion") == "omitir":
             session["servicios_seleccionados"] = []
-            return redirect(url_for("compras.checkout"))
+            return redirect(url_for("compra.seleccion_checkout"))
 
         try:
             servicios = validar_servicios_seleccionados(
@@ -361,7 +361,7 @@ def seleccion_servicios():
             return redirect(url_for("compra.seleccion_servicios"))
 
         session["servicios_seleccionados"] = servicios
-        return redirect(url_for("compras.checkout"))
+        return redirect(url_for("compra.seleccion_checkout"))
 
     servicios_api = obtener_servicios_disponibles()
     if servicios_api is None:
