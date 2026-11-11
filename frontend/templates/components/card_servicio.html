@@ -12,10 +12,12 @@
     
     <!-- Imagen y Badges de la Card -->
     <div class="service-card-media">
-        <img src="{{ s.imagen_url }}" 
-             alt="{{ s.nombre }}" 
-             class="service-card-img" 
-             loading="lazy">
+        {% if s.imagen_url %}
+              <img src="{{ s.imagen_url }}"
+                  alt="{{ s.nombre }}"
+                  class="service-card-img"
+                 loading="lazy">
+        {% endif %}
 
         {% if s.badge_top %}
             <span class="service-badge-top {{ s.badge_top_tipo | default('badge-gold') }}">
