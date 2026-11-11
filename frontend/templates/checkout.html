@@ -426,29 +426,5 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<script>
-    // Cuenta regresiva visual del temporizador (8 min 40 seg)
-    document.addEventListener('DOMContentLoaded', function () {
-        let totalSeconds = 8 * 60 + 40;
-        const countdownEl = document.getElementById('checkoutCountdown');
-
-        if (countdownEl) {
-            setInterval(function () {
-                if (totalSeconds > 0) {
-                    totalSeconds--;
-                    const mins = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
-                    const secs = String(totalSeconds % 60).padStart(2, '0');
-                    countdownEl.textContent = `${mins}:${secs}`;
-                }
-            }, 1000);
-        }
-    });
-
-    // Simulación del procesamiento de pago exitoso para este hito
-    function handleSimulatedPayment(e) {
-        e.preventDefault();
-        window.location.href = "{{ url_for('compra.confirmacion_compra') }}";
-        return false;
-    }
-</script>
+<script src="{{ url_for('static', filename='js/checkout.js') }}"></script>
 {% endblock %}

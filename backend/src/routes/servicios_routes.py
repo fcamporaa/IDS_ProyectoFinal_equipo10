@@ -1,6 +1,5 @@
 from flask import jsonify, request
 from src.services.servicios_services import (
-    autorizar_administrador,
     listar_servicios,
     crear_servicio,
     actualizar_servicio,
@@ -11,29 +10,7 @@ from src.validators.servicios_validators import (
     validar_crear_servicio,
     validar_actualizar_servicio,
 )
-from src.utils import construir_error_api
-
-
-def _obtener_usuario_administrador():
-    partes_autorizacion = request.headers.get("Authorization", "").split()
-    if len(partes_autorizacion) != 2 or partes_autorizacion[0].lower() != "bearer":
-        return None, construir_error_api(
-            "error.auth.token_requerido",
-            "Autenticación requerida",
-            "Envía un token válido como Bearer en el encabezado Authorization.",
-        )
-
-    resultado = autorizar_administrador(partes_autorizacion[1])
-    if "errors" in resultado:
-        codigo_error = resultado["errors"][0]["code"]
-        if codigo_error == "error.auth.permisos_insuficientes":
-            return None, resultado
-        if codigo_error == "error.auth.usuario_inactivo":
-            return None, resultado
-        if codigo_error == "error.auth.usuario_no_encontrado":
-            return None, resultado
-        return None, resultado
-    return resultado, None
+from src.utils import construir_error_api, validar_admin
 
 
 def register_servicios_routes(app):
@@ -46,11 +23,7 @@ def register_servicios_routes(app):
     @app.route("/servicios", methods=["POST"])
     def post_servicio():
         """POST /servicios: Crea un servicio adicional (Solo Admin)."""
-        usuario, error = _obtener_usuario_administrador()
-        if error is not None:
-            codigo_error = error["errors"][0]["code"]
-            estado = 403 if codigo_error == "error.auth.permisos_insuficientes" else 401
-            return jsonify(error), estado
+        validar_admin(request.headers.get("Authorization"))
 
         datos_validados = validar_crear_servicio(request.get_json(silent=True))
         if isinstance(datos_validados, dict) and "errors" in datos_validados:
@@ -64,11 +37,7 @@ def register_servicios_routes(app):
     @app.route("/servicios/<int:id>", methods=["PUT"])
     def put_servicio(id):
         """PUT /servicios/{id}: Modifica un servicio existente (Solo Admin)."""
-        usuario, error = _obtener_usuario_administrador()
-        if error is not None:
-            codigo_error = error["errors"][0]["code"]
-            estado = 403 if codigo_error == "error.auth.permisos_insuficientes" else 401
-            return jsonify(error), estado
+        validar_admin(request.headers.get("Authorization"))
 
         id_validado = validar_id_servicio(id)
         if isinstance(id_validado, dict):
@@ -92,11 +61,7 @@ def register_servicios_routes(app):
     @app.route("/servicios/<int:id>", methods=["DELETE"])
     def delete_servicio(id):
         """DELETE /servicios/{id}: Da de baja un servicio (Solo Admin)."""
-        usuario, error = _obtener_usuario_administrador()
-        if error is not None:
-            codigo_error = error["errors"][0]["code"]
-            estado = 403 if codigo_error == "error.auth.permisos_insuficientes" else 401
-            return jsonify(error), estado
+        validar_admin(request.headers.get("Authorization"))
 
         id_validado = validar_id_servicio(id)
         if isinstance(id_validado, dict):

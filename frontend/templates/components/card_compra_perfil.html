@@ -1,0 +1,55 @@
+{% set estado_compra = compra.estado|default('Estado pendiente', true)|upper %}
+<article class="perfil-purchase">
+    <div class="perfil-purchase__poster" aria-hidden="true">
+        {% if compra.poster_url %}
+        <img src="{{ compra.poster_url }}" alt="">
+        {% else %}
+        <span>CP</span>
+        {% endif %}
+    </div>
+
+    <div class="perfil-purchase__details">
+        <div class="perfil-purchase__title-row">
+            <h3>{{ compra.pelicula|default('Película', true) }}</h3>
+            <span class="perfil-status{% if 'CANCEL' in estado_compra %} perfil-status--cancelled{% elif estado_compra in ['PAGADA', 'PAGADO', 'CONFIRMADA', 'VALIDADA'] %} perfil-status--success{% endif %}">
+                {{ estado_compra|replace('_', ' ')|title }}
+            </span>
+        </div>
+        <dl class="perfil-purchase__meta">
+            <div>
+                <dt>Función</dt>
+                <dd><time>{{ compra.fecha_funcion|default(compra.creada_en|default('Fecha no disponible'), true) }}</time></dd>
+            </div>
+            {% if compra.nombre_local or compra.complejo %}
+            <div><dt>Cine</dt><dd>{{ compra.nombre_local|default(compra.complejo, true) }}</dd></div>
+            {% endif %}
+            {% if compra.nombre_sala or compra.sala %}
+            <div><dt>Sala</dt><dd>{{ compra.nombre_sala|default(compra.sala, true) }}</dd></div>
+            {% endif %}
+            <div><dt>Entradas</dt><dd>{{ compra.cantidad_entradas|default(0, true) }}</dd></div>
+            {% if compra.codigo_reserva %}
+            <div><dt>Código</dt><dd class="perfil-purchase__code">{{ compra.codigo_reserva }}</dd></div>
+            {% endif %}
+        </dl>
+    </div>
+
+    <div class="perfil-purchase__action">
+        <div class="perfil-purchase__total">
+            <span>{{ 'Total abonado' if not compra_activa else 'Total' }}</span>
+            <strong>$ {{ '%.2f'|format(compra.total|default(0, true)|float) }}</strong>
+        </div>
+        {% if compra.id_compra %}
+        <a class="perfil-action{% if compra_activa %} perfil-action--primary{% else %} perfil-action--secondary{% endif %}"
+            href="{{ url_for('compras.compra_exitosa', id_compra=compra.id_compra) }}">
+            Ver comprobante
+        </a>
+        {% if compra_activa and compra.puede_cancelar %}
+        <form method="post" action="{{ url_for('perfil.cancelar_compra', id_compra=compra.id_compra) }}"
+            onsubmit="return confirm('¿Querés cancelar esta compra? Se liberarán las butacas.');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button class="perfil-action perfil-action--danger" type="submit">Cancelar entradas</button>
+        </form>
+        {% endif %}
+        {% endif %}
+    </div>
+</article>

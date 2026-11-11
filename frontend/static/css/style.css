@@ -15,13 +15,16 @@
 @import "components/hero_destacado.css";
 @import "components/footer.css";
 @import "components/button.css";
+@import "components/stepper.css";
 @import "components/kpi_card.css";
 @import "components/tabla_dashboard.css";
 @import "components/filtros_dashboard.css";
+@import "components/modal.css";
 
 /* 4. Estilos de Páginas Específicas */
 @import "pages/home.css";
 @import "pages/dashboard.css";
 @import "pages/auth.css";
 @import "pages/checkout.css";
+@import "pages/perfil_cliente.css";
 

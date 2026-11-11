@@ -1,0 +1,201 @@
+{% extends 'layout.html' %}
+
+{% block title %}Mi perfil - Cinema Paradiso{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/perfil_cliente.css') }}">
+{% endblock %}
+
+{% block content %}
+{% set usuario = usuario_activo|default({}, true) %}
+{% set reservas_activas = reservas_activas|default([], true) %}
+{% set compras_pasadas = compras_pasadas|default([], true) %}
+{% set peliculas_vistas = peliculas_vistas|default([], true) %}
+
+<section class="perfil-identity">
+    <div class="perfil-identity__inner container">
+        <div class="perfil-identity__person">
+            <div class="perfil-avatar" aria-hidden="true">{{ usuario.get('nombre', 'U')[:1]|upper }}</div>
+            <div class="perfil-identity__copy">
+                <p class="perfil-eyebrow">Área de cliente</p>
+                <h1>{{ usuario.get('nombre', 'Mi perfil') }}</h1>
+                <div class="perfil-identity__meta">
+                    {% if usuario.get('email') %}<span>{{ usuario.email }}</span>{% endif %}
+                    {% if usuario.get('numero_socio') %}<span>Socio {{ usuario.numero_socio }}</span>{% endif %}
+                    {% if usuario.get('fecha_registro') %}<span>Miembro desde {{ usuario.fecha_registro }}</span>{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <dl class="perfil-stats" aria-label="Resumen de actividad">
+            <div class="perfil-stat">
+                <dt>Películas vistas</dt>
+                <dd>{{ peliculas_vistas|length }}</dd>
+            </div>
+            <div class="perfil-stat">
+                <dt>Reservas activas</dt>
+                <dd>{{ reservas_activas|length }}</dd>
+            </div>
+            <div class="perfil-stat">
+                <dt>Compras pasadas</dt>
+                <dd>{{ compras_pasadas|length }}</dd>
+            </div>
+        </dl>
+    </div>
+</section>
+
+<div class="perfil-main container">
+    {% if error_backend is defined and error_backend %}
+    <div class="perfil-alert" role="alert">{{ error_backend }}</div>
+    {% endif %}
+
+    <div class="perfil-layout" data-profile-layout>
+        <nav class="perfil-tabs" role="tablist" aria-label="Secciones del perfil">
+            <a class="perfil-tab is-active" id="tab-reservas" href="#perfil-reservas" role="tab"
+                aria-controls="perfil-reservas" aria-selected="true" tabindex="0">
+                Próximas funciones
+            </a>
+            <a class="perfil-tab" id="tab-vistas" href="#perfil-vistas" role="tab"
+                aria-controls="perfil-vistas" aria-selected="false" tabindex="-1">
+                Películas que ya vi
+            </a>
+            <a class="perfil-tab" id="tab-datos" href="#perfil-datos" role="tab"
+                aria-controls="perfil-datos" aria-selected="false" tabindex="-1">
+                Datos personales y facturación
+            </a>
+        </nav>
+
+        <section class="perfil-panel is-active" id="perfil-reservas" role="tabpanel" aria-labelledby="tab-reservas" tabindex="0">
+            <div class="perfil-section-heading">
+                <div>
+                    <p class="perfil-eyebrow">Tu actividad</p>
+                    <h2>Próximas funciones</h2>
+                </div>
+                <span class="perfil-section-count">{{ reservas_activas|length }} activas</span>
+            </div>
+
+            {% if reservas_activas %}
+                <div class="perfil-purchase-list">
+                    {% for compra in reservas_activas %}
+                        {% with compra=compra, compra_activa=true %}
+                            {% include 'components/card_compra_perfil.html' %}
+                        {% endwith %}
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="perfil-empty-state">
+                    <span class="perfil-empty-state__mark" aria-hidden="true">01</span>
+                    <div>
+                        <h3>No tienes reservas activas</h3>
+                        <p>Cuando compres entradas, tus próximas funciones aparecerán aquí.</p>
+                    </div>
+                    <a class="perfil-action perfil-action--secondary" href="{{ url_for('home.index') }}">Ver cartelera</a>
+                </div>
+            {% endif %}
+
+            <div class="perfil-section-heading perfil-section-heading--past">
+                <div>
+                    <p class="perfil-eyebrow">Archivo personal</p>
+                    <h2>Historial de compras</h2>
+                </div>
+                <span class="perfil-section-count">{{ compras_pasadas|length }} compras</span>
+            </div>
+
+            {% if compras_pasadas %}
+                <div class="perfil-purchase-list">
+                    {% for compra in compras_pasadas %}
+                        {% with compra=compra, compra_activa=false %}
+                            {% include 'components/card_compra_perfil.html' %}
+                        {% endwith %}
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="perfil-empty-state perfil-empty-state--compact">
+                    <p>Aún no hay compras en tu historial.</p>
+                </div>
+            {% endif %}
+        </section>
+
+        <section class="perfil-panel" id="perfil-vistas" role="tabpanel" aria-labelledby="tab-vistas" tabindex="0">
+            <div class="perfil-section-heading">
+                <div>
+                    <p class="perfil-eyebrow">Tu diario cinéfilo</p>
+                    <h2>Películas que ya viste</h2>
+                </div>
+                <span class="perfil-section-count">{{ peliculas_vistas|length }} películas</span>
+            </div>
+
+            {% if peliculas_vistas %}
+                <div class="perfil-seen-list">
+                    {% for pelicula in peliculas_vistas %}
+                        {% include 'components/card_pelicula_vista.html' %}
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="perfil-empty-state">
+                    <span class="perfil-empty-state__mark" aria-hidden="true">02</span>
+                    <div>
+                        <h3>Tu lista está por comenzar</h3>
+                        <p>Las películas de funciones validadas aparecerán aquí para que puedas recordarlas y reseñarlas.</p>
+                    </div>
+                    <a class="perfil-action perfil-action--secondary" href="{{ url_for('home.index') }}">Explorar películas</a>
+                </div>
+            {% endif %}
+        </section>
+
+        <section class="perfil-panel" id="perfil-datos" role="tabpanel" aria-labelledby="tab-datos" tabindex="0">
+            <div class="perfil-section-heading">
+                <div>
+                    <p class="perfil-eyebrow">Tu cuenta</p>
+                    <h2>Datos personales y facturación</h2>
+                </div>
+            </div>
+
+            <div class="perfil-data-grid">
+                <section class="perfil-data-section" aria-labelledby="perfil-datos-personales">
+                    <h3 id="perfil-datos-personales">Datos personales</h3>
+                    <form class="perfil-edit-form" method="post" action="{{ url_for('perfil.actualizar') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <label class="perfil-field">
+                            <span>Nombre</span>
+                            <input type="text" name="nombre" value="{{ usuario.get('nombre', '') }}" maxlength="120" required>
+                        </label>
+                        <label class="perfil-field">
+                            <span>Correo electrónico</span>
+                            <input type="email" value="{{ usuario.get('email', '') }}" readonly>
+                        </label>
+                        <label class="perfil-field">
+                            <span>Nueva contraseña <small>(opcional)</small></span>
+                            <input type="password" name="contrasena" autocomplete="new-password" minlength="8" maxlength="72">
+                        </label>
+                        <label class="perfil-field">
+                            <span>Confirmar nueva contraseña</span>
+                            <input type="password" name="confirmar_contrasena" autocomplete="new-password" minlength="8" maxlength="72">
+                        </label>
+                        <p class="perfil-form-hint">La contraseña debe incluir mayúscula, minúscula y número.</p>
+                        <button class="perfil-action perfil-action--primary" type="submit">Guardar cambios</button>
+                    </form>
+                </section>
+
+                <section class="perfil-data-section" aria-labelledby="perfil-datos-fiscales">
+                    <h3 id="perfil-datos-fiscales">Facturación AFIP</h3>
+                    {% set datos_fiscales = datos_facturacion|default({}, true) %}
+                    {% if datos_fiscales %}
+                    <dl class="perfil-data-list">
+                        {% for etiqueta, valor in datos_fiscales.items() %}
+                        <div><dt>{{ etiqueta|replace('_', ' ')|title }}</dt><dd>{{ valor }}</dd></div>
+                        {% endfor %}
+                    </dl>
+                    {% else %}
+                    <p class="perfil-data-empty">No hay datos de facturación registrados.</p>
+                    {% endif %}
+                </section>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/perfil_cliente.js') }}" defer></script>
+{% endblock %}

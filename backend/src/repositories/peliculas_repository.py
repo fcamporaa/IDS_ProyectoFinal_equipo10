@@ -23,6 +23,13 @@ SQL_ASOCIAR_GENERO = "INSERT INTO pelicula_generos (id_pelicula, id_genero) VALU
 
 SQL_QUITAR_GENEROS = "DELETE FROM pelicula_generos WHERE id_pelicula = %s;"
 
+SQL_SELECCIONAR_PELICULAS_ADMIN = """
+    SELECT id_pelicula, origen_api, id_api, titulo, sinopsis, poster_url,
+           trailer_url, duracion_min, clasificacion, anio_estreno, activa
+    FROM peliculas
+    ORDER BY activa DESC, titulo;
+"""
+
 SQL_INSERTAR_RESENA = """
     INSERT INTO resenas (id_usuario, id_pelicula, id_compra, puntuacion, comentario, creada_en)
     VALUES (%s, %s, %s, %s, %s, %s);
@@ -74,6 +81,11 @@ def obtener_cartelera_vigente_db(filtros: dict) -> list[dict]:
         ORDER BY p.titulo;
     """
     return ejecutar_consulta(query, tuple(parametros))
+
+
+def obtener_peliculas_admin_db() -> list[dict]:
+    """Obtiene todas las películas (activas e inactivas) para el ABM del backoffice."""
+    return ejecutar_consulta(SQL_SELECCIONAR_PELICULAS_ADMIN)
 
 
 def buscar_pelicula_por_id_db(id_pelicula: int) -> dict | None:

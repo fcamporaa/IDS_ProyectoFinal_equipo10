@@ -11,6 +11,18 @@ def obtener_compra_del_backend(id_compra: int, token: str):
     return consultar_backend(f"/compras/{id_compra}", token=token, metodo="GET")
 
 
+def obtener_mis_compras(token: str):
+    """Obtiene el historial de compras del usuario autenticado."""
+    return consultar_backend("/compras/mis-compras", token=token, metodo="GET")
+
+
+def cancelar_compra_al_backend(id_compra: int, token: str):
+    """Solicita la cancelación de una compra y la liberación de sus butacas."""
+    return consultar_backend(
+        f"/compras/{id_compra}/cancelar", token=token, metodo="PUT", datos={}
+    )
+
+
 def reenviar_comprobante_al_backend(id_compra: int, token: str):
     """Solicita el reenvío por correo del comprobante con código QR."""
     return consultar_backend(
