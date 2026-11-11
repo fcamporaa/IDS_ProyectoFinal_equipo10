@@ -13,7 +13,7 @@ def index():
     Consume exclusivamente el catálogo real del Backend.
     Si el backend responde vacío o falla, refleja el estado real sin inventar datos.
     """
-     try:
+    try:
         filtros = validar_filtros_cartelera(request.args)
     except ValueError as error:
         flash(str(error), "error")
