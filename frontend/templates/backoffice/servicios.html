@@ -1,0 +1,128 @@
+{% extends 'layout.html' %}
+
+{% block title %}Gestión de Servicios | Cinema Paradiso{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/admin_servicios.css') }}">
+{% endblock %}
+
+{% block content %}
+<main class="admin-servicios">
+  <div class="admin-servicios__container">
+    
+    <!-- Cabecera de página -->
+    <header class="admin-servicios__header">
+      <div>
+        <span class="admin-servicios__eyebrow">Backoffice</span>
+        <h1 class="admin-servicios__title">Gestión de Servicios (Candy Bar)</h1>
+        <p class="admin-servicios__subtitle">Administrá combos, bebidas y alimentos disponibles para los clientes.</p>
+      </div>
+      <div class="admin-servicios__header-actions">
+        <a href="{{ url_for('dashboard.index') }}" class="admin-servicios__back">← Volver al dashboard</a>
+        <a href="{{ url_for('home.index') }}" class="admin-servicios__back">← Volver a la cartelera</a>
+        {% with url_destino=url_for('admin_servicios.index') ~ '?nuevo=1', texto='+ Nuevo servicio', variante_clase='btn-primary' %}
+          {% include 'components/button.html' %}
+        {% endwith %}
+      </div>
+    </header>
+
+    <!-- Alertas Flash -->
+    {% include 'components/mensajes.html' %}
+
+    {% if error_backend %}
+      <div class="alert alert-danger" role="alert">
+        {{ error_backend }}
+      </div>
+    {% endif %}
+
+    <!-- Formulario desplegable (Alta / Edición) -->
+    <div id="contenedor-formulario" class="admin-servicios__form-container {% if abrir_formulario %}admin-servicios__form-container--activo{% endif %}">
+      {% include 'components/formulario_servicio.html' %}
+    </div>
+
+    <!-- Listado / Tabla de Servicios -->
+    <section class="admin-servicios__listado">
+      <div class="admin-servicios__table-header">
+        <h2>Catálogo de Servicios ({{ servicios | length }})</h2>
+      </div>
+
+      {% if servicios %}
+        <div class="admin-servicios__table-wrapper">
+          <table class="admin-servicios__table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Tipo</th>
+                <th>Precio</th>
+                <th>Estado</th>
+                <th class="text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for servicio in servicios %}
+                <tr>
+                  <td>#{{ servicio.id_servicio }}</td>
+                  <td class="font-weight-bold">{{ servicio.nombre }}</td>
+                  <td>
+                    <span class="badge badge-tipo badge-tipo--{{ servicio.tipo | lower }}">
+                      {{ servicio.tipo }}
+                    </span>
+                  </td>
+                  <td>${{ "%.2f" | format(servicio.precio) }}</td>
+                  <td>
+                    {% if servicio.activo %}
+                      <span class="badge badge-estado badge-estado--activo">Activo</span>
+                    {% else %}
+                      <span class="badge badge-estado badge-estado--inactivo">Inactivo</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-right admin-servicios__actions-cell">
+                    {% with texto='Editar', url_destino=url_for('admin_servicios.editar', id=servicio.id_servicio), variante='secondary', clase_extra='admin-servicios__action' %}
+                      {% include 'components/button.html' %}
+                    {% endwith %}
+                    
+                    {% if servicio.activo %}
+                      <form method="POST" action="{{ url_for('admin_servicios.eliminar', id=servicio.id_servicio) }}" data-confirmar-baja data-modal-destino="modal-baja-{{ servicio.id_servicio }}" class="confirm-baja-form">
+                        {% with texto='Dar de baja', tipo='submit', variante='danger', clase_extra='admin-servicios__action' %}
+                          {% include 'components/button.html' %}
+                        {% endwith %}
+                      </form>
+                    {% else %}
+                      <form method="POST" action="{{ url_for('admin_servicios.reactivar', id=servicio.id_servicio) }}" class="inline-form">
+                        <button type="submit" class="btn-action btn-action--reactivate" title="Reactivar">
+                          Reactivar
+                        </button>
+                      </form>
+                    {% endif %}
+                  </td>
+                </tr>
+
+                <!-- Modal de confirmación de baja por cada servicio -->
+                {% with id_modal='modal-baja-' ~ servicio.id_servicio,
+                        titulo='Confirmar baja de servicio',
+                        mensaje='¿Estás seguro que deseás dar de baja el servicio "' ~ servicio.nombre ~ '"? Los clientes ya no podrán seleccionarlo en sus compras.',
+                        accion=url_for('admin_servicios.eliminar', id=servicio.id_servicio),
+                        texto_confirmar='Sí, dar de baja',
+                        texto_cancelar='Cancelar' %}
+                  {% include 'components/modal_confirmacion.html' %}
+                {% endwith %}
+
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="admin-servicios__empty">
+          <p>No hay servicios registrados en el sistema.</p>
+        </div>
+      {% endif %}
+    </section>
+
+  </div>
+</main>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/admin_servicios.js') }}"></script>
+{% endblock %}

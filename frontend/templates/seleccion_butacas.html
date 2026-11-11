@@ -15,6 +15,9 @@
             {% include 'components/stepper_compra.html' %}
         {% endwith %}
 
+        <!-- Mensajes del sistema (flash) -->
+        {% include 'components/mensajes.html' %}
+
         <!-- 2. Header de Película, Sesión y Temporizador -->
         <header class="movie-session-banner">
             <div class="session-left-details">
@@ -97,59 +100,62 @@
                     <div class="seat-row {% if fila.es_vip %}vip-row{% endif %} {% if fila.letra == 'E' %}active-row{% endif %}" data-row-letter="{{ fila.letra }}">
                         <span class="row-letter">{{ fila.letra }}</span>
 
-                        <!-- Bloque Izquierdo (3 Asientos) -->
+                        <!-- Bloque Izquierdo -->
                         <div class="seat-group group-left">
                             {% for seat in fila.asientos_izq %}
                             <button 
                                 type="button" 
                                 class="seat-button {% if seat.estado == 'ocupada' %}occupied{% elif seat.estado == 'seleccionada' %}selected{% endif %}"
-                                data-seat-id="{{ fila.letra }}-{{ seat.num }}"
+                                data-seat-id="{{ seat.id_butaca }}"
+                                data-seat-code="{{ fila.letra }}-{{ seat.num }}"
                                 data-seat-row="{{ fila.letra }}"
                                 data-seat-num="{{ seat.num }}"
                                 data-seat-vip="{{ 'true' if fila.es_vip else 'false' }}"
                                 data-seat-price="{{ c.funcion.precio_vip if fila.es_vip else c.funcion.precio_general }}"
-                                title="Fila {{ fila.letra }} • Butaca {{ seat.num }} ({{ 'VIP D-BOX' if fila.es_vip else 'General 4D' }})"
+                                title="Fila {{ fila.letra }} • Butaca {{ seat.num }} ({{ 'VIP D-BOX' if fila.es_vip else 'General' }})"
                                 {% if seat.estado == 'ocupada' %}disabled aria-disabled="true"{% endif %}
                             >
-                                {% if seat.estado == 'seleccionada' %}{{ seat.num }}{% endif %}
+                                {% if seat.estado == 'ocupada' %}✕{% elif seat.estado == 'seleccionada' %}{{ seat.num }}{% endif %}
                             </button>
                             {% endfor %}
                         </div>
 
-                        <!-- Bloque Central (6 Asientos) -->
+                        <!-- Bloque Central -->
                         <div class="seat-group group-center">
                             {% for seat in fila.asientos_centro %}
                             <button 
                                 type="button" 
                                 class="seat-button {% if seat.estado == 'ocupada' %}occupied{% elif seat.estado == 'seleccionada' %}selected{% endif %}"
-                                data-seat-id="{{ fila.letra }}-{{ seat.num }}"
+                                data-seat-id="{{ seat.id_butaca }}"
+                                data-seat-code="{{ fila.letra }}-{{ seat.num }}"
                                 data-seat-row="{{ fila.letra }}"
                                 data-seat-num="{{ seat.num }}"
                                 data-seat-vip="{{ 'true' if fila.es_vip else 'false' }}"
                                 data-seat-price="{{ c.funcion.precio_vip if fila.es_vip else c.funcion.precio_general }}"
-                                title="Fila {{ fila.letra }} • Butaca {{ seat.num }} ({{ 'VIP D-BOX' if fila.es_vip else 'General 4D' }})"
+                                title="Fila {{ fila.letra }} • Butaca {{ seat.num }} ({{ 'VIP D-BOX' if fila.es_vip else 'General' }})"
                                 {% if seat.estado == 'ocupada' %}disabled aria-disabled="true"{% endif %}
                             >
-                                {% if seat.estado == 'seleccionada' %}{{ seat.num }}{% endif %}
+                                {% if seat.estado == 'ocupada' %}✕{% elif seat.estado == 'seleccionada' %}{{ seat.num }}{% endif %}
                             </button>
                             {% endfor %}
                         </div>
 
-                        <!-- Bloque Derecho (3 Asientos) -->
+                        <!-- Bloque Derecho -->
                         <div class="seat-group group-right">
                             {% for seat in fila.asientos_der %}
                             <button 
                                 type="button" 
                                 class="seat-button {% if seat.estado == 'ocupada' %}occupied{% elif seat.estado == 'seleccionada' %}selected{% endif %}"
-                                data-seat-id="{{ fila.letra }}-{{ seat.num }}"
+                                data-seat-id="{{ seat.id_butaca }}"
+                                data-seat-code="{{ fila.letra }}-{{ seat.num }}"
                                 data-seat-row="{{ fila.letra }}"
                                 data-seat-num="{{ seat.num }}"
                                 data-seat-vip="{{ 'true' if fila.es_vip else 'false' }}"
                                 data-seat-price="{{ c.funcion.precio_vip if fila.es_vip else c.funcion.precio_general }}"
-                                title="Fila {{ fila.letra }} • Butaca {{ seat.num }} ({{ 'VIP D-BOX' if fila.es_vip else 'General 4D' }})"
+                                title="Fila {{ fila.letra }} • Butaca {{ seat.num }} ({{ 'VIP D-BOX' if fila.es_vip else 'General' }})"
                                 {% if seat.estado == 'ocupada' %}disabled aria-disabled="true"{% endif %}
                             >
-                                {% if seat.estado == 'seleccionada' %}{{ seat.num }}{% endif %}
+                                {% if seat.estado == 'ocupada' %}✕{% elif seat.estado == 'seleccionada' %}{{ seat.num }}{% endif %}
                             </button>
                             {% endfor %}
                         </div>
@@ -261,14 +267,18 @@
                         </div>
                     </div>
 
-                    <!-- Botón de Continuación a Candy Bar -->
-                    <a href="{{ url_for('compra.seleccion_servicios') }}" class="btn-continue-candy" id="btnContinuarCandy" title="Avanzar al siguiente paso">
-                        <span>Continuar a Candy Bar</span>
-                        <span>→</span>
-                    </a>
+                    <!-- Formulario de Continuación a Candy Bar (POST nativo SSR) -->
+                    <form method="POST" action="{{ url_for('compra.seleccion_butacas') }}" id="formSeleccionButacas">
+                        <input type="hidden" name="id_funcion" value="{{ c.funcion.id_funcion }}">
+                        <input type="hidden" name="butacas_seleccionadas" id="inputButacasSeleccionadas" value="">
+                        <button type="submit" class="btn-continue-candy" id="btnContinuarCandy" title="Avanzar al siguiente paso" style="width: 100%; border: none; font-family: inherit;">
+                            <span>Continuar a Candy Bar</span>
+                            <span>→</span>
+                        </button>
+                    </form>
 
                     <!-- Enlace Volver a Funciones -->
-                    <a href="{{ url_for('peliculas.detalle_pelicula', id_pelicula=1) }}" class="btn-return-link">
+                    <a href="{{ url_for('peliculas.detalle_pelicula', id_pelicula=c.pelicula.id_pelicula) }}" class="btn-return-link">
                         <span>←</span>
                         <span>Volver a Funciones</span>
                     </a>

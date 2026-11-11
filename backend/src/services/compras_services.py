@@ -6,7 +6,7 @@ from src.services.qr_services import crear_token_qr
 from src.services.comprobantes_services import enviar_comprobante_compra
 from src.repositories.compras_repository import registrar_compra_pagada_db, obtener_detalle_comprobante_db
 from src.constants import HTTP_NO_IMPLEMENTADO, HTTP_CONFLICTO
-from src.utils import error_de_negocio
+from src.utils import ahora_local, error_de_negocio
 
 from src.constants import FORMATO_DATETIME_SQL
 from src.repositories.compras_repository import (
@@ -113,14 +113,14 @@ def cancelar_compra(id_compra: int, id_usuario: int) -> dict | None:
     inicio = compra["inicio"]
     if isinstance(inicio, str):
         inicio = datetime.strptime(inicio, FORMATO_DATETIME_SQL)
-    if inicio <= datetime.now() + timedelta(hours=24):
+    if inicio <= ahora_local() + timedelta(hours=24):
         return construir_error_api(
             "error.compras.plazo_cancelacion_vencido",
             "Plazo de cancelación vencido",
             "La compra solo puede cancelarse hasta 24 horas antes del inicio de la función.",
         )
 
-    cancelada_en = datetime.now().strftime(FORMATO_DATETIME_SQL)
+    cancelada_en = ahora_local().strftime(FORMATO_DATETIME_SQL)
     if not cancelar_compra_atomica_db(id_compra, id_usuario, cancelada_en):
         return construir_error_api(
             "error.compras.no_cancelable",

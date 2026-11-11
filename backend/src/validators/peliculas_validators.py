@@ -169,11 +169,21 @@ def validar_actualizar_pelicula(datos: dict) -> dict:
     return validados
 
 
+def validar_id_externo(id_api: str) -> str:
+    """Valida el identificador externo de una película (texto no vacío de hasta 50 caracteres)."""
+    return validar_texto(id_api, "id_api", 50)
+
+
 def validar_busqueda_externa(args) -> dict:
-    """Valida el parámetro obligatorio 'query' (texto de hasta 100 caracteres) de la búsqueda externa."""
+    """
+    Valida el parámetro de búsqueda externa (texto de hasta 100 caracteres).
+    Acepta `query` y, por compatibilidad con el Hito 3, `titulo` como alias.
+    """
     query = validar_texto_opcional(args.get("query"), "query", 100)
     if query is None:
-        raise error_validacion("El parámetro query es obligatorio.")
+        query = validar_texto_opcional(args.get("titulo"), "titulo", 100)
+    if query is None:
+        raise error_validacion("El parámetro query o titulo es obligatorio.")
     return {"query": query}
 
 

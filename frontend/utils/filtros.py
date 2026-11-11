@@ -1,7 +1,11 @@
 from datetime import datetime
 
+from utils.validaciones import validar_entero_positivo, validar_texto_maximo
+
 CAMPOS_FILTRO_PERMITIDOS = {"desde", "hasta", "id_local"}
 FORMATO_FECHA = "%Y-%m-%d"
+LARGO_MAX_TITULO = 250
+LARGO_MAX_CLASIFICACION = 20
 
 
 def _validar_fecha(valor: str, nombre: str) -> str:
@@ -38,5 +42,30 @@ def validar_filtros_dashboard(args) -> dict:
         if not id_local.isascii() or not id_local.isdigit() or int(id_local) <= 0:
             raise ValueError("El filtro 'Complejo' debe ser un número válido.")
         filtros["id_local"] = int(id_local)
+
+    return filtros
+
+
+def validar_filtros_cartelera(args) -> dict:
+    """
+    Valida los filtros de la cartelera (id_genero, titulo y clasificacion) y devuelve
+    solo los que vinieron con valor. Cualquier otro parámetro de la URL se ignora:
+    el diccionario se arma solo con las claves conocidas, así nada extra llega al backend.
+    """
+    filtros = {}
+
+    id_genero = args.get("id_genero", "")
+    if id_genero.strip():
+        filtros["id_genero"] = validar_entero_positivo(id_genero, "Género")
+
+    titulo = validar_texto_maximo(args.get("titulo", ""), "Título", LARGO_MAX_TITULO)
+    if titulo:
+        filtros["titulo"] = titulo
+
+    clasificacion = validar_texto_maximo(
+        args.get("clasificacion", ""), "Clasificación", LARGO_MAX_CLASIFICACION
+    )
+    if clasificacion:
+        filtros["clasificacion"] = clasificacion
 
     return filtros

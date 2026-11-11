@@ -1,3 +1,6 @@
+import json
+from datetime import datetime
+
 from flask import (
     Blueprint,
     flash,
@@ -8,162 +11,318 @@ from flask import (
     url_for,
 )
 
+from services.funciones_service import (
+    obtener_detalle_funcion_del_backend,
+    obtener_funciones_del_backend,
+    obtener_mapa_butacas_del_backend,
+)
+from services.peliculas_service import obtener_detalle_pelicula
 from services.servicios_service import (
     formatear_monto,
     obtener_servicios_disponibles,
 )
 from utils.csrf import crear_token_csrf, validar_token_csrf
+from utils.formatos import formatear_duracion, formatear_fecha_corta, formatear_hora
 from validators.compras_validators import validar_servicios_seleccionados
 
 compra_bp = Blueprint("compra", __name__, url_prefix="/compra")
 
 
-@compra_bp.route("/butacas")
+def _armar_filas_butacas(butacas_lista: list[dict], butacas_seleccionadas_ids: set[int]) -> list[dict]:
+    """
+    Agrupa la lista plana de butacas recibida del backend por letra de fila
+    y las distribuye en los tres bloques de la sala (izquierda, centro, derecha).
+    """
+    filas_dict = {}
+    for b in butacas_lista:
+        letra = b.get("fila", "A")
+        if letra not in filas_dict:
+            filas_dict[letra] = []
+
+        estado_db = b.get("estado", "DISPONIBLE")
+        id_butaca = b.get("id_butaca")
+
+        if estado_db in ("OCUPADA", "RESERVADA"):
+            estado = "ocupada"
+        elif id_butaca in butacas_seleccionadas_ids:
+            estado = "seleccionada"
+        else:
+            estado = "libre"
+
+        filas_dict[letra].append({
+            "id_butaca": id_butaca,
+            "num": b.get("numero", 1),
+            "estado": estado,
+        })
+
+    filas_ordenadas = []
+    for letra in sorted(filas_dict.keys()):
+        asientos = sorted(filas_dict[letra], key=lambda x: x["num"])
+        total = len(asientos)
+
+        # Distribuir proporcionalmente en 3 bloques (izq, centro, der)
+        if total <= 4:
+            izq = asientos[:1]
+            centro = asientos[1:3]
+            der = asientos[3:]
+        elif total <= 6:
+            izq = asientos[:1]
+            centro = asientos[1:5]
+            der = asientos[5:]
+        elif total <= 10:
+            izq = asientos[:2]
+            centro = asientos[2:8]
+            der = asientos[8:]
+        else:
+            c1 = 3
+            c2 = total - 3
+            izq = asientos[:c1]
+            centro = asientos[c1:c2]
+            der = asientos[c2:]
+
+        filas_ordenadas.append({
+            "letra": letra,
+            "es_vip": letra in ("E", "F", "G"),
+            "asientos_izq": izq,
+            "asientos_centro": centro,
+            "asientos_der": der,
+        })
+
+    return filas_ordenadas
+
+
+@compra_bp.route("/butacas", methods=["GET", "POST"])
 def seleccion_butacas():
     """
-    Renderiza la pantalla de selección de butacas de una función.
-    Provee el contexto estructurado de sala, filas y resumen para este hito visual SSR.
+    Controlador SSR para el mapa de butacas en vivo.
+    GET: Carga la función y el estado real de cada butaca desde el backend.
+    POST: Recibe la selección del usuario, valida disponibilidad y persiste en session.
     """
+    if request.method == "POST":
+        id_funcion = request.form.get("id_funcion", type=int)
+        raw_butacas = request.form.get("butacas_seleccionadas", "")
+
+        ids_butacas = []
+        if raw_butacas:
+            try:
+                ids_butacas = json.loads(raw_butacas)
+            except (ValueError, TypeError):
+                ids_butacas = [int(x) for x in raw_butacas.split(",") if x.strip().isdigit()]
+
+        if not id_funcion:
+            flash("No se especificó la función de cine seleccionada.", "error")
+            return redirect(url_for("home.index"))
+
+        if not ids_butacas:
+            flash("Por favor seleccioná al menos una butaca libre para continuar.", "error")
+            return redirect(url_for("compra.seleccion_butacas", id_funcion=id_funcion))
+
+        # Verificar en vivo que ninguna butaca haya sido ocupada en la BD
+        mapa_resp, status_mapa = obtener_mapa_butacas_del_backend(id_funcion)
+        if status_mapa == 200 and isinstance(mapa_resp, dict):
+            todas_butacas = mapa_resp.get("butacas", [])
+            mapa_dict = {b["id_butaca"]: b for b in todas_butacas}
+
+            butacas_elegidas = []
+            for id_b in ids_butacas:
+                b = mapa_dict.get(id_b)
+                if not b or b.get("estado") in ("OCUPADA", "RESERVADA"):
+                    flash(
+                        f"La butaca elegida (Fila {b.get('fila', '')} N° {b.get('numero', '')}) ya fue reclamada o no está disponible.",
+                        "error",
+                    )
+                    return redirect(url_for("compra.seleccion_butacas", id_funcion=id_funcion))
+                butacas_elegidas.append(b)
+        else:
+            butacas_elegidas = [{"id_butaca": id_b, "fila": "A", "numero": id_b} for id_b in ids_butacas]
+
+        # Obtener detalle de función para precio y datos de la orden
+        func_detalle, _ = obtener_detalle_funcion_del_backend(id_funcion)
+        precio_unitario = (
+            float(func_detalle.get("precio_entrada", 8500))
+            if isinstance(func_detalle, dict)
+            else 8500.0
+        )
+        subtotal = precio_unitario * len(butacas_elegidas)
+
+        # Guardar la selección en la sesión de Flask
+        session["compra"] = {
+            "id_funcion": id_funcion,
+            "pelicula_titulo": func_detalle.get("titulo_pelicula", "Película") if isinstance(func_detalle, dict) else "Película",
+            "complejo": func_detalle.get("nombre_local", "Cine Paradiso") if isinstance(func_detalle, dict) else "Cine Paradiso",
+            "sala_numero": func_detalle.get("numero_sala", 1) if isinstance(func_detalle, dict) else 1,
+            "sala_completa": f"Sala {func_detalle.get('numero_sala', 1)} ({func_detalle.get('formato', '2D')})" if isinstance(func_detalle, dict) else "Sala 1",
+            "horario": func_detalle.get("inicio", "") if isinstance(func_detalle, dict) else "",
+            "precio_unitario": precio_unitario,
+            "butacas": [
+                {
+                    "id_butaca": b["id_butaca"],
+                    "fila": b["fila"],
+                    "numero": b["numero"],
+                    "precio": precio_unitario,
+                }
+                for b in butacas_elegidas
+            ],
+            "total_butacas": len(butacas_elegidas),
+            "subtotal_entradas": subtotal,
+        }
+
+        return redirect(url_for("compra.seleccion_servicios"))
+
+    # Petición GET: Cargar mapa y datos
+    id_funcion = request.args.get("id_funcion", type=int)
+    if not id_funcion:
+        id_funcion = session.get("compra", {}).get("id_funcion")
+
+    # Si no vino id_funcion, buscar la primera función programada activa
+    if not id_funcion:
+        funciones_disponibles, status_f = obtener_funciones_del_backend()
+        if status_f == 200 and isinstance(funciones_disponibles, list) and funciones_disponibles:
+            id_funcion = funciones_disponibles[0].get("id_funcion")
+        else:
+            # Fallback de desarrollo / demo para permitir visualizar la vista
+            id_funcion = 101
+
+    # 1. Consultar mapa de butacas al backend
+    mapa_resp, status_mapa = obtener_mapa_butacas_del_backend(id_funcion)
+    # 2. Consultar detalles de la función
+    func_resp, status_func = obtener_detalle_funcion_del_backend(id_funcion)
+
+    # Obtener butacas de la sesión previa si corresponden a esta función
+    compra_sesion = session.get("compra", {})
+    butacas_previas = (
+        compra_sesion.get("butacas", [])
+        if compra_sesion.get("id_funcion") == id_funcion
+        else []
+    )
+    ids_seleccionadas = {b["id_butaca"] for b in butacas_previas if "id_butaca" in b}
+
+    # Armar filas dinámicas si el backend respondió
+    butacas_db = mapa_resp.get("butacas", []) if isinstance(mapa_resp, dict) else []
+    filas_construidas = _armar_filas_butacas(butacas_db, ids_seleccionadas)
+
+    # Si el backend no devolvió butacas (o no está corriendo), generar sala de demostración
+    if not filas_construidas:
+        filas_construidas = [
+            {
+                "letra": letra,
+                "es_vip": letra in ("E", "F", "G"),
+                "asientos_izq": [
+                    {"id_butaca": idx * 10 + n, "num": n, "estado": "libre"}
+                    for n in range(1, 4)
+                ],
+                "asientos_centro": [
+                    {
+                        "id_butaca": idx * 10 + n,
+                        "num": n,
+                        "estado": "ocupada" if (letra in ("A", "D", "F") and n in (5, 6)) else "libre",
+                    }
+                    for n in range(4, 10)
+                ],
+                "asientos_der": [
+                    {"id_butaca": idx * 10 + n, "num": n, "estado": "libre"}
+                    for n in range(10, 13)
+                ],
+            }
+            for idx, letra in enumerate(["A", "B", "C", "D", "E", "F", "G", "H"], start=1)
+        ]
+
+    # Buscar detalles de la película
+    id_pelicula = func_resp.get("id_pelicula", 1) if isinstance(func_resp, dict) else 1
+    peli_resp = obtener_detalle_pelicula(id_pelicula) if id_pelicula else None
+    if not isinstance(peli_resp, dict):
+        peli_resp = {}
+
+    titulo_pelicula = (
+        func_resp.get("titulo_pelicula")
+        or peli_resp.get("titulo")
+        or "Película en Cartelera"
+    )
+    poster_url = (
+        peli_resp.get("poster_url")
+        or "https://image.tmdb.org/t/p/w500/8b8R8l88Qje9dn9OE8PY05Nxl1X.jpg"
+    )
+    duracion = formatear_duracion(peli_resp.get("duracion_min")) or "120 min"
+    formato = func_resp.get("formato", "2D") if isinstance(func_resp, dict) else "2D"
+    idioma = func_resp.get("idioma", "Original") if isinstance(func_resp, dict) else "Original"
+    subtitulada = (
+        "Subtitulada"
+        if (func_resp.get("subtitulada") if isinstance(func_resp, dict) else True)
+        else "Doblada"
+    )
+    complejo = (
+        func_resp.get("nombre_local", "Cine Paradiso")
+        if isinstance(func_resp, dict)
+        else "Cine Paradiso"
+    )
+    num_sala = func_resp.get("numero_sala", 1) if isinstance(func_resp, dict) else 1
+    precio_base = (
+        float(func_resp.get("precio_entrada", 8500))
+        if isinstance(func_resp, dict)
+        else 8500.0
+    )
+    precio_vip = precio_base * 1.25
+
+    # Formato de horario
+    inicio_raw = func_resp.get("inicio", "") if isinstance(func_resp, dict) else ""
+    horario_etiqueta = "Horario a confirmar"
+    if inicio_raw:
+        try:
+            dt = datetime.fromisoformat(inicio_raw)
+            horario_etiqueta = f"{formatear_fecha_corta(dt.date())} {formatear_hora(dt)}"
+        except Exception:
+            horario_etiqueta = inicio_raw
+
+    # Resumen lateral
+    ubicaciones_resumen = []
+    subtotal = 0.0
+    for b in butacas_previas:
+        pr = b.get("precio", precio_base)
+        subtotal += pr
+        ubicaciones_resumen.append({
+            "id": f"{b.get('fila')}-{b.get('numero')}",
+            "id_butaca": b.get("id_butaca"),
+            "fila": b.get("fila"),
+            "butaca": b.get("numero"),
+            "categoria": f"General {formato}",
+            "precio": int(pr),
+            "precio_formato": f"${int(pr):,.0f}".replace(",", "."),
+        })
+
     datos_compra = {
         "pelicula": {
-            "id_pelicula": 1,
-            "titulo": "Dune: Parte Dos",
-            "titulo_upper": "DUNE: PARTE DOS",
-            "poster_url": "https://image.tmdb.org/t/p/w500/8b8R8l88Qje9dn9OE8PY05Nxl1X.jpg",
-            "formato": "SALA 4D",
-            "idioma": "Subtitulada",
-            "duracion": "166 min",
+            "id_pelicula": id_pelicula,
+            "titulo": titulo_pelicula,
+            "titulo_upper": titulo_pelicula.upper(),
+            "poster_url": poster_url,
+            "formato": f"SALA {formato}",
+            "idioma": f"{idioma} ({subtitulada})",
+            "duracion": duracion,
         },
         "funcion": {
-            "id_funcion": 102,
-            "complejo": "Cine Paradiso Centro",
-            "sala_nombre": "Sala 1",
-            "sala_completa": "Sala 1 (4D Atmos)",
-            "horario_etiqueta": "Hoy 19:30 hs",
-            "pantalla_tipo": "PANTALLA CURVA MAXVISION 4D",
-            "tiempo_restante": "08:40 min",
-            "precio_general": 8500,
-            "precio_vip": 10500,
+            "id_funcion": id_funcion,
+            "complejo": complejo,
+            "sala_nombre": f"Sala {num_sala}",
+            "sala_completa": f"Sala {num_sala} ({formato})",
+            "horario_etiqueta": horario_etiqueta,
+            "pantalla_tipo": f"PANTALLA {formato}",
+            "tiempo_restante": "10:00 min",
+            "precio_general": int(precio_base),
+            "precio_vip": int(precio_vip),
         },
         "sala": {
-            "filas": [
-                {
-                    "letra": "A",
-                    "es_vip": False,
-                    "asientos_izq": [{"num": 1, "estado": "libre"}, {"num": 2, "estado": "libre"}, {"num": 3, "estado": "libre"}],
-                    "asientos_centro": [
-                        {"num": 4, "estado": "libre"}, {"num": 5, "estado": "ocupada"},
-                        {"num": 6, "estado": "ocupada"}, {"num": 7, "estado": "libre"},
-                        {"num": 8, "estado": "libre"}, {"num": 9, "estado": "libre"}
-                    ],
-                    "asientos_der": [{"num": 10, "estado": "libre"}, {"num": 11, "estado": "libre"}, {"num": 12, "estado": "libre"}]
-                },
-                {
-                    "letra": "B",
-                    "es_vip": False,
-                    "asientos_izq": [{"num": 1, "estado": "libre"}, {"num": 2, "estado": "libre"}, {"num": 3, "estado": "libre"}],
-                    "asientos_centro": [
-                        {"num": 4, "estado": "ocupada"}, {"num": 5, "estado": "ocupada"},
-                        {"num": 6, "estado": "libre"}, {"num": 7, "estado": "libre"},
-                        {"num": 8, "estado": "libre"}, {"num": 9, "estado": "libre"}
-                    ],
-                    "asientos_der": [{"num": 10, "estado": "libre"}, {"num": 11, "estado": "libre"}, {"num": 12, "estado": "libre"}]
-                },
-                {
-                    "letra": "C",
-                    "es_vip": False,
-                    "asientos_izq": [{"num": 1, "estado": "libre"}, {"num": 2, "estado": "libre"}, {"num": 3, "estado": "libre"}],
-                    "asientos_centro": [
-                        {"num": 4, "estado": "libre"}, {"num": 5, "estado": "libre"},
-                        {"num": 6, "estado": "libre"}, {"num": 7, "estado": "libre"},
-                        {"num": 8, "estado": "libre"}, {"num": 9, "estado": "libre"}
-                    ],
-                    "asientos_der": [{"num": 10, "estado": "libre"}, {"num": 11, "estado": "libre"}, {"num": 12, "estado": "libre"}]
-                },
-                {
-                    "letra": "D",
-                    "es_vip": False,
-                    "asientos_izq": [{"num": 1, "estado": "libre"}, {"num": 2, "estado": "libre"}, {"num": 3, "estado": "libre"}],
-                    "asientos_centro": [
-                        {"num": 4, "estado": "libre"}, {"num": 5, "estado": "ocupada"},
-                        {"num": 6, "estado": "ocupada"}, {"num": 7, "estado": "ocupada"},
-                        {"num": 8, "estado": "ocupada"}, {"num": 9, "estado": "libre"}
-                    ],
-                    "asientos_der": [{"num": 10, "estado": "libre"}, {"num": 11, "estado": "libre"}, {"num": 12, "estado": "libre"}]
-                },
-                {
-                    "letra": "E",
-                    "es_vip": False,
-                    "asientos_izq": [{"num": 1, "estado": "libre"}, {"num": 2, "estado": "libre"}, {"num": 3, "estado": "libre"}],
-                    "asientos_centro": [
-                        {"num": 4, "estado": "libre"}, {"num": 5, "estado": "libre"},
-                        {"num": 6, "estado": "libre"}, {"num": 7, "estado": "seleccionada"},
-                        {"num": 8, "estado": "seleccionada"}, {"num": 9, "estado": "libre"}
-                    ],
-                    "asientos_der": [{"num": 10, "estado": "libre"}, {"num": 11, "estado": "libre"}, {"num": 12, "estado": "libre"}]
-                },
-                {
-                    "letra": "F",
-                    "es_vip": True,
-                    "asientos_izq": [{"num": 1, "estado": "libre"}, {"num": 2, "estado": "libre"}, {"num": 3, "estado": "libre"}],
-                    "asientos_centro": [
-                        {"num": 4, "estado": "libre"}, {"num": 5, "estado": "libre"},
-                        {"num": 6, "estado": "ocupada"}, {"num": 7, "estado": "ocupada"},
-                        {"num": 8, "estado": "libre"}, {"num": 9, "estado": "libre"}
-                    ],
-                    "asientos_der": [{"num": 10, "estado": "libre"}, {"num": 11, "estado": "libre"}, {"num": 12, "estado": "libre"}]
-                },
-                {
-                    "letra": "G",
-                    "es_vip": True,
-                    "asientos_izq": [{"num": 1, "estado": "libre"}, {"num": 2, "estado": "libre"}, {"num": 3, "estado": "libre"}],
-                    "asientos_centro": [
-                        {"num": 4, "estado": "libre"}, {"num": 5, "estado": "libre"},
-                        {"num": 6, "estado": "libre"}, {"num": 7, "estado": "libre"},
-                        {"num": 8, "estado": "libre"}, {"num": 9, "estado": "libre"}
-                    ],
-                    "asientos_der": [{"num": 10, "estado": "libre"}, {"num": 11, "estado": "libre"}, {"num": 12, "estado": "libre"}]
-                },
-                {
-                    "letra": "H",
-                    "es_vip": False,
-                    "asientos_izq": [{"num": 1, "estado": "libre"}, {"num": 2, "estado": "libre"}, {"num": 3, "estado": "libre"}],
-                    "asientos_centro": [
-                        {"num": 4, "estado": "libre"}, {"num": 5, "estado": "libre"},
-                        {"num": 6, "estado": "libre"}, {"num": 7, "estado": "libre"},
-                        {"num": 8, "estado": "libre"}, {"num": 9, "estado": "libre"}
-                    ],
-                    "asientos_der": [{"num": 10, "estado": "libre"}, {"num": 11, "estado": "libre"}, {"num": 12, "estado": "libre"}]
-                },
-            ]
+            "filas": filas_construidas,
         },
         "resumen": {
-            "total_butacas": 2,
-            "ubicaciones": [
-                {
-                    "id": "E-7",
-                    "fila": "E",
-                    "butaca": 7,
-                    "categoria": "General 4D",
-                    "precio": 8500,
-                    "precio_formato": "$8.500"
-                },
-                {
-                    "id": "E-8",
-                    "fila": "E",
-                    "butaca": 8,
-                    "categoria": "General 4D",
-                    "precio": 8500,
-                    "precio_formato": "$8.500"
-                }
-            ],
-            "subtotal": 17000,
-            "subtotal_formato": "$17.000",
+            "total_butacas": len(ubicaciones_resumen),
+            "ubicaciones": ubicaciones_resumen,
+            "subtotal": int(subtotal),
+            "subtotal_formato": f"${int(subtotal):,.0f}".replace(",", "."),
             "cargo_servicio": 0,
             "cargo_servicio_texto": "Bonificado $0",
-            "total": 17000,
-            "total_formato": "$17.000"
-        }
+            "total": int(subtotal),
+            "total_formato": f"${int(subtotal):,.0f}".replace(",", "."),
+        },
     }
 
     return render_template("seleccion_butacas.html", c=datos_compra)

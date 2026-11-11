@@ -1,6 +1,7 @@
 from flask import jsonify, request
 from src.services.servicios_services import (
     listar_servicios,
+    listar_servicios_admin,
     crear_servicio,
     actualizar_servicio,
     eliminar_servicio,
@@ -19,6 +20,12 @@ def register_servicios_routes(app):
     def get_servicios():
         """GET /servicios: Lista los servicios adicionales activos."""
         return jsonify(listar_servicios()), 200
+
+    @app.route("/servicios/admin", methods=["GET"])
+    def get_servicios_admin():
+        """GET /servicios/admin: Lista todos los servicios, activos e inactivos (Solo Admin)."""
+        validar_admin(request.headers.get("Authorization"))
+        return jsonify(listar_servicios_admin()), 200
 
     @app.route("/servicios", methods=["POST"])
     def post_servicio():

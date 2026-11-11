@@ -12,9 +12,20 @@
                 Ocupación, ventas, franjas horarias y cancelaciones del complejo.
             </p>
         </div>
-        <a href="{{ url_for('home.index') }}" class="dashboard-page__back">
-            ← Volver a la cartelera
-        </a>
+        <div class="dashboard-page__actions">
+            {% with texto='Gestionar películas', url_destino=url_for('admin_peliculas.index') %}
+                {% include 'components/button.html' %}
+            {% endwith %}
+            {% with texto='Gestionar servicios', url_destino=url_for('admin_servicios.index') %}
+                {% include 'components/button.html' %}
+            {% endwith %}
+            {% with texto='Validador QR', url_destino=url_for('validaciones.index') %}
+                {% include 'components/button.html' %}
+            {% endwith %}
+            <a href="{{ url_for('home.index') }}" class="dashboard-page__back">
+                ← Volver a la cartelera
+            </a>
+        </div>
     </header>
 
     {% if error_backend %}

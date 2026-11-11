@@ -1,6 +1,7 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from src.db import ejecutar_consulta, ejecutar_mutacion, obtener_conexion
+from src.utils import ahora_local
 
 
 def verificar_butacas_disponibles_db(id_funcion: int, ids_butacas: list[int]) -> bool:
@@ -128,7 +129,7 @@ def cancelar_compra_atomica_db(id_compra: int, id_usuario: int, cancelada_en: st
                 not compra
                 or compra["estado"] != "PAGADA"
                 or compra["qr_validado_en"] is not None
-                or compra["inicio"] <= datetime.now() + timedelta(hours=24)
+                or compra["inicio"] <= ahora_local() + timedelta(hours=24)
             ):
                 conexion.rollback()
                 return False
@@ -165,9 +166,9 @@ def registrar_compra_pagada_db(
             cursor.execute(
                 """SELECT id_funcion, id_sala, precio_entrada
                    FROM funciones
-                   WHERE id_funcion = %s AND estado = 'PROGRAMADA' AND inicio > NOW()
+                   WHERE id_funcion = %s AND estado = 'PROGRAMADA' AND inicio > %s
                    FOR UPDATE""",
-                (datos["id_funcion"],),
+                (datos["id_funcion"], ahora_local()),
             )
             funcion = cursor.fetchone()
             if not funcion:

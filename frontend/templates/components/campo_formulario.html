@@ -1,7 +1,16 @@
 <label class="form-field" for="{{ identificador | default(nombre) }}">
   <span>{{ etiqueta }}</span>
+  {% if tipo | default('text') == 'textarea' %}
+  <textarea id="{{ identificador | default(nombre) }}" name="{{ nombre }}"
+            {% if obligatorio | default(false) %}required{% endif %}
+            {% if maxlength is defined %}maxlength="{{ maxlength }}"{% endif %}>{{ valor if valor is defined and valor is not none else '' }}</textarea>
+  {% else %}
   <input id="{{ identificador | default(nombre) }}" name="{{ nombre }}" type="{{ tipo | default('text') }}"
          {% if obligatorio | default(false) %}required{% endif %}
          {% if minimo is defined %}min="{{ minimo }}"{% endif %}
-         {% if valor is defined %}value="{{ valor }}"{% endif %}>
+         {% if maximo is defined %}max="{{ maximo }}"{% endif %}
+         {% if maxlength is defined %}maxlength="{{ maxlength }}"{% endif %}
+         {% if lista is defined %}list="{{ lista }}"{% endif %}
+         {% if valor is defined and valor is not none %}value="{{ valor }}"{% endif %}>
+  {% endif %}
 </label>
