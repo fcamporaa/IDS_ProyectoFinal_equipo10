@@ -22,7 +22,7 @@
                     <span>Cartelera</span>
                 </a>
                 <span class="breadcrumb-separator">/</span>
-                <span class="breadcrumb-text">{{ p.generos[0] | default('Ciencia Ficción') }}</span>
+                <span class="breadcrumb-text">{{ p.generos[0] if p.generos }}</span>
                 <span class="breadcrumb-separator">/</span>
                 <span class="breadcrumb-current">{{ p.titulo }}</span>
             </nav>
@@ -39,15 +39,17 @@
             <!-- Columna Izquierda: Póster con Botón Play Central -->
             <div class="movie-poster-column">
                 <div class="movie-poster-card" id="openTrailerBtn" role="button" tabindex="0" title="Reproducir tráiler oficial">
+                    {% if p.poster_url %}
                     <img 
                         src="{{ p.poster_url }}" 
                         alt="Póster oficial de {{ p.titulo }}" 
                         class="movie-poster-image"
                         loading="eager"
                     >
+                    {% endif %}
                     <div class="poster-floating-badges">
                         <span class="badge-premiere-poster">Estreno de la semana</span>
-                        <span class="badge-tech-poster">{{ p.formato_destacado }} Disponible</span>
+                        {% if p.formato_destacado %}<span class="badge-tech-poster">{{ p.formato_destacado }} Disponible</span>{% endif %}
                     </div>
 
                     <!-- Botón de Play Central en el Póster -->
@@ -88,16 +90,17 @@
                 <!-- Píldoras de Metadatos Superiores -->
                 <div class="movie-meta-badges">
                     <span class="meta-pill pill-red">Estreno de la semana</span>
-                    <span class="meta-pill pill-tech">{{ p.formato_destacado }}</span>
-                    <span class="meta-pill">{{ p.clasificacion }}</span>
-                    <span class="meta-pill">{{ p.duracion_legible }}</span>
-                    <span class="meta-pill">{{ p.idioma_formato }}</span>
-                    <span class="meta-pill">Año {{ p.anio }}</span>
+                    {% if p.formato_destacado %}<span class="meta-pill pill-tech">{{ p.formato_destacado }}</span>{% endif %}
+                    {% if p.clasificacion %}<span class="meta-pill">{{ p.clasificacion }}</span>{% endif %}
+                    {% if p.duracion_legible %}<span class="meta-pill">{{ p.duracion_legible }}</span>{% endif %}
+                    {% if p.idioma_formato %}<span class="meta-pill">{{ p.idioma_formato }}</span>{% endif %}
+                    {% if p.anio %}<span class="meta-pill">Año {{ p.anio }}</span>{% endif %}
                 </div>
 
                 <!-- Título y Puntuaciones -->
                 <div class="movie-title-block">
                     <h1 class="movie-main-title">{{ p.titulo }}</h1>
+                    {% if p.titulo_original or p.puntuacion_imdb or p.porcentaje_critica %}
                     <div class="movie-subtitle-meta">
                         <span class="meta-original-title">Título Original: <em>{{ p.titulo_original }}</em></span>
                         <span class="meta-bullet">•</span>
@@ -105,6 +108,7 @@
                         <span class="meta-bullet">•</span>
                         <span class="meta-critics-score">👍 <strong>{{ p.porcentaje_critica }}</strong></span>
                     </div>
+                    {% endif %}
                 </div>
 
                 <!-- Bloque de Sinopsis -->
@@ -118,24 +122,30 @@
 
                 <!-- Ficha Técnica (Grid 2x2) -->
                 <div class="movie-tech-specs-grid">
+                    {% if p.direccion %}
                     <div class="tech-spec-box">
                         <span class="tech-spec-label">DIRECCIÓN</span>
                         <span class="tech-spec-value">{{ p.direccion }}</span>
                     </div>
+                    {% endif %}
+                    {% if p.reparto %}
                     <div class="tech-spec-box">
                         <span class="tech-spec-label">REPARTO PRINCIPAL</span>
                         <span class="tech-spec-value">{{ p.reparto }}</span>
                     </div>
+                    {% endif %}
                     <div class="tech-spec-box">
                         <span class="tech-spec-label">GÉNERO</span>
                         <span class="tech-spec-value">{{ p.generos | join(', ') }}</span>
                     </div>
+                    {% if p.distribuidora or p.tecnologia_sala %}
                     <div class="tech-spec-box">
                         <span class="tech-spec-label">DISTRIBUIDORA / TECNOLOGÍA DE SALA</span>
                         <span class="tech-spec-value">
                             {{ p.distribuidora }} • <span class="highlight-tech-purple">{{ p.tecnologia_sala }}</span>
                         </span>
                     </div>
+                    {% endif %}
                 </div>
 
             </div>
@@ -176,7 +186,7 @@
                 tabindex="0"
             >
                 <div class="complex-card-top">
-                    <span class="complex-role-tag {% if complejo.seleccionado %}tag-red{% endif %}">{{ complejo.etiqueta }}</span>
+                    {% if complejo.etiqueta %}<span class="complex-role-tag {% if complejo.seleccionado %}tag-red{% endif %}">{{ complejo.etiqueta }}</span>{% endif %}
                     <div class="complex-radio-circle">
                         {% if complejo.seleccionado %}
                             <span class="radio-check-mark">✓</span>
@@ -184,6 +194,7 @@
                     </div>
                 </div>
                 <h3 class="complex-name">{{ complejo.nombre }}</h3>
+                {% if complejo.direccion %}
                 <p class="complex-address">
                     <svg class="icon-pin" viewBox="0 0 24 24" width="14" height="14" stroke="#e50914" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
@@ -191,6 +202,7 @@
                     </svg>
                     <span>{{ complejo.direccion }}</span>
                 </p>
+                {% endif %}
                 <div class="complex-tech-badges">
                     {% for badge in complejo.badges %}
                         <span class="complex-tech-chip">{{ badge }}</span>
@@ -262,7 +274,7 @@
                         <span class="card-time-display">{{ func.hora }}</span>
                         <div class="card-availability-meta">
                             <span class="status-dot-sm dot-{{ func.estado }}"></span>
-                            <span>{{ func.idioma }} • {{ func.disponibilidad }}</span>
+                            <span>{{ func.idioma }}{% if func.disponibilidad %} • {{ func.disponibilidad }}{% endif %}</span>
                         </div>
                     </div>
                     {% endfor %}

@@ -1,17 +1,27 @@
-from flask import Blueprint, render_template
+from flask import Blueprint, abort, render_template
+
+from services.peliculas_service import obtener_detalle_pelicula
+from utils.peliculas import armar_detalle_pelicula
 
 peliculas_bp = Blueprint("peliculas", __name__, url_prefix="/peliculas")
 
 
 @peliculas_bp.route("/<int:id_pelicula>")
-@peliculas_bp.route("/dune-parte-dos")
-def detalle_pelicula(id_pelicula=1):
+def detalle_pelicula(id_pelicula):
     """
-    Renderiza la ficha y cartelera de funciones de una película.
-    Para este hito de templates SSR, provee el contexto completo estructurado.
+    Renderiza la ficha y las funciones de una película leídas del backend.
+    Solo si el backend no responde se usa el contexto genérico de más abajo.
     """
+    pelicula, estado = obtener_detalle_pelicula(id_pelicula)
+    if estado == 200 and isinstance(pelicula, dict):
+        return render_template(
+            "pelicula_detalle.html", p=armar_detalle_pelicula(pelicula)
+        )
+    if estado == 404:
+        abort(404)
+
     datos_pelicula = {
-        "id_pelicula": id_pelicula or 1,
+        "id_pelicula": id_pelicula,
         "titulo": "Dune: Parte Dos",
         "titulo_original": "Dune: Part Two",
         "puntuacion_imdb": "8.8 / 10 (IMDb)",
