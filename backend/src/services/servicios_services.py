@@ -4,6 +4,7 @@ import pymysql
 
 from src.repositories.servicios_repository import (
     obtener_servicios_activos_db,
+    obtener_servicios_admin_db,
     buscar_servicio_por_id_db,
     buscar_servicio_por_nombre_db,
     insertar_servicio_db,
@@ -34,6 +35,11 @@ def _error_nombre_duplicado() -> dict:
 def listar_servicios() -> list[dict]:
     """Lista todos los servicios adicionales activos."""
     return [_serializar_servicio(servicio) for servicio in obtener_servicios_activos_db()]
+
+
+def listar_servicios_admin() -> list[dict]:
+    """Lista todos los servicios (activos e inactivos) para administración."""
+    return [_serializar_servicio(servicio) for servicio in obtener_servicios_admin_db()]
 
 
 def crear_servicio(datos: dict) -> dict:

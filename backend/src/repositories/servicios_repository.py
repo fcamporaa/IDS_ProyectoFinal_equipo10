@@ -12,6 +12,16 @@ def obtener_servicios_activos_db() -> list[dict]:
     return ejecutar_consulta(query)
 
 
+def obtener_servicios_admin_db() -> list[dict]:
+    """Obtiene todos los servicios, activos e inactivos, para el ABM."""
+    query = """
+        SELECT id_servicio, nombre, tipo, precio, activo
+        FROM servicios
+        ORDER BY activo DESC, nombre
+    """
+    return ejecutar_consulta(query)
+
+
 def buscar_servicio_por_id_db(id_servicio: int) -> dict | None:
     """Busca un servicio por su id_servicio."""
     query = """
