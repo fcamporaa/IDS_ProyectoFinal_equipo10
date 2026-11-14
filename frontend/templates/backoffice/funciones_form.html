@@ -2,58 +2,53 @@
 
 {% block content %}
 <div class="container mt-5 mb-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card" style="background-color: #1c1c1c; border: 1px solid #333;">
-                <div class="card-header" style="border-bottom: 2px solid #e50914; background-color: #111;">
-                    <h4 style="color: white; margin: 0; font-weight: bold;">
-                        {{ 'Editar Función' if funcion else 'Crear Nueva Función' }}
-                    </h4>
-                </div>
-                <div class="card-body p-4">
-                    <!-- Si hay función, la ruta apunta a editar; si no, a crear -->
-                    <form action="{{ url_for('admin_funciones.editar_funcion', id_funcion=funcion.id_funcion) if funcion else url_for('admin_funciones.crear_funcion') }}" method="POST">
-                        
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label" style="color: #ccc;">ID de la Película</label>
-                                <input type="number" name="pelicula_id" class="form-control bg-dark text-white border-secondary" value="{{ funcion.id_pelicula if funcion else '' }}" placeholder="Ej: 1" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label" style="color: #ccc;">ID de la Sala</label>
-                                <input type="number" name="sala_id" class="form-control bg-dark text-white border-secondary" value="{{ funcion.id_sala if funcion else '' }}" placeholder="Ej: 3" required>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label" style="color: #ccc;">Fecha</label>
-                                <input type="date" name="fecha" class="form-control bg-dark text-white border-secondary" value="{{ funcion.inicio.split('T')[0] if funcion else '' }}" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label" style="color: #ccc;">Hora</label>
-                                <input type="time" name="hora" class="form-control bg-dark text-white border-secondary" value="{{ funcion.inicio.split('T')[1][:5] if funcion else '' }}" required>
-                            </div>
-                        </div>
-
-                        <div class="mb-4">
-                            <label class="form-label" style="color: #ccc;">Formato</label>
-                            <select name="idioma" class="form-select bg-dark text-white border-secondary" required>
-                                <option value="" disabled {{ '' if funcion else 'selected' }}>Seleccioná el formato...</option>
-                                <option value="2D" {{ 'selected' if funcion and funcion.formato == '2D' else '' }}>2D</option>
-                                <option value="3D" {{ 'selected' if funcion and funcion.formato == '3D' else '' }}>3D</option>
-                                <option value="4D" {{ 'selected' if funcion and funcion.formato == '4D' else '' }}>4D</option>
-                            </select>
-                        </div>
-                        
-                        <div class="d-flex justify-content-end mt-2">
-                            <a href="/admin/funciones/" class="btn btn-outline-light me-2">Cancelar</a>
-                            <button type="submit" class="btn btn-danger" style="background-color: #e50914; border: none;">Guardar Cambios</button>
-                        </div>
-                    </form>
-                </div>
+    <h2 style="color: white; font-weight: bold;">{{ 'Editar' if funcion else 'Nueva' }} Función</h2>
+    
+    <div class="card p-4 mt-4" style="background-color: #1c1c1c; border: 1px solid #333;">
+        <form action="{{ url_for('admin_funciones.editar_funcion', id_funcion=funcion.id_funcion) if funcion else url_for('admin_funciones.crear_funcion') }}" method="POST" style="color: white;">
+            
+            <div class="mb-3">
+                <label class="form-label">Película</label>
+                <!-- Se bloquea si es edición -->
+                <select name="id_pelicula" class="form-select bg-dark text-white border-secondary" {% if funcion %}disabled{% endif %}>
+                    <option value="1" {% if funcion and funcion.id_pelicula == 1 %}selected{% endif %}>Película (Se conectará a la API OMDb)</option>
+                </select>
             </div>
-        </div>
+
+            <div class="mb-3">
+                <label class="form-label">Sala</label>
+                <!-- Se bloquea si es edición -->
+                <select name="id_sala" class="form-select bg-dark text-white border-secondary" {% if funcion %}disabled{% endif %}>
+                    <option value="1" {% if funcion and funcion.id_sala == 1 %}selected{% endif %}>Sala 1</option>
+                    <option value="2" {% if funcion and funcion.id_sala == 2 %}selected{% endif %}>Sala 2</option>
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Formato</label>
+                <!-- Nombre corregido a "formato" y bloqueado en edición -->
+                <select name="formato" class="form-select bg-dark text-white border-secondary" {% if funcion %}disabled{% endif %}>
+                    <option value="2D" {% if funcion and funcion.formato == '2D' %}selected{% endif %}>2D</option>
+                    <option value="3D" {% if funcion and funcion.formato == '3D' %}selected{% endif %}>3D</option>
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Fecha y Hora de Inicio</label>
+                <input type="datetime-local" name="inicio" class="form-control bg-dark text-white border-secondary" value="{{ funcion.inicio if funcion else '' }}" required>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Precio de la Entrada ($)</label>
+                <!-- Campo de precio dinámico -->
+                <input type="number" name="precio_entrada" class="form-control bg-dark text-white border-secondary" value="{{ funcion.precio_entrada if funcion else 6500 }}" required>
+            </div>
+
+            <div class="mt-4">
+                <button type="submit" class="btn btn-danger" style="background-color: #e50914; border: none;">Guardar Función</button>
+                <a href="{{ url_for('admin_funciones.listar_funciones') }}" class="btn btn-outline-light ms-2">Cancelar</a>
+            </div>
+        </form>
     </div>
 </div>
 {% endblock %}
