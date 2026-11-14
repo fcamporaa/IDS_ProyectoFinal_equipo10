@@ -1,3 +1,5 @@
+from dotenv import load_dotenv
+load_dotenv()
 from flask import Flask, jsonify
 from werkzeug.exceptions import HTTPException
 
@@ -17,7 +19,7 @@ app.json.sort_keys = False
 
 
 # Manejador de error general HTTP (404, 405, etc.)
-@app.errorhandler(Exception)
+#@app.errorhandler(Exception)
 def handle_unexpected_error(error):
     if isinstance(error, HTTPException):
         return jsonify(
