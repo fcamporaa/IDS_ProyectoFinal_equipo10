@@ -1,4 +1,6 @@
 import json
+from utils.csrf import crear_token_csrf
+from services.servicios_service import obtener_servicios_del_backend
 from datetime import datetime
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 
@@ -319,6 +321,43 @@ def seleccion_servicios():
     Renderiza la pantalla de selección de servicios complementarios y combos (Candy Bar).
     Muestra el catálogo con combos, pochoclos, bebidas y extras, junto al resumen de compra acumulado.
     """
+
+    servicios, estado = obtener_servicios_del_backend()
+
+    servicios_vista = []
+
+    for servicio in servicios:
+        precio = float(servicio["precio"])
+        nombre = servicio["nombre"]
+        tipo = servicio["tipo"]
+
+        if nombre.lower().startswith("combo"):
+            categoria = "combos pochoclos bebidas"
+        elif tipo == "COMIDA":
+            categoria = "snacks"
+        elif tipo == "BEBIDA":
+            categoria = "bebidas"
+        else:
+            categoria = "todos"
+
+        servicios_vista.append({
+            "id_servicio": servicio["id_servicio"],
+            "nombre": nombre,
+            "categoria": categoria,
+            "descripcion": "",
+            "precio": precio,
+            "precio_formato": f"${precio:,.0f}".replace(",", "."),
+            "cantidad": 0,
+            "imagen_url": "https://images.unsplash.com/photo-1572177812156-58036aae439c?w=600",
+            "badge_top": None,
+            "badge_top_tipo": None,
+            "badge_image_bottom": None,
+        })
+
+    if estado != 200 or not isinstance(servicios, list):
+        flash("No se pudieron obtener los servicios.", "error")
+        servicios = []
+
     datos_compra = {
         "pelicula": {
             "id_pelicula": 2,
@@ -352,83 +391,8 @@ def seleccion_servicios():
         ],
         "servicios": [
             {
-                "id_servicio": 1,
-                "nombre": "Combo Mega Paradiso",
-                "categoria": "combos pochoclos bebidas",
-                "descripcion": "Balde gigante de pochoclos salados o dulces + 2 gaseosas grandes 1L + golosina a elección en candy bar.",
-                "precio": 14500,
-                "precio_formato": "$14.500",
-                "badge_top": "MÁS VENDIDO",
-                "badge_top_tipo": "badge-gold",
-                "badge_image_bottom": "Tamaño Gigante",
-                "cantidad": 1,
-                "imagen_url": "https://images.unsplash.com/photo-1572177812156-58036aae439c?w=600&auto=format&fit=crop&q=80",
-            },
-            {
-                "id_servicio": 2,
-                "nombre": "Combo Clásico Dúo",
-                "categoria": "combos pochoclos bebidas",
-                "descripcion": "1 Balde mediano de pochoclos recién hechos + 2 gaseosas medianas 500ml.",
-                "precio": 10200,
-                "precio_formato": "$10.200",
-                "badge_top": None,
-                "badge_top_tipo": None,
-                "badge_image_bottom": None,
-                "cantidad": 0,
-                "imagen_url": "https://images.unsplash.com/photo-1585647347384-2593bc35786b?w=600&auto=format&fit=crop&q=80",
-            },
-            {
-                "id_servicio": 3,
-                "nombre": "Combo Individual",
-                "categoria": "combos pochoclos bebidas",
-                "descripcion": "1 Bolsa de pochoclos crocantes + 1 gaseosa 500ml línea Coca-Cola.",
-                "precio": 6800,
-                "precio_formato": "$6.800",
-                "badge_top": None,
-                "badge_top_tipo": None,
-                "badge_image_bottom": None,
-                "cantidad": 0,
-                "imagen_url": "https://images.unsplash.com/photo-1505686994434-e3cc5abf1330?w=600&auto=format&fit=crop&q=80",
-            },
-            {
-                "id_servicio": 4,
-                "nombre": "Voucher Estacionamiento Prepago (3 hs cubiertas)",
-                "categoria": "estacionamiento",
-                "descripcion": "Acceso exclusivo cubierto por 3 horas en cochera de Av. Corrientes 1240. Validación automática con QR.",
-                "precio": 4500,
-                "precio_formato": "$4.500",
-                "badge_top": "PARADISO CENTRO",
-                "badge_top_tipo": "badge-cyan",
-                "badge_image_bottom": "3 Horas Cubiertas",
-                "cantidad": 1,
-                "imagen_url": "https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=600&auto=format&fit=crop&q=80",
-            },
-            {
-                "id_servicio": 5,
-                "nombre": "Nachos con Queso Cheddar Caliente",
-                "categoria": "snacks",
-                "descripcion": "Porción generosa de nachos crujientes con queso cheddar fundido caliente en bandeja térmica.",
-                "precio": 5200,
-                "precio_formato": "$5.200",
-                "badge_top": None,
-                "badge_top_tipo": None,
-                "badge_image_bottom": None,
-                "cantidad": 0,
-                "imagen_url": "https://images.unsplash.com/photo-1513456852971-30c0b8199d4d?w=600&auto=format&fit=crop&q=80",
-            },
-            {
-                "id_servicio": 6,
-                "nombre": "Gaseosa Extra Grande (Línea Coca-Cola)",
-                "categoria": "bebidas",
-                "descripcion": "1000ml a elección: Coca-Cola original, Sin Azúcar, Sprite o Fanta con hielo frappe.",
-                "precio": 3500,
-                "precio_formato": "$3.500",
-                "badge_top": None,
-                "badge_top_tipo": None,
-                "badge_image_bottom": None,
-                "cantidad": 0,
-                "imagen_url": "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=600&auto=format&fit=crop&q=80",
-            },
+            "servicios": servicios_vista,
+            }
         ],
         "candy_seleccionado": {
             "items": [
@@ -470,128 +434,201 @@ def seleccion_servicios():
 @compra_bp.route("/checkout")
 def seleccion_checkout():
     """
-    Renderiza la pantalla de Checkout y Pago final de la reserva.
-    Presenta los datos del comprador, formulario de tarjeta con cuotas y el resumen consolidado.
+    Muestra el checkout con los datos de la compra actual.
+    Recupera las butacas y los servicios desde la sesión.
+    Consulta los precios vigentes al backend.
     """
-    datos_compra = {
-        "tiempo_restante": "08:40",
-        "pelicula": {
-            "id_pelicula": 1,
-            "titulo": "Dune: Parte Dos",
-            "poster_url": "https://image.tmdb.org/t/p/w500/8b8R8l88Qje9dn9OE8PY05Nxl1X.jpg",
-            "badge_formato": "4D MOTION",
-            "badge_edad": "+13",
-            "especificaciones": "Subtitulada • 166 min",
-            "sala_completa": "Sala 1 (Atmos 4D Extreme)",
-            "dia_horario": "Viernes 24/10/2026 • 19:30 hs",
-            "complejo": "Cine Paradiso Centro",
-            "butacas_asignadas": "Fila E • Butacas 7, 8 (VIP 4D)",
-        },
-        "desglose": [
-            {
-                "titulo": "2x Entrada 4D Subtitulada ($8.500 c/u)",
+
+    # 1. Verificar que el usuario haya iniciado sesión
+    usuario = session.get("usuario")
+
+    if not usuario or not session.get("access_token"):
+        flash("Debés iniciar sesión para comprar.", "error")
+        return redirect(url_for("auth.login"))
+
+    # 2. Recuperar la compra de la sesión
+    compra = session.get("compra")
+
+    if not compra or not compra.get("id_funcion") or not compra.get("butacas"):
+        flash("Primero debés seleccionar tus butacas.", "error")
+        return redirect(url_for("compra.seleccion_butacas"))
+
+    # 3. Consultar los datos actuales de la función
+    funcion, estado = obtener_detalle_funcion_del_backend(
+        compra["id_funcion"]
+    )
+
+    if estado != 200 or not isinstance(funcion, dict):
+        flash("La función seleccionada ya no está disponible.", "error")
+        return redirect(url_for("compra.seleccion_butacas"))
+
+    # 4. Obtener los datos de la película
+    id_pelicula = funcion.get("id_pelicula")
+
+    pelicula = (
+        obtener_detalle_pelicula(id_pelicula)
+        if id_pelicula
+        else None
+    )
+
+    if not isinstance(pelicula, dict):
+        pelicula = {}
+
+    # 5. Calcular el subtotal de las entradas
+    cantidad_entradas = len(compra["butacas"])
+
+    precio_unitario = float(funcion["precio_entrada"])
+
+    subtotal_entradas = precio_unitario * cantidad_entradas
+
+    # 6. Construir el desglose de las entradas
+    desglose = [
+        {
+            "titulo": f"{cantidad_entradas}x Entrada",
+            "subtexto": compra["pelicula_titulo"],
+            "precio": f"${subtotal_entradas:,.0f}".replace(",", "."),
+        }
+    ]
+
+    # 7. Recuperar los servicios seleccionados (si existen)
+    servicios_seleccionados = compra.get("servicios", [])
+
+    subtotal_servicios = 0
+
+    if servicios_seleccionados:
+
+        catalogo, estado = obtener_servicios_del_backend()
+
+        if estado != 200 or not isinstance(catalogo, list):
+            flash("No se pudieron consultar los servicios.", "error")
+            return redirect(url_for("compra.seleccion_servicios"))
+
+        servicios_por_id = {
+            servicio["id_servicio"]: servicio
+            for servicio in catalogo
+        }
+
+        ids_procesados = set()
+
+        for item in servicios_seleccionados:
+
+            try:
+                id_servicio = int(item["id_servicio"])
+                cantidad = int(item["cantidad"])
+            except (KeyError, TypeError, ValueError):
+                flash("Hay un servicio inválido en la compra.", "error")
+                return redirect(url_for("compra.seleccion_servicios"))
+
+            servicio = servicios_por_id.get(id_servicio)
+
+            if (
+                servicio is None
+                or cantidad <= 0
+                or cantidad > 99
+                or id_servicio in ids_procesados
+            ):
+                flash("Hay un servicio inválido en la compra.", "error")
+                return redirect(url_for("compra.seleccion_servicios"))
+
+            ids_procesados.add(id_servicio)
+
+            precio = float(servicio["precio"])
+            subtotal = precio * cantidad
+
+            subtotal_servicios += subtotal
+
+            desglose.append({
+                "titulo": f"{cantidad}x {servicio['nombre']}",
                 "subtexto": None,
-                "precio": "$17.000",
-            },
-            {
-                "titulo": "1x Combo Mega Paradiso",
-                "subtexto": "1 Balde Popcorn XL + 2 Gaseosas 750ml + 1 Golosina",
-                "precio": "$14.500",
-            },
-            {
-                "titulo": "Estacionamiento Prepago (4 hs)",
-                "subtexto": "Acceso por calle Cerrito 1150",
-                "precio": "$4.500",
-            },
-        ],
-        "subtotal_parcial": "$36.000",
-        "cargo_servicio": "BONIFICADO ($0)",
-        "total": "$36.000",
-        "total_monto": 36000,
-        "cuotas": [
-            "3 cuotas de $12.000 (Programa Cuota Simple - Sin Interés)",
-            "1 pago de $36.000 (Sin Interés)",
-            "6 cuotas fijas de $7.200",
-        ],
-        "comprador_default": {
-            "nombre": "Mateo Alessandro Rossi",
-            "email": "mateo.rossi@cinemaparadiso.com.ar",
-            "dni": "39.842.109",
-            "telefono": "+54 9 11 4982-3390",
-            "tarjeta_numero": "4509 •••• •••• 8821",
-            "tarjeta_titular": "MATEO A ROSSI",
-            "tarjeta_vencimiento": "08/29",
-        },
-    }
+                "precio": f"${subtotal:,.0f}".replace(",", "."),
+            })
 
-    return render_template("checkout.html", c=datos_compra)
+    # 8. Calcular el total de la compra
+    total = subtotal_entradas + subtotal_servicios
 
+    total_formateado = f"${total:,.0f}".replace(",", ".")
 
-@compra_bp.route("/confirmacion")
-@compra_bp.route("/confirmacion/<int:id_compra>")
-def confirmacion_compra(id_compra: int = 89421):
-    """
-    Renderiza la pantalla de Confirmación de Compra y Comprobante Oficial (Paso 4).
-    Muestra el voucher digital de acceso a sala con código QR, detalle de facturación AFIP,
-    política de cancelación autogestionable e instrucciones de sala.
-    """
-    datos_confirmacion = {
-        "id_transaccion": "#CP-2026-89421",
-        "email_comprador": "mateo.rossi@cinemaparadiso.com.ar",
-        "codigo_qr": "QR-CP-89421-E7E8",
+    # 9. Preparar los datos visuales de la película
+    formato = funcion.get("formato", "")
+    idioma = funcion.get("idioma", "")
+
+    subtitulos = (
+        "Subtitulada"
+        if funcion.get("subtitulada")
+        else "Doblada"
+    )
+
+    duracion = formatear_duracion(pelicula.get("duracion_min"))
+
+    especificaciones = " • ".join(
+        dato for dato in [idioma, subtitulos, duracion] if dato
+    )
+
+    horario = funcion.get("inicio", compra.get("horario", ""))
+
+    try:
+        fecha_funcion = datetime.fromisoformat(horario)
+
+        horario = (
+            f"{formatear_fecha_corta(fecha_funcion.date())} "
+            f"{formatear_hora(fecha_funcion)}"
+        )
+    except (ValueError, TypeError):
+        pass
+
+    # 10. Preparar el diccionario que utiliza checkout.html
+    datos_compra = {
+
+        "tiempo_restante": "--:--",
+
         "pelicula": {
-            "id_pelicula": 1,
-            "titulo": "Dune: Parte Dos",
-            "poster_url": "https://image.tmdb.org/t/p/w500/8b8R8l88Qje9dn9OE8PY05Nxl1X.jpg",
-            "badge_poster": "4D ATMOS",
-            "clasificacion": "SAM 13",
-            "duracion": "166 MIN",
-            "formato_sala": "4D D-BOX",
-            "idioma": "SUBTITULADA",
-            "direccion_sonido": "Dirección: Denis Villeneuve • Formato de Sonido Dolby Atmos 64 Canales",
-            "fecha": "Vie 24 Oct 2026",
-            "horario": "19:30 hs",
-            "complejo": "Centro (Corrientes 1240)",
-            "sala_nombre": "AUDITORIO CENTRO • SALA 1",
-            "butacas": "Fila E • Asientos 7 y 8",
-            "badge_butacas": "VIP D-BOX 4D",
+            "id_pelicula": id_pelicula,
+            "titulo": pelicula.get(
+                "titulo",
+                compra["pelicula_titulo"]
+            ),
+            "poster_url": pelicula.get("poster_url") or "",
+            "badge_formato": formato,
+            "badge_edad": pelicula.get("clasificacion") or "",
+            "especificaciones": especificaciones,
+            "sala_completa": compra["sala_completa"],
+            "dia_horario": horario,
+            "complejo": compra["complejo"],
+            "butacas_asignadas": ", ".join(
+                f"{butaca['fila']}-{butaca['numero']}"
+                for butaca in compra["butacas"]
+            ),
         },
-        "facturacion": {
-            "tipo": "FACTURA B • AFIP",
-            "items": [
-                {"descripcion": "2x Entrada 4D Subtitulada (Fila E: 7, 8)", "monto": "$17.000"},
-                {"descripcion": "1x Combo Mega Paradiso (Candy Bar)", "monto": "$14.500"},
-                {"descripcion": "1x Estacionamiento Prepago (4 hs)", "monto": "$4.500"},
-            ],
-            "cargo_servicio": "100% BONIFICADO",
-            "cargo_servicio_monto": "$0",
-            "total": "$36.000",
-            "iva_discriminado": "$6.247,93",
-            "tarjeta_info": "Mastercard finalizada en 8821",
-            "cuotas_info": "Aprobado en 3 cuotas fijas de $12.000",
-            "cae": "CAE Nº: 74920194820184",
-            "vto_cae": "Fecha Vto CAE: 03/11/2026",
-        },
-        "adicionales": [
-            {
-                "tipo": "combo",
-                "nombre": "1x Combo Mega Paradiso",
-                "detalle": "Balde Pochoclos + 2 Bebidas Grandes",
-                "estado": "Listo",
-                "icono": "combo",
-            },
-            {
-                "tipo": "cochera",
-                "nombre": "1x Cochera Prepaga",
-                "detalle": "Hasta 4 hs cubiertas (Corrientes 1240)",
-                "subdetalle": "PATENTE: AB-829-QX",
-                "estado": "Activo",
-                "icono": "parking",
-            },
+
+        "desglose": desglose,
+
+        "subtotal_parcial": total_formateado,
+
+        "cargo_servicio": "BONIFICADO ($0)",
+
+        "total": total_formateado,
+
+        "total_monto": total,
+
+        # El proyecto actualmente solo admite pagos simulados
+        "cuotas": [
+            "Pago simulado de desarrollo"
         ],
-        "cancelacion": {
-            "limite_texto": "Viernes 24/10 hasta las 17:30 hs",
+
+        "comprador_default": {
+            "nombre": usuario.get("nombre", ""),
+            "email": usuario.get("email", ""),
+            "dni": "",
+            "telefono": "",
+            "tarjeta_numero": "",
+            "tarjeta_titular": "",
+            "tarjeta_vencimiento": "",
         },
     }
 
-    return render_template("confirmacion_compra.html", c=datos_confirmacion)
+    # 11. Renderizar el checkout
+    return render_template(
+        "checkout.html",
+        c=datos_compra,
+        csrf_token=crear_token_csrf()
+    )
