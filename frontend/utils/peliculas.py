@@ -70,6 +70,8 @@ def agrupar_funciones(funciones: list[dict]) -> list[dict]:
     [{"nombre_local": ..., "fechas": [{"etiqueta": "Dom 15 Nov", "funciones": [...]}]}]
     Los complejos salen ordenados por nombre, y los días y las funciones por fecha de inicio.
     Se agrupa por nombre_local porque el endpoint no devuelve el id del local.
+    Cada complejo lleva un `id` propio ("local-0", ...) y cada día el suyo (fecha ISO):
+    son los ids que usa el template para vincular tarjetas, fechas y funciones.
     """
     ordenadas = sorted(
         ((datetime.fromisoformat(f["inicio"]), f) for f in funciones),
@@ -93,13 +95,18 @@ def agrupar_funciones(funciones: list[dict]) -> list[dict]:
 
     return [
         {
+            "id": f"local-{indice}",
             "nombre_local": nombre_local,
             "fechas": [
-                {"etiqueta": formatear_fecha_corta(dia), "funciones": lista}
+                {
+                    "id": dia.isoformat(),
+                    "etiqueta": formatear_fecha_corta(dia),
+                    "funciones": lista,
+                }
                 for dia, lista in dias.items()
             ],
         }
-        for nombre_local, dias in sorted(por_local.items())
+        for indice, (nombre_local, dias) in enumerate(sorted(por_local.items()))
     ]
 
 
@@ -137,15 +144,17 @@ def armar_detalle_pelicula(pelicula: dict) -> dict:
     funciones = pelicula.get("funciones_vigentes", [])
     locales = agrupar_funciones(funciones)
 
-    dias = sorted({datetime.fromisoformat(f["inicio"]).date() for f in funciones})
+    etiquetas_por_fecha = {
+        fecha["id"]: fecha["etiqueta"] for local in locales for fecha in local["fechas"]
+    }
     fechas = [
-        {"id": dia.isoformat(), "etiqueta": formatear_fecha_corta(dia), "activa": i == 0}
-        for i, dia in enumerate(dias)
+        {"id": id_fecha, "etiqueta": etiqueta, "activa": False}
+        for id_fecha, etiqueta in sorted(etiquetas_por_fecha.items())
     ]
 
     complejos = [
         {
-            "id": f"local-{i}",
+            "id": local["id"],
             "nombre": local["nombre_local"],
             "badges": sorted(
                 {fn["formato"] for fecha in local["fechas"] for fn in fecha["funciones"]}
@@ -165,6 +174,8 @@ def armar_detalle_pelicula(pelicula: dict) -> dict:
             for (sala, formato, precio), lista in por_sala.items():
                 salas_funciones.append(
                     {
+                        "complejo_id": local["id"],
+                        "fecha_id": fecha["id"],
                         "sala_id": sala,
                         "badge_tipo": formato,
                         "badge_clase": f"badge-{formato.lower()}",
@@ -186,9 +197,11 @@ def armar_detalle_pelicula(pelicula: dict) -> dict:
     if salas_funciones:
         primera = salas_funciones[0]
         primera["funciones"][0]["seleccionada"] = True
+        for fecha in fechas:
+            fecha["activa"] = fecha["id"] == primera["fecha_id"]
         seleccion_inicial = {
             "complejo": complejos[0]["nombre"],
-            "fecha": fechas[0]["etiqueta"],
+            "fecha": next(f["etiqueta"] for f in fechas if f["activa"]),
             "sala": f"Sala {primera['sala_id']} ({primera['badge_tipo']})",
             "hora": primera["funciones"][0]["hora"],
             "precio": primera["precio"],
