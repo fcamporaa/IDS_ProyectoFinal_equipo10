@@ -14,7 +14,7 @@
     <header class="admin-servicios__header">
       <div>
         <span class="admin-servicios__eyebrow">Backoffice</span>
-        <h1 class="admin-servicios__title">Gestión de Servicios (Candy Bar)</h1>
+        <h1 class="admin-servicios__title">Gestión de Servicios Extras</h1>
         <p class="admin-servicios__subtitle">Administrá combos, bebidas y alimentos disponibles para los clientes.</p>
       </div>
       <div class="admin-servicios__header-actions">
@@ -97,21 +97,23 @@
                     {% endif %}
                   </td>
                 </tr>
-
-                <!-- Modal de confirmación de baja por cada servicio -->
-                {% with id_modal='modal-baja-' ~ servicio.id_servicio,
-                        titulo='Confirmar baja de servicio',
-                        mensaje='¿Estás seguro que deseás dar de baja el servicio "' ~ servicio.nombre ~ '"? Los clientes ya no podrán seleccionarlo en sus compras.',
-                        accion=url_for('admin_servicios.eliminar', id=servicio.id_servicio),
-                        texto_confirmar='Sí, dar de baja',
-                        texto_cancelar='Cancelar' %}
-                  {% include 'components/modal_confirmacion.html' %}
-                {% endwith %}
-
               {% endfor %}
             </tbody>
           </table>
         </div>
+
+        {% for servicio in servicios %}
+          {% if servicio.activo %}
+            {% with id_modal='modal-baja-' ~ servicio.id_servicio,
+                    titulo='Confirmar baja de servicio',
+                    mensaje='¿Estás seguro que deseás dar de baja el servicio "' ~ servicio.nombre ~ '"? Los clientes ya no podrán seleccionarlo en sus compras.',
+                    accion=url_for('admin_servicios.eliminar', id=servicio.id_servicio),
+                    texto_confirmar='Sí, dar de baja',
+                    texto_cancelar='Cancelar' %}
+              {% include 'components/modal_confirmacion.html' %}
+            {% endwith %}
+          {% endif %}
+        {% endfor %}
       {% else %}
         <div class="admin-servicios__empty">
           <p>No hay servicios registrados en el sistema.</p>
@@ -124,5 +126,6 @@
 {% endblock %}
 
 {% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/modal.js') }}"></script>
 <script src="{{ url_for('static', filename='js/admin_servicios.js') }}"></script>
 {% endblock %}

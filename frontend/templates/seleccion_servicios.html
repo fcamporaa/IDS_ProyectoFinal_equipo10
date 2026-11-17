@@ -1,6 +1,6 @@
 {% extends 'layout.html' %}
 
-{% block title %}Servicios Complementarios & Candy Bar - {{ c.pelicula.titulo }} | Cinema Paradiso{% endblock %}
+{% block title %}Servicios Extras - {{ c.pelicula.titulo }} | Cinema Paradiso{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/seleccion_servicios.css') }}">
@@ -23,13 +23,13 @@
         <div class="services-main-grid">
 
             <!-- Columna Izquierda: Catálogo de Servicios y Combos -->
-            <section class="services-catalog-column" aria-label="Catálogo de Candy Bar y Servicios">
+            <section class="services-catalog-column" aria-label="Catálogo de Servicios Extras">
 
                 <!-- Header de Sección -->
                 <header class="catalog-header">
                     <div class="catalog-header-top">
                         <div class="badge-candy-bar-official">
-                            <span class="badge-text-gold">CANDY BAR OFICIAL</span>
+                            <span class="badge-text-gold">SERVICIOS EXTRAS</span>
                             <span class="badge-status-dot"></span>
                             <span class="badge-status-text">Retiro express con QR en mostrador</span>
                         </div>
@@ -40,7 +40,10 @@
                                     <polyline points="12 6 12 12 16 14"></polyline>
                                 </svg>
                                 <span>TIEMPO RESTANTE:</span>
-                                <strong id="candyCountdown" class="timer-digits">08:40</strong>
+                                <strong id="candyCountdown" class="timer-digits"
+                                        data-expira-en-ms="{{ temporizador.expira_en_ms }}"
+                                        data-ahora-servidor-ms="{{ temporizador.ahora_servidor_ms }}"
+                                        data-url-expiracion="{{ url_for('compra.compra_expirada') }}">{{ temporizador.tiempo_restante }}</strong>
                             </div>
                             <button type="submit" name="accion" value="omitir" class="btn-skip-step-link" title="Omitir selección de confitería y avanzar al checkout">
                                 <span>Omitir este paso</span>
@@ -48,7 +51,7 @@
                             </button>
                         </div>
                     </div>
-                    <h1 class="catalog-main-title">Servicios Complementarios & Combos</h1>
+                    <h1 class="catalog-main-title">Servicios Extras & Combos</h1>
                 </header>
 
                 <!-- Barra de Filtros por Categoría -->
@@ -146,10 +149,10 @@
                         </div>
                     </div>
 
-                    <!-- Sección 2: Candy Bar & Extras -->
+                    <!-- Sección 2: Servicios Extras -->
                     <div class="summary-section">
                         <div class="summary-section-header">
-                            <span class="summary-section-title">2. CANDY BAR & EXTRAS</span>
+                            <span class="summary-section-title">2. SERVICIOS EXTRAS</span>
                             <span class="badge-items-count" id="candyItemsCountBadge">{{ c.candy_seleccionado.total_items }} ITEMS</span>
                         </div>
                         <div class="summary-items-list" id="candySummaryItemsList" data-subtotal-entradas="{{ c.entradas.subtotal }}">
@@ -174,7 +177,7 @@
                             <span class="totals-val" id="displaySubtotalEntradas">{{ c.resumen.subtotal_entradas_formato }}</span>
                         </div>
                         <div class="totals-line">
-                            <span class="totals-label">Subtotal Candy & Extras:</span>
+                            <span class="totals-label">Subtotal Servicios Extras:</span>
                             <span class="totals-val" id="displaySubtotalCandy">{{ c.resumen.subtotal_candy_formato }}</span>
                         </div>
                         <div class="totals-line">
@@ -223,7 +226,7 @@
 
                 </div>
 
-                <!-- Banner Informativo QR Exclusivo para Candy Bar -->
+                <!-- Banner Informativo QR Exclusivo para Servicios Extras -->
                 <div class="candy-qr-info-card">
                     <div class="qr-info-icon">
                         <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -238,7 +241,7 @@
                         </svg>
                     </div>
                     <div class="qr-info-text">
-                        <p>Al completar la compra recibirás un <strong>QR exclusivo para Candy Bar</strong> con retiro express en mostrador sin filas.</p>
+                        <p>Al completar la compra recibirás un <strong>QR exclusivo para tus servicios extras</strong> con retiro express en mostrador sin filas.</p>
                     </div>
                 </div>
 
@@ -252,5 +255,6 @@
 {% endblock %}
 
 {% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/temporizador_compra.js') }}"></script>
 <script src="{{ url_for('static', filename='js/seleccion_servicios.js') }}"></script>
 {% endblock %}

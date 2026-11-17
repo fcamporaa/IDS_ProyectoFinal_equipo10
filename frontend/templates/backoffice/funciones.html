@@ -1,0 +1,149 @@
+{% extends 'layout.html' %}
+
+{% block title %}Gestión de funciones | Cinema Paradiso{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/admin_funciones.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="admin-funciones">
+  <div class="admin-funciones__container">
+
+    <header class="admin-funciones__header">
+      <div>
+        <span class="admin-funciones__eyebrow">Backoffice</span>
+        <h1 class="admin-funciones__title">Gestión de funciones</h1>
+        <p class="admin-funciones__subtitle">
+          Programá funciones, asigná salas, horarios y precios, o cancelá funciones.
+        </p>
+      </div>
+      <div class="admin-funciones__header-actions">
+        <a href="{{ url_for('dashboard.index') }}" class="admin-funciones__back">← Volver al dashboard</a>
+        <a href="{{ url_for('home.index') }}" class="admin-funciones__back">← Volver a la cartelera</a>
+        {% with url_destino=url_for('admin_funciones.index', nuevo=1), texto='+ Nueva función', variante='primary' %}
+          {% include 'components/button.html' %}
+        {% endwith %}
+      </div>
+    </header>
+
+    {% if error_backend %}
+    <div class="admin-funciones__alert" role="alert">{{ error_backend }}</div>
+    {% endif %}
+
+    <div id="contenedor-formulario"
+         class="admin-funciones__form-container{% if abrir_formulario %} admin-funciones__form-container--activo{% endif %}"
+         data-abrir-formulario="{{ 'true' if abrir_formulario else 'false' }}">
+      {% include 'components/formulario_funcion.html' %}
+    </div>
+
+    <section class="admin-funciones__listado" aria-labelledby="titulo-listado-funciones">
+      <div class="admin-funciones__table-header">
+        <h2 id="titulo-listado-funciones">Funciones registradas ({{ funciones | length }})</h2>
+      </div>
+
+      {% if funciones %}
+      <div class="admin-funciones__table-wrapper">
+        <table class="admin-funciones__table">
+          <thead>
+            <tr>
+              <th scope="col">ID</th>
+              <th scope="col">Película</th>
+              <th scope="col">Complejo / Sala</th>
+              <th scope="col">Inicio</th>
+              <th scope="col">Fin</th>
+              <th scope="col">Formato</th>
+              <th scope="col">Idioma</th>
+              <th scope="col">Precio</th>
+              <th scope="col">Estado</th>
+              <th scope="col" class="admin-funciones__actions-header">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for funcion in funciones %}
+            <tr>
+              <td>#{{ funcion.id_funcion }}</td>
+              <td class="admin-funciones__pelicula">{{ funcion.titulo_pelicula }}</td>
+              <td>
+                <span class="admin-funciones__local">{{ funcion.nombre_local }}</span>
+                <span class="admin-funciones__detalle">Sala {{ funcion.numero_sala }}</span>
+              </td>
+              <td>
+                <span>{{ funcion.fecha_legible }}</span>
+                <span class="admin-funciones__detalle">{{ funcion.hora_inicio }}</span>
+              </td>
+              <td>{{ funcion.hora_fin }}</td>
+              <td>
+                <span class="admin-funciones__formato">{{ funcion.formato }}</span>
+                {% if funcion.subtitulada %}
+                <span class="admin-funciones__detalle">Subtitulada</span>
+                {% endif %}
+              </td>
+              <td>{{ funcion.idioma or '—' }}</td>
+              <td>{{ funcion.precio_legible }}</td>
+              <td>
+                <span class="admin-funciones__badge admin-funciones__badge--{{ funcion.estado | lower | replace('_', '-') }}">
+                  {{ funcion.estado | replace('_', ' ') }}
+                </span>
+              </td>
+              <td class="admin-funciones__actions-cell">
+                <div class="admin-funciones__actions">
+                  {% if funcion.puede_editar %}
+                  {% with texto='Editar',
+                          url_destino=url_for('admin_funciones.editar', id_funcion=funcion.id_funcion),
+                          variante='secondary',
+                          clase_extra='admin-funciones__action' %}
+                    {% include 'components/button.html' %}
+                  {% endwith %}
+                  {% endif %}
+
+                  {% if funcion.puede_baja %}
+                  <form method="POST"
+                        action="{{ url_for('admin_funciones.eliminar', id_funcion=funcion.id_funcion) }}"
+                        data-confirmar-baja
+                        data-modal-destino="modal-baja-{{ funcion.id_funcion }}">
+                    {% with texto='Dar de baja', tipo='submit', variante='danger', clase_extra='admin-funciones__action' %}
+                      {% include 'components/button.html' %}
+                    {% endwith %}
+                  </form>
+                  {% endif %}
+
+                  {% if not funcion.puede_editar and not funcion.puede_baja %}
+                  <span class="admin-funciones__sin-acciones">—</span>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% for funcion in funciones %}
+        {% if funcion.puede_baja %}
+          {% with id_modal='modal-baja-' ~ funcion.id_funcion,
+                  titulo='Confirmar baja de función',
+                  mensaje='¿Querés cancelar la función de "' ~ funcion.titulo_pelicula ~ '" del ' ~ funcion.fecha_legible ~ ' a las ' ~ funcion.hora_inicio ~ '? La función quedará cancelada y no se podrá reactivar.',
+                  accion=url_for('admin_funciones.eliminar', id_funcion=funcion.id_funcion),
+                  texto_confirmar='Sí, cancelar función',
+                  texto_cancelar='Volver' %}
+            {% include 'components/modal_confirmacion.html' %}
+          {% endwith %}
+        {% endif %}
+      {% endfor %}
+      {% else %}
+      <div class="admin-funciones__empty">
+        <p>No hay funciones registradas.</p>
+        <p>Usá “+ Nueva función” para programar la primera.</p>
+      </div>
+      {% endif %}
+    </section>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/modal.js') }}"></script>
+<script src="{{ url_for('static', filename='js/admin_funciones.js') }}"></script>
+{% endblock %}

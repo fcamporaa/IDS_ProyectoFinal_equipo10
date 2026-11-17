@@ -38,6 +38,12 @@ def obtener_funciones_db(filtros: dict) -> list[dict]:
     return ejecutar_consulta(query, tuple(parametros))
 
 
+def obtener_funciones_admin_db() -> list[dict]:
+    """Lista todas las funciones, incluyendo canceladas y finalizadas, para el ABM."""
+    query = SELECT_FUNCION_DETALLE + " ORDER BY f.inicio DESC;"
+    return ejecutar_consulta(query)
+
+
 def buscar_funcion_por_id_db(id_funcion: int) -> dict | None:
     """Busca una función por id con los mismos datos que el listado."""
     resultados = ejecutar_consulta(
@@ -97,15 +103,22 @@ def insertar_funcion_db(datos: dict) -> int:
 
 
 def actualizar_funcion_db(id_funcion: int, datos: dict) -> int:
-    """Actualiza inicio, fin, precio y estado (los únicos campos editables)."""
+    """Actualiza película, sala, horario, formato, idioma, subtítulos, precio y estado."""
     query = """
         UPDATE funciones
-        SET inicio = %s, fin = %s, precio_entrada = %s, estado = %s
+        SET id_pelicula = %s, id_sala = %s, inicio = %s, fin = %s,
+            formato = %s, idioma = %s, subtitulada = %s,
+            precio_entrada = %s, estado = %s
         WHERE id_funcion = %s;
     """
     valores = (
+        datos["id_pelicula"],
+        datos["id_sala"],
         datos["inicio"],
         datos["fin"],
+        datos["formato"],
+        datos["idioma"],
+        datos["subtitulada"],
         datos["precio_entrada"],
         datos["estado"],
         id_funcion,
