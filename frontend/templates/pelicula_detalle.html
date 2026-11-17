@@ -221,6 +221,7 @@
                     type="button" 
                     class="showtime-date-pill {% if fecha.activa %}active{% endif %}" 
                     data-date="{{ fecha.etiqueta }}"
+                    data-date-id="{{ fecha.id }}"
                 >
                     {{ fecha.etiqueta }}
                 </button>
@@ -242,7 +243,7 @@
         <!-- Grupos de Salas y Horarios -->
         <div class="halls-showtimes-list" id="hallsShowtimesList">
             {% for sala in p.salas_funciones %}
-            <div class="hall-showtime-block">
+            <div class="hall-showtime-block" data-complex-id="{{ sala.complejo_id }}" data-date-id="{{ sala.fecha_id }}">
                 <!-- Cabecera de la Sala -->
                 <div class="hall-header-row">
                     <div class="hall-title-group">
