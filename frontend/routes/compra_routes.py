@@ -545,7 +545,7 @@ def confirmacion_compra(id_compra: int = 89421):
             "tipo": "FACTURA B • AFIP",
             "items": [
                 {"descripcion": "2x Entrada 4D Subtitulada (Fila E: 7, 8)", "monto": "$17.000"},
-                {"descripcion": "1x Combo Mega Paradiso (Candy Bar)", "monto": "$14.500"},
+                {"descripcion": "1x Combo Mega Paradiso (Servicios Extras)", "monto": "$14.500"},
                 {"descripcion": "1x Estacionamiento Prepago (4 hs)", "monto": "$4.500"},
             ],
             "cargo_servicio": "100% BONIFICADO",
@@ -575,7 +575,7 @@ def confirmacion_compra(id_compra: int = 89421):
             },
         ],
         "cancelacion": {
-            "limite_texto": "Viernes 24/10 hasta las 17:30 hs",
+            "limite_texto": "a las 19:30 hs del día anterior",
         },
     }
 
