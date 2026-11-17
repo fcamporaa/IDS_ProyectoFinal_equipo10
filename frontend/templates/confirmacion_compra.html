@@ -358,7 +358,7 @@
                             <span>Cancelación gratuita habilitada</span>
                         </div>
                         <p class="cancellation-desc">
-                            Podés autogestionar la cancelación de tu reserva hasta <strong>2 horas antes</strong> del inicio de la función (<strong>{{ c.cancelacion.limite_texto }}</strong>). Las butacas se liberan automáticamente en tiempo real y el importe se reintegra al medio de pago original.
+                            Podés solicitar la cancelación gratuita hasta <strong>24 horas antes</strong> del inicio de la función (<strong>{{ c.cancelacion.limite_texto }}</strong>). Las butacas se liberan y el importe se reintegra al medio de pago original.
                         </p>
                         <button type="button" class="btn-cancel-reservation" onclick="confirm('¿Estás seguro de que deseas gestionar o cancelar esta reserva?')">
                             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
@@ -388,7 +388,7 @@
                         <li>
                             <span class="step-num">1</span>
                             <div class="step-content">
-                                <strong>Llegada anticipada:</strong> Te recomendamos ingresar 15 minutos antes para retirar tus combos en el Tótem Express de Candy Bar sin filas.
+                                <strong>Llegada anticipada:</strong> Te recomendamos ingresar 15 minutos antes para retirar tus combos y servicios extras en el mostrador sin filas.
                             </div>
                         </li>
                         <li>
@@ -420,7 +420,6 @@
                 <span>Tu compra está respaldada por Cinema Paradiso Argentina bajo los estándares de defensa del consumidor.</span>
             </div>
             <div class="nav-actions-right">
-                <a href="#mis-compras" class="btn-nav-outline">Ir a Mis Compras</a>
                 <a href="{{ url_for('home.index') }}" class="btn-nav-primary">Volver a Cartelera</a>
             </div>
         </footer>
