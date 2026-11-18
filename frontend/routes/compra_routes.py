@@ -251,13 +251,19 @@ def seleccion_butacas():
             for idx, letra in enumerate(["A", "B", "C", "D", "E", "F", "G", "H"], start=1)
         ]
 
-    # Buscar detalles de la película
+        # Buscar detalles de la película
     id_pelicula = func_resp.get("id_pelicula", 1) if isinstance(func_resp, dict) else 1
     iniciar_temporizador_compra()
     registrar_pelicula_compra(id_pelicula)
     temporizador = contexto_temporizador_compra()
-    peli_resp = obtener_detalle_pelicula(id_pelicula) if id_pelicula else None
-    if not isinstance(peli_resp, dict):
+
+    peli_resp, estado_pelicula = (
+        obtener_detalle_pelicula(id_pelicula)
+        if id_pelicula
+        else (None, 404)
+    )
+
+    if estado_pelicula != 200 or not isinstance(peli_resp, dict):
         peli_resp = {}
 
     titulo_pelicula = (
@@ -525,13 +531,13 @@ def seleccion_checkout():
     # 4. Obtener los datos de la película
     id_pelicula = funcion.get("id_pelicula")
 
-    pelicula = (
+    pelicula, estado_pelicula = (
         obtener_detalle_pelicula(id_pelicula)
         if id_pelicula
-        else None
+        else (None, 404)
     )
 
-    if not isinstance(pelicula, dict):
+    if estado_pelicula != 200 or not isinstance(pelicula, dict):
         pelicula = {}
 
     # 5. Calcular el subtotal de las entradas
