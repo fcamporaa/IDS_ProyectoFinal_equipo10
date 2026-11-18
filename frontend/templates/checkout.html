@@ -132,13 +132,19 @@
                             <!-- DNI y Teléfono -->
                             <div class="form-group">
                                 <label for="inputDni" class="form-label">
-                                    DNI / CUIT (PARA FACTURACIÓN AFIP) <span class="required-star">*</span>
+                                    DNI (7 U 8 DÍGITOS) <span class="required-star">*</span>
                                 </label>
                                 <input type="text" 
                                        id="inputDni" 
                                        name="dni_cuit" 
                                        class="form-control" 
-                                       value="{{ c.comprador_default.dni }}" 
+                                       value="{{ c.comprador_default.dni }}"
+                                       inputmode="numeric"
+                                       minlength="7"
+                                       maxlength="8"
+                                       pattern="[1-9][0-9]{6,7}"
+                                       placeholder="12345678"
+                                       title="Ingresá un DNI de 7 u 8 dígitos, sin puntos ni espacios."
                                        required>
                             </div>
 
@@ -218,6 +224,8 @@
                                     class="form-control"
                                     placeholder="0000 0000 0000 0000"
                                     maxlength="23"
+                                    pattern="(?:[0-9][ -]?){12,18}[0-9]"
+                                    title="Ingresá entre 13 y 19 dígitos, con espacios o guiones opcionales."
                                     inputmode="numeric"
                                     autocomplete="off"
                                     required>

@@ -62,6 +62,10 @@ def validar_formulario_compra(formulario, servicios_seleccionados=None) -> dict:
     if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email) or len(email) > 255:
         raise ValueError("El correo no es válido.")
 
+    dni = formulario.get("dni_cuit", "").strip()
+    if not re.fullmatch(r"[1-9][0-9]{6,7}", dni):
+        raise ValueError("Ingresá un DNI válido de 7 u 8 dígitos, sin puntos ni espacios.")
+
     if formulario.get("medio_pago") != "TARJETA_SIMULADA":
         raise ValueError("Solo existe el pago simulado de desarrollo.")
     servicios = validar_servicios_seleccionados(servicios_seleccionados or [])

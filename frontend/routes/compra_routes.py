@@ -28,7 +28,6 @@ from utils.temporizador_compra import (
     contexto_temporizador_compra,
     iniciar_temporizador_compra,
     redirigir_compra_expirada,
-    registrar_pelicula_compra,
     temporizador_compra_vencido,
 )
 from validators.compras_validators import validar_servicios_seleccionados
@@ -137,24 +136,27 @@ def seleccion_butacas():
             flash("Por favor seleccioná al menos una butaca libre para continuar.", "error")
             return redirect(url_for("compra.seleccion_butacas", id_funcion=id_funcion))
 
-        # Verificar en vivo que ninguna butaca haya sido ocupada en la BD
+        # Los IDs enviados deben existir y estar disponibles en la función elegida.
         mapa_resp, status_mapa = obtener_mapa_butacas_del_backend(id_funcion)
-        if status_mapa == 200 and isinstance(mapa_resp, dict):
-            todas_butacas = mapa_resp.get("butacas", [])
-            mapa_dict = {b["id_butaca"]: b for b in todas_butacas}
+        if status_mapa != 200 or not isinstance(mapa_resp, dict):
+            flash("No se pudo verificar la disponibilidad de las butacas.", "error")
+            return redirect(url_for("compra.seleccion_butacas", id_funcion=id_funcion))
 
-            butacas_elegidas = []
-            for id_b in ids_butacas:
-                b = mapa_dict.get(id_b)
-                if not b or b.get("estado") in ("OCUPADA", "RESERVADA"):
-                    flash(
-                        f"La butaca elegida (Fila {b.get('fila', '')} N° {b.get('numero', '')}) ya fue reclamada o no está disponible.",
-                        "error",
-                    )
-                    return redirect(url_for("compra.seleccion_butacas", id_funcion=id_funcion))
-                butacas_elegidas.append(b)
-        else:
-            butacas_elegidas = [{"id_butaca": id_b, "fila": "A", "numero": id_b} for id_b in ids_butacas]
+        todas_butacas = mapa_resp.get("butacas") or []
+        mapa_dict = {b["id_butaca"]: b for b in todas_butacas}
+        butacas_elegidas = []
+        for id_b in ids_butacas:
+            b = mapa_dict.get(id_b)
+            if b is None:
+                flash(f"La butaca seleccionada (ID {id_b}) no existe en esta función.", "error")
+                return redirect(url_for("compra.seleccion_butacas", id_funcion=id_funcion))
+            if b.get("estado") in ("OCUPADA", "RESERVADA"):
+                flash(
+                    f"La butaca elegida (Fila {b.get('fila', '')} N° {b.get('numero', '')}) ya no está disponible.",
+                    "error",
+                )
+                return redirect(url_for("compra.seleccion_butacas", id_funcion=id_funcion))
+            butacas_elegidas.append(b)
 
         # Obtener detalle de función para precio y datos de la orden
         func_detalle, _ = obtener_detalle_funcion_del_backend(id_funcion)
@@ -190,13 +192,10 @@ def seleccion_butacas():
 
         return redirect(url_for("compra.seleccion_servicios"))
 
-    if "compra_expira_en" in session and temporizador_compra_vencido():
-        return redirigir_compra_expirada()
-
     # Petición GET: Cargar mapa y datos
     id_funcion = request.args.get("id_funcion", type=int)
     if not id_funcion:
-        id_funcion = session.get("compra", {}).get("id_funcion")
+        id_funcion = (session.get("compra") or {}).get("id_funcion") or session.get("compra_id_funcion")
 
     # Si no vino id_funcion, buscar la primera función programada activa
     if not id_funcion:
@@ -204,13 +203,25 @@ def seleccion_butacas():
         if status_f == 200 and isinstance(funciones_disponibles, list) and funciones_disponibles:
             id_funcion = funciones_disponibles[0].get("id_funcion")
         else:
-            # Fallback de desarrollo / demo para permitir visualizar la vista
-            id_funcion = 101
+            flash("No hay funciones disponibles para seleccionar butacas.", "error")
+            return redirect(url_for("home.index"))
 
     # 1. Consultar mapa de butacas al backend
     mapa_resp, status_mapa = obtener_mapa_butacas_del_backend(id_funcion)
     # 2. Consultar detalles de la función
     func_resp, status_func = obtener_detalle_funcion_del_backend(id_funcion)
+    if status_func != 200 or not isinstance(func_resp, dict):
+        flash("La función seleccionada no está disponible.", "error")
+        return redirect(url_for("home.index"))
+    if status_mapa != 200 or not isinstance(mapa_resp, dict) or not mapa_resp.get("butacas"):
+        flash("No se pudo cargar el mapa real de butacas de esta función.", "error")
+        return redirect(url_for("peliculas.detalle_pelicula", id_pelicula=func_resp["id_pelicula"]))
+
+    id_pelicula = func_resp.get("id_pelicula")
+    iniciar_temporizador_compra(id_funcion=id_funcion, id_pelicula=id_pelicula)
+    if temporizador_compra_vencido():
+        return redirigir_compra_expirada()
+    temporizador = contexto_temporizador_compra()
 
     # Obtener butacas de la sesión previa si corresponden a esta función
     compra_sesion = session.get("compra", {})
@@ -225,38 +236,7 @@ def seleccion_butacas():
     butacas_db = mapa_resp.get("butacas", []) if isinstance(mapa_resp, dict) else []
     filas_construidas = _armar_filas_butacas(butacas_db, ids_seleccionadas)
 
-    # Si el backend no devolvió butacas (o no está corriendo), generar sala de demostración
-    if not filas_construidas:
-        filas_construidas = [
-            {
-                "letra": letra,
-                "es_vip": letra in ("E", "F", "G"),
-                "asientos_izq": [
-                    {"id_butaca": idx * 10 + n, "num": n, "estado": "libre"}
-                    for n in range(1, 4)
-                ],
-                "asientos_centro": [
-                    {
-                        "id_butaca": idx * 10 + n,
-                        "num": n,
-                        "estado": "ocupada" if (letra in ("A", "D", "F") and n in (5, 6)) else "libre",
-                    }
-                    for n in range(4, 10)
-                ],
-                "asientos_der": [
-                    {"id_butaca": idx * 10 + n, "num": n, "estado": "libre"}
-                    for n in range(10, 13)
-                ],
-            }
-            for idx, letra in enumerate(["A", "B", "C", "D", "E", "F", "G", "H"], start=1)
-        ]
-
-        # Buscar detalles de la película
-    id_pelicula = func_resp.get("id_pelicula", 1) if isinstance(func_resp, dict) else 1
-    iniciar_temporizador_compra()
-    registrar_pelicula_compra(id_pelicula)
-    temporizador = contexto_temporizador_compra()
-
+    # Buscar detalles de la película
     peli_resp, estado_pelicula = (
         obtener_detalle_pelicula(id_pelicula)
         if id_pelicula
@@ -676,9 +656,12 @@ def seleccion_checkout():
 
         "total_monto": total,
 
-        # El proyecto actualmente solo admite pagos simulados
+        # Opciones visuales de cuotas calculadas sobre el total real.
+        # El procesamiento del pago continúa siendo simulado.
         "cuotas": [
-            "Pago simulado de desarrollo"
+            f"1 pago de {total_formateado} (Sin interés)",
+            f"3 cuotas de {formatear_monto(total / 3)} (Sin interés)",
+            f"6 cuotas fijas de {formatear_monto(total / 6)} (Sin interés)",
         ],
 
         "comprador_default": {

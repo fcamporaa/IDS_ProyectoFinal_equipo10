@@ -9,12 +9,37 @@ from flask import flash, redirect, session, url_for
 DURACION_COMPRA_SEGUNDOS = 10 * 60
 _CLAVE_VENCIMIENTO = "compra_expira_en"
 _CLAVE_PELICULA = "compra_id_pelicula"
+_CLAVE_FUNCION = "compra_id_funcion"
 
 
-def iniciar_temporizador_compra() -> None:
-    """Inicia una única cuenta atrás; navegar o actualizar no modifica el plazo."""
+def iniciar_temporizador_compra(
+    id_funcion: int | None = None,
+    id_pelicula: int | None = None,
+) -> None:
+    """Conserva el plazo en la misma función y lo reinicia al cambiar de función."""
+    compra_previa = session.get("compra") or {}
+    funcion_previa = session.get(_CLAVE_FUNCION) or compra_previa.get("id_funcion")
+    pelicula_previa = session.get(_CLAVE_PELICULA) or compra_previa.get("id_pelicula")
+
+    cambio_de_funcion = (
+        id_funcion is not None
+        and funcion_previa is not None
+        and id_funcion != funcion_previa
+    )
+    cambio_de_pelicula = (
+        id_pelicula is not None
+        and pelicula_previa is not None
+        and id_pelicula != pelicula_previa
+    )
+    if cambio_de_funcion or cambio_de_pelicula:
+        limpiar_compra_temporal()  # Evita reutilizar butacas y servicios de otra función.
+
     if _CLAVE_VENCIMIENTO not in session:
         session[_CLAVE_VENCIMIENTO] = time.time() + DURACION_COMPRA_SEGUNDOS
+    if id_funcion is not None:
+        session[_CLAVE_FUNCION] = id_funcion
+    if id_pelicula is not None:
+        session[_CLAVE_PELICULA] = id_pelicula
 
 
 def temporizador_compra_vencido() -> bool:
@@ -51,6 +76,7 @@ def limpiar_compra_temporal() -> int | None:
     id_pelicula = compra.get("id_pelicula") or session.get(_CLAVE_PELICULA)
     session.pop(_CLAVE_VENCIMIENTO, None)
     session.pop(_CLAVE_PELICULA, None)
+    session.pop(_CLAVE_FUNCION, None)
     session.pop("servicios_seleccionados", None)
     return id_pelicula
 
