@@ -28,6 +28,20 @@ def checkout():
     return render_template("client/checkout.html", csrf_token=crear_token_csrf())
 
 
+def _extraer_mensaje_error_backend(respuesta, fallback: str) -> str:
+    if isinstance(respuesta, dict):
+        errores = respuesta.get("errors")
+        if isinstance(errores, list) and errores:
+            primero = errores[0] if isinstance(errores[0], dict) else {}
+            mensaje = primero.get("description") or primero.get("message")
+            if mensaje:
+                return str(mensaje)
+        mensaje = respuesta.get("error") or respuesta.get("mensaje")
+        if mensaje:
+            return str(mensaje)
+    return fallback
+
+
 @compras_bp.route("/compra/confirmar", methods=["POST"])
 def confirmar_compra():
     if temporizador_compra_vencido():
@@ -50,7 +64,13 @@ def confirmar_compra():
     if estado == 201 and isinstance(compra, dict) and type(compra.get("id_compra")) is int:
         limpiar_compra_temporal()
         return redirect(url_for("compras.compra_exitosa", id_compra=compra["id_compra"]))
-    flash("No se pudo confirmar la compra. Revisá la función, las butacas y la sesión.", "error")
+    flash(
+        _extraer_mensaje_error_backend(
+            compra,
+            "No se pudo confirmar la compra. Revisá la función, las butacas y la sesión.",
+        ),
+        "error",
+    )
     return redirect(url_for("compra.seleccion_checkout"))
 
 

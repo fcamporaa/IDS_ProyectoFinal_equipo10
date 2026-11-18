@@ -343,21 +343,150 @@ def seleccion_butacas():
 
 @compra_bp.route("/servicios", methods=["GET", "POST"])
 def seleccion_servicios():
-    """Renderiza Candy Bar, controla el vencimiento y conserva los servicios elegidos."""
+    """Renderiza Candy Bar con la compra real y conserva los servicios elegidos."""
     if temporizador_compra_vencido():
         return redirigir_compra_expirada()
-    if not (session.get("compra") or {}).get("butacas"):
+
+    compra = session.get("compra") or {}
+    if not compra.get("butacas") or not compra.get("id_funcion"):
         return redirect(url_for("compra.seleccion_butacas"))
 
-    """Renderiza Candy Bar y conserva sus cantidades en la sesión Flask."""
+    def _parsear_inicio(valor: str):
+        if not valor:
+            return None
+        try:
+            return datetime.fromisoformat(str(valor))
+        except (ValueError, TypeError):
+            return None
+
+    def _construir_contexto(compra_actual: dict, servicios_api: list[dict], cantidades: dict):
+        id_funcion = compra_actual.get("id_funcion")
+        funcion, _ = obtener_detalle_funcion_del_backend(id_funcion) if id_funcion else (None, 404)
+        if not isinstance(funcion, dict):
+            funcion = {}
+
+        id_pelicula = compra_actual.get("id_pelicula") or funcion.get("id_pelicula")
+        pelicula, estado_pelicula = (
+            obtener_detalle_pelicula(id_pelicula)
+            if id_pelicula
+            else (None, 404)
+        )
+        if estado_pelicula != 200 or not isinstance(pelicula, dict):
+            pelicula = {}
+
+        titulo = (
+            compra_actual.get("pelicula_titulo")
+            or funcion.get("titulo_pelicula")
+            or pelicula.get("titulo")
+            or "Película en cartelera"
+        )
+        formato = funcion.get("formato") or (compra_actual.get("sala_completa") or "").split("(")[-1].replace(")", "").strip() or "2D"
+        idioma_base = funcion.get("idioma") or "Original"
+        subtitulada = funcion.get("subtitulada")
+        if subtitulada is None:
+            subtitulada = True
+        idioma = f"{idioma_base} ({'Subtitulada' if subtitulada else 'Doblada'})"
+        complejo = compra_actual.get("complejo") or funcion.get("nombre_local") or "Cine Paradiso"
+        sala_numero = compra_actual.get("sala_numero") or funcion.get("numero_sala") or 1
+        sala_completa = compra_actual.get("sala_completa") or f"Sala {sala_numero} ({formato})"
+        sala_badge = f"SALA {sala_numero} • {formato}".upper()
+
+        inicio_dt = _parsear_inicio(funcion.get("inicio") or compra_actual.get("horario", ""))
+        if inicio_dt:
+            horario_etiqueta = f"{formatear_fecha_corta(inicio_dt.date())} {formatear_hora(inicio_dt)} • {'Subtitulada' if subtitulada else 'Doblada'}"
+        else:
+            horario_etiqueta = compra_actual.get("horario") or "Horario a confirmar"
+
+        poster_url = (
+            pelicula.get("poster_url")
+            or "https://image.tmdb.org/t/p/w500/8b8R8l88Qje9dn9OE8PY05Nxl1X.jpg"
+        )
+
+        butacas = compra_actual.get("butacas") or []
+        butacas_texto = ", ".join(
+            f"{b.get('fila')}-{b.get('numero')}" for b in butacas
+        ) or "Sin butacas"
+        precio_unitario = float(compra_actual.get("precio_unitario") or funcion.get("precio_entrada") or 0)
+        subtotal_entradas = float(compra_actual.get("subtotal_entradas") or (precio_unitario * len(butacas)))
+
+        servicios = [
+            {**servicio, "cantidad": cantidades.get(servicio["id_servicio"], 0)}
+            for servicio in servicios_api
+        ]
+        items_seleccionados = [
+            {
+                "id_servicio": servicio["id_servicio"],
+                "nombre": servicio["nombre"],
+                "descripcion": servicio.get("descripcion") or servicio.get("tipo") or "",
+                "cantidad": servicio["cantidad"],
+                "subtotal_formato": formatear_monto(
+                    float(servicio["precio"]) * servicio["cantidad"]
+                ),
+            }
+            for servicio in servicios
+            if servicio["cantidad"] > 0
+        ]
+        subtotal_candy = sum(
+            float(servicio["precio"]) * servicio["cantidad"] for servicio in servicios
+        )
+        total = subtotal_entradas + subtotal_candy
+
+        return {
+            "pelicula": {
+                "id_pelicula": id_pelicula,
+                "titulo": titulo,
+                "titulo_upper": str(titulo).upper(),
+                "poster_url": poster_url,
+                "formato": sala_completa,
+                "sala_badge": sala_badge,
+                "idioma": idioma,
+                "horario_etiqueta": horario_etiqueta,
+                "complejo": complejo,
+            },
+            "entradas": {
+                "items": [
+                    {
+                        "descripcion": f"{len(butacas)}x Entrada {formato}",
+                        "detalle": f"Butacas {butacas_texto}",
+                        "subtotal": subtotal_entradas,
+                        "subtotal_formato": formatear_monto(subtotal_entradas),
+                    }
+                ],
+                "subtotal": subtotal_entradas,
+                "subtotal_formato": formatear_monto(subtotal_entradas),
+            },
+            "categorias_filtro": [
+                {"id": "todos", "nombre": "Todos los Servicios"},
+                {"id": "comida", "nombre": "COMIDA"},
+                {"id": "bebida", "nombre": "BEBIDA"},
+            ],
+            "servicios": servicios,
+            "servicios_seleccionados": [
+                {"id_servicio": sid, "cantidad": cant}
+                for sid, cant in cantidades.items()
+                if cant > 0
+            ],
+            "candy_seleccionado": {
+                "items": items_seleccionados,
+                "total_items": sum(item["cantidad"] for item in items_seleccionados),
+                "subtotal": subtotal_candy,
+                "subtotal_formato": formatear_monto(subtotal_candy),
+            },
+            "resumen": {
+                "subtotal_entradas": subtotal_entradas,
+                "subtotal_entradas_formato": formatear_monto(subtotal_entradas),
+                "subtotal_candy": subtotal_candy,
+                "subtotal_candy_formato": formatear_monto(subtotal_candy),
+                "cargos_servicio_texto": "100% Bonificado",
+                "total": total,
+                "total_formato": formatear_monto(total),
+            },
+        }
+
     if request.method == "POST":
         if not validar_token_csrf(request.form.get("csrf_token", "")):
             flash("Formulario vencido o CSRF inválido.", "error")
             return redirect(url_for("compra.seleccion_servicios"))
-
-        if request.form.get("accion") == "omitir":
-            session["servicios_seleccionados"] = []
-            return redirect(url_for("compra.seleccion_checkout"))
 
         try:
             servicios = validar_servicios_seleccionados(
@@ -367,17 +496,18 @@ def seleccion_servicios():
             flash(str(error), "error")
             return redirect(url_for("compra.seleccion_servicios"))
 
-        catalogo = obtener_servicios_disponibles()
-        if catalogo is None:
-            flash("No se pudo validar el catálogo de servicios.", "error")
-            return redirect(url_for("compra.seleccion_servicios"))
-        ids_disponibles = {servicio["id_servicio"] for servicio in catalogo}
-        if any(item["id_servicio"] not in ids_disponibles for item in servicios):
-            flash(
-                "La selección contiene un servicio que ya no está disponible.",
-                "error",
-            )
-            return redirect(url_for("compra.seleccion_servicios"))
+        if servicios:
+            catalogo = obtener_servicios_disponibles()
+            if catalogo is None:
+                flash("No se pudo validar el catálogo de servicios.", "error")
+                return redirect(url_for("compra.seleccion_servicios"))
+            ids_disponibles = {servicio["id_servicio"] for servicio in catalogo}
+            if any(item["id_servicio"] not in ids_disponibles for item in servicios):
+                flash(
+                    "La selección contiene un servicio que ya no está disponible.",
+                    "error",
+                )
+                return redirect(url_for("compra.seleccion_servicios"))
 
         session["servicios_seleccionados"] = servicios
         return redirect(url_for("compra.seleccion_checkout"))
@@ -391,79 +521,8 @@ def seleccion_servicios():
         item["id_servicio"]: item["cantidad"]
         for item in session.get("servicios_seleccionados", [])
     }
-    servicios = [
-        {**servicio, "cantidad": cantidades.get(servicio["id_servicio"], 0)}
-        for servicio in servicios_api
-    ]
-    subtotal_entradas = 17000
-    items_seleccionados = [
-        {
-            "id_servicio": servicio["id_servicio"],
-            "nombre": servicio["nombre"],
-            "descripcion": servicio["descripcion"],
-            "cantidad": servicio["cantidad"],
-            "subtotal_formato": formatear_monto(
-                servicio["precio"] * servicio["cantidad"]
-            ),
-        }
-        for servicio in servicios
-        if servicio["cantidad"] > 0
-    ]
-    subtotal_candy = sum(
-        servicio["precio"] * servicio["cantidad"]
-        for servicio in servicios
-    )
+    datos_compra = _construir_contexto(compra, servicios_api, cantidades)
     temporizador = contexto_temporizador_compra()
-
-    datos_compra = {
-        "pelicula": {
-            "id_pelicula": 2,
-            "titulo": "Furiosa: Saga Mad Max",
-            "titulo_upper": "FURIOSA: SAGA MAD MAX",
-            "poster_url": "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=300&auto=format&fit=crop&q=80",
-            "formato": "SALA 2 • 4D",
-            "sala_badge": "SALA 2 • 4D",
-            "idioma": "Subtitulada",
-            "horario_etiqueta": "Hoy 20:15 hs • Subtitulada",
-            "complejo": "Paradiso Centro (Corrientes 1240)",
-        },
-        "entradas": {
-            "items": [
-                {
-                    "descripcion": "2x Entrada General 4D",
-                    "detalle": "Butacas E-08, E-09",
-                    "subtotal": subtotal_entradas,
-                    "subtotal_formato": formatear_monto(subtotal_entradas),
-                }
-            ],
-            "subtotal": subtotal_entradas,
-            "subtotal_formato": formatear_monto(subtotal_entradas),
-        },
-        "categorias_filtro": [
-            {"id": "todos", "nombre": "Todos los Servicios"},
-            {"id": "comida", "nombre": "COMIDA"},
-            {"id": "bebida", "nombre": "BEBIDA"},
-        ],
-        "servicios": servicios,
-        "servicios_seleccionados": [
-            item for item in session.get("servicios_seleccionados", [])
-        ],
-        "candy_seleccionado": {
-            "items": items_seleccionados,
-            "total_items": sum(item["cantidad"] for item in items_seleccionados),
-            "subtotal": subtotal_candy,
-            "subtotal_formato": formatear_monto(subtotal_candy),
-        },
-        "resumen": {
-            "subtotal_entradas": subtotal_entradas,
-            "subtotal_entradas_formato": formatear_monto(subtotal_entradas),
-            "subtotal_candy": subtotal_candy,
-            "subtotal_candy_formato": formatear_monto(subtotal_candy),
-            "cargos_servicio_texto": "100% Bonificado",
-            "total": subtotal_entradas + subtotal_candy,
-            "total_formato": formatear_monto(subtotal_entradas + subtotal_candy),
-        },
-    }
 
     return render_template(
         "seleccion_servicios.html",
