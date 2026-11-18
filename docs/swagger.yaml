@@ -740,12 +740,62 @@ paths:
           $ref: '#/components/responses/ProhibidoAdmin'
 
   /servicios/{id}:
+    get:
+      tags:
+        - Servicios Adicionales
+      summary: Obtiene el detalle de un servicio activo
+      description: Retorna los datos del servicio, incluida su URL de imagen.
+      operationId: obtenerServicio
+      parameters:
+        - $ref: '#/components/parameters/ServicioId'
+      responses:
+        '200':
+          description: Detalle del servicio.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Servicio'
+        '404':
+          $ref: '#/components/responses/RecursoNoEncontrado'
+
     put:
       tags:
         - Servicios Adicionales
-      summary: Modifica los datos o el precio de un servicio (Solo Admin)
-      description: Actualiza nombre, tipo o precio de un servicio adicional existente.
+      summary: Modifica los datos de un servicio (Solo Admin)
+      description: Actualiza los campos enviados, incluida imagen_url; null o texto vacío limpian la imagen.
       operationId: actualizarServicio
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ServicioId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServicioActualizarRequest'
+      responses:
+        '200':
+          description: Servicio actualizado correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Servicio'
+        '400':
+          $ref: '#/components/responses/ErrorValidacion'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '403':
+          $ref: '#/components/responses/ProhibidoAdmin'
+        '404':
+          $ref: '#/components/responses/RecursoNoEncontrado'
+
+    patch:
+      tags:
+        - Servicios Adicionales
+      summary: Actualiza parcialmente un servicio (Solo Admin)
+      description: Actualiza los campos enviados; null o texto vacío limpian imagen_url.
+      operationId: actualizarParcialmenteServicio
       security:
         - BearerAuth: []
       parameters:
@@ -1864,6 +1914,12 @@ components:
         activo:
           type: boolean
           example: true
+        imagen_url:
+          type: string
+          format: uri
+          nullable: true
+          description: URL HTTP(S) de la imagen o null si no tiene imagen.
+          example: https://cdn.example.com/servicios/pochoclos.jpg
 
     ServicioCrearRequest:
       type: object
@@ -1883,6 +1939,12 @@ components:
           type: number
           format: float
           example: 2500.00
+        imagen_url:
+          type: string
+          format: uri
+          nullable: true
+          description: URL HTTP(S) de la imagen; puede omitirse, enviarse como null o como texto vacío.
+          example: https://cdn.example.com/servicios/estacionamiento.jpg
 
     ServicioActualizarRequest:
       type: object
@@ -1897,6 +1959,11 @@ components:
           format: float
         activo:
           type: boolean
+        imagen_url:
+          type: string
+          format: uri
+          nullable: true
+          description: URL HTTP(S) de la imagen; null o texto vacío limpian el valor actual.
 
     # --- Compras y Pagos ---
     ItemServicioCompraRequest:

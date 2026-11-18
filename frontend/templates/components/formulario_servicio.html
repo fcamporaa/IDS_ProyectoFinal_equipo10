@@ -31,6 +31,16 @@
         <input type="number" id="precio" name="precio" class="form-control" value="{{ borrador.precio }}" required min="0.01" step="0.01" max="99999999.99" placeholder="Ej: 8500.00">
       </div>
 
+      <div class="formulario-servicio__campo formulario-servicio__campo--imagen">
+        <label for="imagen_url" class="form-label">URL de la imagen *</label>
+        <input type="url" id="imagen_url" name="imagen_url" class="form-control" value="{{ borrador.imagen_url }}" required maxlength="2048" placeholder="https://ejemplo.com/imagen.jpg" aria-describedby="imagen-url-error">
+        <p id="imagen-url-error" class="formulario-servicio__error" role="alert" aria-live="polite"></p>
+        <div class="formulario-servicio__preview" aria-live="polite">
+          <img id="imagen-preview" alt="Vista previa de la imagen del servicio" hidden>
+          <span id="imagen-preview-mensaje">La vista previa aparecerá cuando ingreses un enlace válido.</span>
+        </div>
+      </div>
+
       <!-- Activo (solo en edición) -->
       {% if modo_formulario == 'editar' %}
         <div class="formulario-servicio__campo formulario-servicio__campo--checkbox">

@@ -1,3 +1,5 @@
+from urllib.parse import urlsplit
+
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 
 from services.admin_servicios_service import (
@@ -31,14 +33,44 @@ def _borrador_vacio() -> dict:
         "nombre": "",
         "tipo": "COMIDA",
         "precio": "",
+        "imagen_url": "",
         "activo": True,
     }
+
+
+def _borrador_desde_formulario(form, incluir_activo: bool = False) -> dict:
+    """Conserva los datos ingresados para volver a mostrar el formulario."""
+    borrador = {
+        "nombre": form.get("nombre", ""),
+        "tipo": form.get("tipo", "COMIDA"),
+        "precio": form.get("precio", ""),
+        "imagen_url": form.get("imagen_url", ""),
+    }
+    if incluir_activo:
+        borrador["activo"] = "activo" in form
+    return borrador
 
 
 def _leer_formulario(form, incluir_activo: bool = False) -> dict:
     """Lee el formulario de alta o edición."""
     nombre = (form.get("nombre") or "").strip()
     tipo = (form.get("tipo") or "COMIDA").strip()
+    imagen_url = (form.get("imagen_url") or "").strip()
+
+    try:
+        partes_url = urlsplit(imagen_url)
+        puerto = partes_url.port
+    except ValueError:
+        raise ValueError("Ingresá una URL válida para la imagen (http o https).") from None
+    if (
+        not imagen_url
+        or len(imagen_url) > 2048
+        or any(caracter.isspace() for caracter in imagen_url)
+        or partes_url.scheme.lower() not in ("http", "https")
+        or not partes_url.hostname
+        or puerto is not None and not 1 <= puerto <= 65535
+    ):
+        raise ValueError("Ingresá una URL válida para la imagen (http o https).")
     
     precio_raw = (form.get("precio") or "").strip()
     precio = None
@@ -52,6 +84,7 @@ def _leer_formulario(form, incluir_activo: bool = False) -> dict:
         "nombre": nombre,
         "tipo": tipo,
         "precio": precio,
+        "imagen_url": imagen_url,
     }
     if incluir_activo:
         datos["activo"] = "activo" in form
@@ -114,7 +147,7 @@ def crear():
     except ValueError as e:
         flash(str(e), "error")
         return _renderizar_pagina(
-            borrador=_borrador_vacio(),
+            borrador=_borrador_desde_formulario(request.form),
             abrir_formulario=True,
             modo_formulario="crear",
             accion_formulario=url_for("admin_servicios.crear"),
@@ -157,6 +190,7 @@ def editar(id):
         "nombre": servicio.get("nombre", ""),
         "tipo": servicio.get("tipo", "COMIDA"),
         "precio": servicio.get("precio", ""),
+        "imagen_url": servicio.get("imagen_url") or "",
         "activo": servicio.get("activo", True),
     }
 
@@ -179,7 +213,7 @@ def actualizar(id):
     except ValueError as e:
         flash(str(e), "error")
         return _renderizar_pagina(
-            borrador=_borrador_vacio(),
+            borrador=_borrador_desde_formulario(request.form, incluir_activo=True),
             abrir_formulario=True,
             modo_formulario="editar",
             accion_formulario=url_for("admin_servicios.actualizar", id=id),
