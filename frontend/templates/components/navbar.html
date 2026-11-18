@@ -39,11 +39,6 @@
             </div>
         </div>
 
-        <!-- Centro: Navegación Desktop (Oculta en móviles mediante CSS) -->
-        <nav class="nav-links desktop-nav" aria-label="Navegación principal">
-            <a href="{{ url_for('home.index') }}" class="nav-link active" data-target="cartelera">Cartelera</a>
-        </nav>
-
         <!-- Lado Derecho: Acceso y Sesión -->
         <div class="header-actions">
             {% if es_admin %}
