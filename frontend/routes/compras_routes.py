@@ -195,7 +195,7 @@ def compra_exitosa(id_compra: int):
         "id_transaccion": compra["codigo_reserva"],
         "estado": compra["estado"],
         "email_comprador": compra["email_comprobante"],
-        "codigo_qr": compra["codigo_reserva"],
+        "codigo_reserva": compra["codigo_reserva"],
         "qr_base64": qr_base64,
 
         "pelicula": {

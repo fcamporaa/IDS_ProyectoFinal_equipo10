@@ -13,7 +13,7 @@
             <p class="validador-qr__eyebrow">Backoffice · Recepción</p>
             <h1>Validador de ingreso QR</h1>
             <p class="validador-qr__subtitle">
-                Ingresá el código de la entrada o activá la cámara para verificar la función y registrar el acceso a sala.
+                Ingresá el código de reserva (CP-...) o escaneá el QR para verificar la función y registrar el acceso.
             </p>
         </div>
         <div class="validador-qr__header-links">
@@ -82,12 +82,12 @@
                         action="{{ url_for('validaciones.index') }}"
                     >
                         <div class="validador-qr__field">
-                            <label for="qr_token">Código QR de la entrada</label>
+                            <label for="qr_token">Token QR o código de reserva</label>
                             <input
                                 type="text"
                                 id="qr_token"
                                 name="qr_token"
-                                placeholder="Escaneá o pegá el token QR..."
+                                placeholder="Pegá el token QR o ingresá CP-..."
                                 minlength="8"
                                 maxlength="160"
                                 pattern="[A-Za-z0-9_-]{8,160}"
