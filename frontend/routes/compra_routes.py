@@ -1,8 +1,15 @@
 import json
-from utils.csrf import crear_token_csrf
-from services.servicios_service import obtener_servicios_del_backend
 from datetime import datetime
-from flask import Blueprint, flash, redirect, render_template, request, session, url_for
+
+from flask import (
+    Blueprint,
+    flash,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
+)
 
 from services.funciones_service import (
     obtener_detalle_funcion_del_backend,
@@ -10,6 +17,12 @@ from services.funciones_service import (
     obtener_mapa_butacas_del_backend,
 )
 from services.peliculas_service import obtener_detalle_pelicula
+from services.servicios_service import (
+    obtener_servicios_del_backend,
+    formatear_monto,
+    obtener_servicios_disponibles,
+)
+from utils.csrf import crear_token_csrf, validar_token_csrf
 from utils.formatos import formatear_duracion, formatear_fecha_corta, formatear_hora
 from utils.temporizador_compra import (
     contexto_temporizador_compra,
@@ -18,6 +31,7 @@ from utils.temporizador_compra import (
     registrar_pelicula_compra,
     temporizador_compra_vencido,
 )
+from validators.compras_validators import validar_servicios_seleccionados
 
 compra_bp = Blueprint("compra", __name__, url_prefix="/compra")
 
@@ -341,53 +355,79 @@ def seleccion_butacas():
     return render_template("seleccion_butacas.html", c=datos_compra, temporizador=temporizador)
 
 
-@compra_bp.route("/servicios")
+@compra_bp.route("/servicios", methods=["GET", "POST"])
 def seleccion_servicios():
-    """
-    Renderiza la pantalla de selección de servicios complementarios y combos (Candy Bar).
-    Muestra el catálogo con combos, pochoclos, bebidas y extras, junto al resumen de compra acumulado.
-    """
+    """Renderiza Candy Bar, controla el vencimiento y conserva los servicios elegidos."""
     if temporizador_compra_vencido():
         return redirigir_compra_expirada()
     if not (session.get("compra") or {}).get("butacas"):
         return redirect(url_for("compra.seleccion_butacas"))
 
-    temporizador = contexto_temporizador_compra()
-    servicios, estado = obtener_servicios_del_backend()
+    """Renderiza Candy Bar y conserva sus cantidades en la sesión Flask."""
+    if request.method == "POST":
+        if not validar_token_csrf(request.form.get("csrf_token", "")):
+            flash("Formulario vencido o CSRF inválido.", "error")
+            return redirect(url_for("compra.seleccion_servicios"))
 
-    servicios_vista = []
+        if request.form.get("accion") == "omitir":
+            session["servicios_seleccionados"] = []
+            return redirect(url_for("compra.seleccion_checkout"))
 
-    for servicio in servicios:
-        precio = float(servicio["precio"])
-        nombre = servicio["nombre"]
-        tipo = servicio["tipo"]
+        try:
+            servicios = validar_servicios_seleccionados(
+                request.form.get("servicios_json", "[]")
+            )
+        except ValueError as error:
+            flash(str(error), "error")
+            return redirect(url_for("compra.seleccion_servicios"))
 
-        if nombre.lower().startswith("combo"):
-            categoria = "combos pochoclos bebidas"
-        elif tipo == "COMIDA":
-            categoria = "snacks"
-        elif tipo == "BEBIDA":
-            categoria = "bebidas"
-        else:
-            categoria = "todos"
+        catalogo = obtener_servicios_disponibles()
+        if catalogo is None:
+            flash("No se pudo validar el catálogo de servicios.", "error")
+            return redirect(url_for("compra.seleccion_servicios"))
+        ids_disponibles = {servicio["id_servicio"] for servicio in catalogo}
+        if any(item["id_servicio"] not in ids_disponibles for item in servicios):
+            flash(
+                "La selección contiene un servicio que ya no está disponible.",
+                "error",
+            )
+            return redirect(url_for("compra.seleccion_servicios"))
 
-        servicios_vista.append({
+        session["servicios_seleccionados"] = servicios
+        return redirect(url_for("compra.seleccion_checkout"))
+
+    servicios_api = obtener_servicios_disponibles()
+    if servicios_api is None:
+        flash("No se pudo cargar el catálogo de servicios.", "error")
+        servicios_api = []
+
+    cantidades = {
+        item["id_servicio"]: item["cantidad"]
+        for item in session.get("servicios_seleccionados", [])
+    }
+    servicios = [
+        {**servicio, "cantidad": cantidades.get(servicio["id_servicio"], 0)}
+        for servicio in servicios_api
+    ]
+    subtotal_entradas = 17000
+    items_seleccionados = [
+        {
             "id_servicio": servicio["id_servicio"],
-            "nombre": nombre,
-            "categoria": categoria,
-            "descripcion": "",
-            "precio": precio,
-            "precio_formato": f"${precio:,.0f}".replace(",", "."),
-            "cantidad": 0,
-            "imagen_url": "https://images.unsplash.com/photo-1572177812156-58036aae439c?w=600",
-            "badge_top": None,
-            "badge_top_tipo": None,
-            "badge_image_bottom": None,
-        })
-
-    if estado != 200 or not isinstance(servicios, list):
-        flash("No se pudieron obtener los servicios.", "error")
-        servicios = []
+            "nombre": servicio["nombre"],
+            "descripcion": servicio["descripcion"],
+            "cantidad": servicio["cantidad"],
+            "subtotal_formato": formatear_monto(
+                servicio["precio"] * servicio["cantidad"]
+            ),
+        }
+        for servicio in servicios
+        if servicio["cantidad"] > 0
+    ]
+    subtotal_candy = sum(
+        servicio["precio"] * servicio["cantidad"]
+        for servicio in servicios
+    )
+    temporizador = contexto_temporizador_compra()
 
     datos_compra = {
         "pelicula": {
@@ -406,60 +446,45 @@ def seleccion_servicios():
                 {
                     "descripcion": "2x Entrada General 4D",
                     "detalle": "Butacas E-08, E-09",
-                    "subtotal": 17000,
-                    "subtotal_formato": "$17.000",
+                    "subtotal": subtotal_entradas,
+                    "subtotal_formato": formatear_monto(subtotal_entradas),
                 }
             ],
-            "subtotal": 17000,
-            "subtotal_formato": "$17.000",
+            "subtotal": subtotal_entradas,
+            "subtotal_formato": formatear_monto(subtotal_entradas),
         },
         "categorias_filtro": [
-            {"id": "todos", "nombre": "Todos los Combos"},
-            {"id": "pochoclos", "nombre": "Pochoclos"},
-            {"id": "bebidas", "nombre": "Bebidas"},
-            {"id": "snacks", "nombre": "Snacks & Dulces"},
-            {"id": "estacionamiento", "nombre": "Estacionamiento & VIP"},
+            {"id": "todos", "nombre": "Todos los Servicios"},
+            {"id": "comida", "nombre": "COMIDA"},
+            {"id": "bebida", "nombre": "BEBIDA"},
         ],
-        "servicios": [
-            {
-            "servicios": servicios_vista,
-            }
+        "servicios": servicios,
+        "servicios_seleccionados": [
+            item for item in session.get("servicios_seleccionados", [])
         ],
         "candy_seleccionado": {
-            "items": [
-                {
-                    "id_servicio": 1,
-                    "nombre": "Combo Mega Paradiso",
-                    "descripcion": "Balde gigante + 2 gaseosas 1L",
-                    "cantidad": 1,
-                    "subtotal": 14500,
-                    "subtotal_formato": "$14.500",
-                },
-                {
-                    "id_servicio": 4,
-                    "nombre": "Voucher Estacionamiento Prepago (3 hs cubi...",
-                    "descripcion": "3 hs. cubiertas - Centro",
-                    "cantidad": 1,
-                    "subtotal": 4500,
-                    "subtotal_formato": "$4.500",
-                },
-            ],
-            "total_items": 2,
-            "subtotal": 19000,
-            "subtotal_formato": "$19.000",
+            "items": items_seleccionados,
+            "total_items": sum(item["cantidad"] for item in items_seleccionados),
+            "subtotal": subtotal_candy,
+            "subtotal_formato": formatear_monto(subtotal_candy),
         },
         "resumen": {
-            "subtotal_entradas": 17000,
-            "subtotal_entradas_formato": "$17.000",
-            "subtotal_candy": 19000,
-            "subtotal_candy_formato": "$19.000",
+            "subtotal_entradas": subtotal_entradas,
+            "subtotal_entradas_formato": formatear_monto(subtotal_entradas),
+            "subtotal_candy": subtotal_candy,
+            "subtotal_candy_formato": formatear_monto(subtotal_candy),
             "cargos_servicio_texto": "100% Bonificado",
-            "total": 36000,
-            "total_formato": "$36.000",
+            "total": subtotal_entradas + subtotal_candy,
+            "total_formato": formatear_monto(subtotal_entradas + subtotal_candy),
         },
     }
 
-    return render_template("seleccion_servicios.html", c=datos_compra, temporizador=temporizador)
+    return render_template(
+        "seleccion_servicios.html",
+        c=datos_compra,
+        csrf_token=crear_token_csrf(),
+        temporizador=temporizador,
+    )
 
 
 @compra_bp.route("/checkout")
@@ -526,7 +551,7 @@ def seleccion_checkout():
     ]
 
     # 7. Recuperar los servicios seleccionados (si existen)
-    servicios_seleccionados = compra.get("servicios", [])
+    servicios_seleccionados = session.get("servicios_seleccionados", [])
 
     subtotal_servicios = 0
 

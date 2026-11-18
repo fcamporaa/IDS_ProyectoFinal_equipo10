@@ -1,7 +1,4 @@
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
-from services.compras_service import (
-    enviar_compra_al_backend, obtener_compra_del_backend,
-    reenviar_comprobante_al_backend)
 from utils.csrf import crear_token_csrf, validar_token_csrf
 from validators.compras_validators import validar_formulario_compra
 from services.peliculas_service import obtener_detalle_pelicula
@@ -17,11 +14,19 @@ import io
 import qrcode
 from utils.temporizador_compra import (
     limpiar_compra_temporal,
+    iniciar_temporizador_compra,
     redirigir_compra_expirada,
     temporizador_compra_vencido,
 )
 
 compras_bp = Blueprint("compras", __name__)
+
+
+@compras_bp.route("/compra/checkout-integracion", methods=["GET"])
+def checkout():
+    iniciar_temporizador_compra()
+    return render_template("client/checkout.html", csrf_token=crear_token_csrf())
+
 
 @compras_bp.route("/compra/confirmar", methods=["POST"])
 def confirmar_compra():
@@ -35,8 +40,8 @@ def confirmar_compra():
         return redirect(url_for("home.index"))
     try:
         datos = validar_formulario_compra(
-        request.form,
-        session.get("compra", {}).get("servicios", [])
+            request.form,
+            session.get("servicios_seleccionados", []),
         )
     except ValueError as error:
         flash(str(error), "error")
@@ -81,7 +86,9 @@ def compra_exitosa(id_compra: int):
         return resultado
 
     # Obtener información adicional de la película
-    pelicula = obtener_detalle_pelicula(funcion["id_pelicula"]) or {}
+    pelicula, estado_pelicula = obtener_detalle_pelicula(funcion["id_pelicula"])
+    if estado_pelicula != 200 or not isinstance(pelicula, dict):
+        pelicula = {}
 
     # Interpretar fecha y horario de la función
     inicio_texto = str(funcion.get("inicio") or "")

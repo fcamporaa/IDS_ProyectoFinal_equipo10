@@ -4,6 +4,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const candyCountBadgeEl = document.getElementById('candyItemsCountBadge');
     const displaySubtotalCandyEl = document.getElementById('displaySubtotalCandy');
     const displayTotalAcumuladoEl = document.getElementById('displayTotalAcumulado');
+    const selectionForm = document.getElementById('servicesSelectionForm');
+    const selectionPayloadEl = document.getElementById('servicesSelectionPayload');
 
     if (!candyListEl) return;
 
@@ -52,15 +54,23 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 const row = document.createElement('div');
                 row.className = 'summary-item-row';
-                row.innerHTML = `
-                    <div class="summary-item-left">
-                        <span class="summary-item-name">${item.qty}x ${shortName}</span>
-                        <span class="summary-item-sub">${item.desc.substring(0, 30)}...</span>
-                    </div>
-                    <div class="summary-item-right">
-                        <span class="summary-item-price text-gold">${formatMoney(itemSubtotal)}</span>
-                    </div>
-                `;
+                const itemLeft = document.createElement('div');
+                itemLeft.className = 'summary-item-left';
+                const itemName = document.createElement('span');
+                itemName.className = 'summary-item-name';
+                itemName.textContent = item.qty + 'x ' + shortName;
+                const itemDescription = document.createElement('span');
+                itemDescription.className = 'summary-item-sub';
+                itemDescription.textContent = item.desc.substring(0, 30);
+                itemLeft.append(itemName, itemDescription);
+
+                const itemRight = document.createElement('div');
+                itemRight.className = 'summary-item-right';
+                const itemPrice = document.createElement('span');
+                itemPrice.className = 'summary-item-price text-gold';
+                itemPrice.textContent = formatMoney(itemSubtotal);
+                itemRight.appendChild(itemPrice);
+                row.append(itemLeft, itemRight);
                 candyListEl.appendChild(row);
             }
         });
@@ -95,7 +105,9 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!product) return;
 
         if (action === 'plus') {
-            product.qty++;
+            if (product.qty < 99) {
+                product.qty++;
+            }
         } else if (action === 'minus') {
             if (product.qty > 0) {
                 product.qty--;
@@ -111,6 +123,18 @@ document.addEventListener('DOMContentLoaded', function () {
         // Actualizar resumen lateral
         updateSummary();
     });
+
+    if (selectionForm && selectionPayloadEl) {
+        selectionForm.addEventListener('submit', function () {
+            selectionPayloadEl.value = JSON.stringify(
+                Object.values(productsMap)
+                    .filter(function (item) { return item.qty > 0; })
+                    .map(function (item) {
+                        return { id_servicio: item.id, cantidad: item.qty };
+                    })
+            );
+        });
+    }
 
     // Filtrado por categorías de píldoras
     const filterPills = document.querySelectorAll('.filter-pill');

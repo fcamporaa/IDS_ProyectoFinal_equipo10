@@ -21,22 +21,26 @@
 >
     <!-- Contenedor del Póster 2:3 -->
     <div class="movie-poster-wrapper">
+        {% if m.poster_url %}
         <img 
             src="{{ m.poster_url }}" 
             alt="Póster de {{ m.titulo }}" 
             class="movie-poster-img"
             loading="lazy"
         >
+        {% endif %}
 
         <!-- Badge Superior de Formato Real (2D / 3D / 4D) -->
+        {% if m.formato %}
         <div class="poster-badge-top">
             <span class="format-badge format-{{ m.formato | lower }}">{{ m.formato }}</span>
         </div>
+        {% endif %}
 
         <!-- Píldora Inferior: Clasificación y Duración -->
         <div class="poster-badge-bottom">
-            <span class="age-badge">{{ m.clasificacion }}</span>
-            <span class="duration-badge">{{ m.duracion_min }} min</span>
+            {% if m.clasificacion %}<span class="age-badge">{{ m.clasificacion }}</span>{% endif %}
+            {% if m.duracion_min %}<span class="duration-badge">{{ m.duracion_min }} min</span>{% endif %}
         </div>
     </div>
 
@@ -44,9 +48,9 @@
     <div class="movie-info-body">
         <div class="movie-header-meta">
             <span class="genre-text">
-                {{ m.genero }} &bull; {{ 'Subtitulada' if m.subtitulada else 'Castellano' }}
+                {{ m.genero }}{% if m.subtitulada is defined %} &bull; {{ 'Subtitulada' if m.subtitulada else 'Castellano' }}{% endif %}
             </span>
-            <span class="hall-badge">{{ m.sala_principal }}</span>
+            {% if m.sala_principal %}<span class="hall-badge">{{ m.sala_principal }}</span>{% endif %}
         </div>
 
         <h3 class="movie-title" title="{{ m.titulo }}">
@@ -56,6 +60,7 @@
         </h3>
 
         <!-- Horarios Disponibles -->
+        {% if m.horarios %}
         <div class="showtimes-container">
             <span class="showtimes-heading">Horarios de hoy:</span>
             <div class="chips-row">
@@ -66,6 +71,7 @@
                 {% endfor %}
             </div>
         </div>
+        {% endif %}
 
         <!-- Botón de Acción Directo -->
         <a href="{{ url_for('peliculas.detalle_pelicula', id_pelicula=m.id_pelicula) }}" class="btn-select-seats">
