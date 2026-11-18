@@ -576,12 +576,35 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorRespuesta'
 
+  /funciones/admin:
+    get:
+      tags:
+        - Funciones
+      summary: Lista todas las funciones para el ABM (Solo Admin)
+      description: Retorna el listado completo de funciones incluyendo canceladas y finalizadas ordenadas por inicio descendente.
+      operationId: listarFuncionesAdmin
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Listado completo de funciones.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FuncionItem'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '403':
+          $ref: '#/components/responses/ProhibidoAdmin'
+
   /funciones/{id}:
     put:
       tags:
         - Funciones
-      summary: Modifica horario, precio o estado de una función (Solo Admin)
-      description: Actualiza los detalles de una función programada validando que no colisione con otras funciones de la sala.
+      summary: Modifica la programación, el precio o el estado de una función (Solo Admin)
+      description: Actualiza los campos editables de una función programada, recalculando el fin según la película y validando que no colisione con otras funciones de la sala.
       operationId: actualizarFuncion
       security:
         - BearerAuth: []
@@ -1748,10 +1771,26 @@ components:
     FuncionActualizarRequest:
       type: object
       properties:
+        id_pelicula:
+          type: integer
+          example: 10
+        id_sala:
+          type: integer
+          example: 2
         inicio:
           type: string
           format: date-time
           example: '2026-11-15T20:30:00'
+        formato:
+          type: string
+          enum: ['2D', '3D', '4D']
+          example: '2D'
+        idioma:
+          type: string
+          example: 'Español'
+        subtitulada:
+          type: boolean
+          example: false
         precio_entrada:
           type: number
           format: float
