@@ -25,7 +25,13 @@
                 </div>
                 <div class="success-banner-texts">
                     <div class="success-title-line">
-                        <h1>¡Reserva Confirmada con Éxito!</h1>
+                        <h1>
+                        {% if c.estado == "CANCELADA" %}
+                            Compra cancelada
+                        {% else %}
+                            ¡Reserva Confirmada con Éxito!
+                        {% endif %}
+                        </h1>
                         <span class="badge-payment-approved">
                         {{ "PAGO APROBADO" if c.estado == "PAGADA" else c.estado }}
                         </span>
@@ -47,7 +53,8 @@
                     </svg>
                     <span>Imprimir</span>
                 </button>
-                <a href="#voucherQrArea" class="btn-banner-action btn-highlight-qr" title="Ver código QR de acceso">
+                {% if c.qr_base64 %}
+                <a href="#voucherQrArea" class="btn-banner-action btn-highlight-qr">
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="3" width="7" height="7"></rect>
                         <rect x="14" y="3" width="7" height="7"></rect>
@@ -60,6 +67,7 @@
                     </svg>
                     <span>Ver QR</span>
                 </a>
+                {% endif %}
             </div>
         </header>
 
@@ -88,10 +96,16 @@
                                 <span class="voucher-room-name">{{ c.pelicula.sala_nombre }}</span>
                             </div>
                         </div>
+                        {% if c.qr_base64 %}
                         <span class="direct-access-badge">
                             <span class="access-dot"></span>
                             <span>ACCESO DIRECTO HABILITADO</span>
                         </span>
+                        {% else %}
+                            <span class="direct-access-badge">
+                            <span>ACCESO NO DISPONIBLE</span>
+                        </span>
+                        {% endif %}
                     </div>
 
                     <!-- Ficha de Película y Metadatos de Función -->
@@ -214,6 +228,7 @@
                     </div>
 
                     <!-- Botones de Acción Rápida del Voucher -->
+                    {% if c.qr_base64 %}
                     <div class="voucher-actions-bar">
                         <button type="button" class="btn-voucher-action" onclick="window.print();">
                             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
@@ -248,7 +263,7 @@
                         </form>
     
                     </div>
-
+                    {% endif %}
                 </div>
             </section>
 
@@ -316,7 +331,15 @@
                                 <circle cx="12" cy="12" r="10"></circle>
                                 <polyline points="12 6 12 12 16 14"></polyline>
                             </svg>
-                            <span>Cancelación gratuita habilitada</span>
+                            <span>
+                                {% if c.estado == "CANCELADA" %}
+                                    Compra cancelada
+                                {% elif c.cancelacion.habilitada %}
+                                    Cancelación disponible
+                                {% else %}
+                                    Cancelación no disponible
+                                {% endif %}
+                            </span>
                         </div>
                         <p class="cancellation-desc">
                         Podés solicitar la cancelación de tu compra
@@ -326,14 +349,38 @@
                             Fecha límite: {{ c.cancelacion.limite_texto }}
                         </strong>
                         </p>
-                        <button type="button" class="btn-cancel-reservation" onclick="confirm('¿Estás seguro de que deseas gestionar o cancelar esta reserva?')">
-                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <line x1="15" y1="9" x2="9" y2="15"></line>
-                                <line x1="9" y1="9" x2="15" y2="15"></line>
-                            </svg>
-                            <span>Gestionar o Cancelar Reserva</span>
-                        </button>
+                        {% if c.cancelacion.habilitada %}
+
+                        <form
+                            method="POST"
+                            action="{{ url_for('compras.cancelar_compra_web', id_compra=c.id_compra) }}"
+                            onsubmit="return confirm('¿Estás seguro de que querés cancelar esta compra?');">
+
+                            <input
+                                type="hidden"
+                                name="csrf_token"
+                                value="{{ csrf_token }}">
+
+                            <button type="submit" class="btn-cancel-reservation">
+                                <svg viewBox="0 0 24 24"
+                                    width="14"
+                                    height="14"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2">
+
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="15" y1="9" x2="9" y2="15"></line>
+                                    <line x1="9" y1="9" x2="15" y2="15"></line>
+
+                                </svg>
+
+                                <span>Cancelar Compra</span>
+                            </button>
+
+                        </form>
+
+                    {% endif %}
                     </div>
                 </div>
 

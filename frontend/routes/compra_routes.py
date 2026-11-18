@@ -11,6 +11,13 @@ from services.funciones_service import (
 )
 from services.peliculas_service import obtener_detalle_pelicula
 from utils.formatos import formatear_duracion, formatear_fecha_corta, formatear_hora
+from utils.temporizador_compra import (
+    contexto_temporizador_compra,
+    iniciar_temporizador_compra,
+    redirigir_compra_expirada,
+    registrar_pelicula_compra,
+    temporizador_compra_vencido,
+)
 
 compra_bp = Blueprint("compra", __name__, url_prefix="/compra")
 
@@ -78,6 +85,16 @@ def _armar_filas_butacas(butacas_lista: list[dict], butacas_seleccionadas_ids: s
     return filas_ordenadas
 
 
+@compra_bp.route("/expirada", methods=["GET"])
+def compra_expirada():
+    if not temporizador_compra_vencido():
+        compra = session.get("compra") or {}
+        if compra.get("butacas"):
+            return redirect(url_for("compra.seleccion_checkout"))
+        return redirect(url_for("compra.seleccion_butacas", id_funcion=compra.get("id_funcion")))
+    return redirigir_compra_expirada()
+
+
 @compra_bp.route("/butacas", methods=["GET", "POST"])
 def seleccion_butacas():
     """
@@ -86,6 +103,8 @@ def seleccion_butacas():
     POST: Recibe la selección del usuario, valida disponibilidad y persiste en session.
     """
     if request.method == "POST":
+        if temporizador_compra_vencido():
+            return redirigir_compra_expirada()
         id_funcion = request.form.get("id_funcion", type=int)
         raw_butacas = request.form.get("butacas_seleccionadas", "")
 
@@ -135,6 +154,7 @@ def seleccion_butacas():
         # Guardar la selección en la sesión de Flask
         session["compra"] = {
             "id_funcion": id_funcion,
+            "id_pelicula": func_detalle.get("id_pelicula") if isinstance(func_detalle, dict) else session.get("compra_id_pelicula"),
             "pelicula_titulo": func_detalle.get("titulo_pelicula", "Película") if isinstance(func_detalle, dict) else "Película",
             "complejo": func_detalle.get("nombre_local", "Cine Paradiso") if isinstance(func_detalle, dict) else "Cine Paradiso",
             "sala_numero": func_detalle.get("numero_sala", 1) if isinstance(func_detalle, dict) else 1,
@@ -155,6 +175,9 @@ def seleccion_butacas():
         }
 
         return redirect(url_for("compra.seleccion_servicios"))
+
+    if "compra_expira_en" in session and temporizador_compra_vencido():
+        return redirigir_compra_expirada()
 
     # Petición GET: Cargar mapa y datos
     id_funcion = request.args.get("id_funcion", type=int)
@@ -216,6 +239,9 @@ def seleccion_butacas():
 
     # Buscar detalles de la película
     id_pelicula = func_resp.get("id_pelicula", 1) if isinstance(func_resp, dict) else 1
+    iniciar_temporizador_compra()
+    registrar_pelicula_compra(id_pelicula)
+    temporizador = contexto_temporizador_compra()
     peli_resp = obtener_detalle_pelicula(id_pelicula) if id_pelicula else None
     if not isinstance(peli_resp, dict):
         peli_resp = {}
@@ -293,7 +319,7 @@ def seleccion_butacas():
             "sala_completa": f"Sala {num_sala} ({formato})",
             "horario_etiqueta": horario_etiqueta,
             "pantalla_tipo": f"PANTALLA {formato}",
-            "tiempo_restante": "10:00 min",
+            "tiempo_restante": f"{temporizador['tiempo_restante']} min",
             "precio_general": int(precio_base),
             "precio_vip": int(precio_vip),
         },
@@ -312,7 +338,7 @@ def seleccion_butacas():
         },
     }
 
-    return render_template("seleccion_butacas.html", c=datos_compra)
+    return render_template("seleccion_butacas.html", c=datos_compra, temporizador=temporizador)
 
 
 @compra_bp.route("/servicios")
@@ -321,7 +347,12 @@ def seleccion_servicios():
     Renderiza la pantalla de selección de servicios complementarios y combos (Candy Bar).
     Muestra el catálogo con combos, pochoclos, bebidas y extras, junto al resumen de compra acumulado.
     """
+    if temporizador_compra_vencido():
+        return redirigir_compra_expirada()
+    if not (session.get("compra") or {}).get("butacas"):
+        return redirect(url_for("compra.seleccion_butacas"))
 
+    temporizador = contexto_temporizador_compra()
     servicios, estado = obtener_servicios_del_backend()
 
     servicios_vista = []
@@ -428,7 +459,7 @@ def seleccion_servicios():
         },
     }
 
-    return render_template("seleccion_servicios.html", c=datos_compra)
+    return render_template("seleccion_servicios.html", c=datos_compra, temporizador=temporizador)
 
 
 @compra_bp.route("/checkout")
@@ -452,6 +483,10 @@ def seleccion_checkout():
     if not compra or not compra.get("id_funcion") or not compra.get("butacas"):
         flash("Primero debés seleccionar tus butacas.", "error")
         return redirect(url_for("compra.seleccion_butacas"))
+
+    if temporizador_compra_vencido():
+        return redirigir_compra_expirada()
+    temporizador = contexto_temporizador_compra()
 
     # 3. Consultar los datos actuales de la función
     funcion, estado = obtener_detalle_funcion_del_backend(
@@ -579,7 +614,7 @@ def seleccion_checkout():
     # 10. Preparar el diccionario que utiliza checkout.html
     datos_compra = {
 
-        "tiempo_restante": "--:--",
+        "tiempo_restante": temporizador["tiempo_restante"],
 
         "pelicula": {
             "id_pelicula": id_pelicula,
@@ -630,5 +665,6 @@ def seleccion_checkout():
     return render_template(
         "checkout.html",
         c=datos_compra,
-        csrf_token=crear_token_csrf()
+        csrf_token=crear_token_csrf(),
+        temporizador=temporizador,
     )

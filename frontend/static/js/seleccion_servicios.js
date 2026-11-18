@@ -134,18 +134,5 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // Cuenta regresiva visual del temporizador (8 min 40 seg)
-    let candySeconds = 8 * 60 + 40;
-    const candyCountdownEl = document.getElementById('candyCountdown');
-    if (candyCountdownEl) {
-        setInterval(function () {
-            if (candySeconds > 0) {
-                candySeconds--;
-                const mins = String(Math.floor(candySeconds / 60)).padStart(2, '0');
-                const secs = String(candySeconds % 60).padStart(2, '0');
-                candyCountdownEl.textContent = `${mins}:${secs}`;
-            }
-        }, 1000);
-    }
 });
 

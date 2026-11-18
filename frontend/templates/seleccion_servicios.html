@@ -36,7 +36,10 @@
                                     <polyline points="12 6 12 12 16 14"></polyline>
                                 </svg>
                                 <span>TIEMPO RESTANTE:</span>
-                                <strong id="candyCountdown" class="timer-digits">08:40</strong>
+                                <strong id="candyCountdown" class="timer-digits"
+                                        data-expira-en-ms="{{ temporizador.expira_en_ms }}"
+                                        data-ahora-servidor-ms="{{ temporizador.ahora_servidor_ms }}"
+                                        data-url-expiracion="{{ url_for('compra.compra_expirada') }}">{{ temporizador.tiempo_restante }}</strong>
                             </div>
                             <a href="{{ url_for('compra.seleccion_checkout') }}" class="btn-skip-step-link" title="Omitir selección de confitería y avanzar al checkout">
                                 <span>Omitir este paso</span>
@@ -244,5 +247,6 @@
 {% endblock %}
 
 {% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/temporizador_compra.js') }}"></script>
 <script src="{{ url_for('static', filename='js/seleccion_servicios.js') }}"></script>
 {% endblock %}

@@ -154,17 +154,4 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Cuenta regresiva visual del temporizador (10 minutos)
-    let totalSeconds = 10 * 60;
-    const countdownEl = document.getElementById('timerCountdown');
-    if (countdownEl) {
-        setInterval(function () {
-            if (totalSeconds > 0) {
-                totalSeconds--;
-                const mins = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
-                const secs = String(totalSeconds % 60).padStart(2, '0');
-                countdownEl.textContent = `${mins}:${secs} min`;
-            }
-        }, 1000);
-    }
 });

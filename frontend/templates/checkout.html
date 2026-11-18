@@ -22,7 +22,10 @@
                     <polyline points="12 6 12 12 16 14"></polyline>
                 </svg>
                 <span>TIEMPO RESTANTE PARA COMPLETAR LA COMPRA:</span>
-                <strong id="checkoutCountdown" class="timer-digits">{{ c.tiempo_restante }}</strong>
+                <strong id="checkoutCountdown" class="timer-digits"
+                        data-expira-en-ms="{{ temporizador.expira_en_ms }}"
+                        data-ahora-servidor-ms="{{ temporizador.ahora_servidor_ms }}"
+                        data-url-expiracion="{{ url_for('compra.compra_expirada') }}">{{ c.tiempo_restante }}</strong>
             </div>
         </header>
 
@@ -451,5 +454,6 @@
 {% endblock %}
 
 {% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/temporizador_compra.js') }}"></script>
 <script src="{{ url_for('static', filename='js/checkout.js') }}"></script>
 {% endblock %}

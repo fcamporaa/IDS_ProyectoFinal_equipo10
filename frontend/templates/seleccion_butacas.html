@@ -53,7 +53,11 @@
                 </div>
                 <div class="timer-texts">
                     <span class="timer-label">TIEMPO RESTANTE</span>
-                    <span class="timer-countdown" id="timerCountdown">{{ c.funcion.tiempo_restante }}</span>
+                    <span class="timer-countdown" id="timerCountdown"
+                          data-expira-en-ms="{{ temporizador.expira_en_ms }}"
+                          data-ahora-servidor-ms="{{ temporizador.ahora_servidor_ms }}"
+                          data-url-expiracion="{{ url_for('compra.compra_expirada') }}"
+                          data-sufijo=" min">{{ c.funcion.tiempo_restante }}</span>
                 </div>
             </div>
         </header>
@@ -295,7 +299,7 @@
                     <div class="guarantee-texts">
                         <h4 class="guarantee-title">Garantía Anti Duplicación IDS</h4>
                         <p class="guarantee-description">
-                            Tus butacas quedan reservadas por 10 minutos. Una vez confirmado el pago, no podrán ser vendidas a terceros bajo la normativa única de sala.
+                            Disponés de 10 minutos para completar tu compra. La disponibilidad de las butacas se confirma al finalizar el pago.
                         </p>
                     </div>
                 </div>
@@ -308,5 +312,6 @@
 {% endblock %}
 
 {% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/temporizador_compra.js') }}"></script>
 <script src="{{ url_for('static', filename='js/seleccion_butacas.js') }}"></script>
 {% endblock %}
