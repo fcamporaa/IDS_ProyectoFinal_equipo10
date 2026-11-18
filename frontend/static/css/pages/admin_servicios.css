@@ -144,6 +144,42 @@
   padding-top: 0.5rem;
 }
 
+.formulario-servicio__campo--imagen {
+  grid-column: 1 / -1;
+}
+
+.formulario-servicio__error {
+  min-height: 1.2em;
+  margin: 0;
+  color: #f87171;
+  font-size: 0.85rem;
+}
+
+.formulario-servicio__preview {
+  display: grid;
+  place-items: center;
+  width: min(100%, 360px);
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid var(--color-border, #2a2a35);
+  border-radius: var(--border-radius-sm, 6px);
+  background: var(--color-background, #121216);
+  color: var(--color-text-muted, #9ca3af);
+  text-align: center;
+  font-size: 0.85rem;
+}
+
+.formulario-servicio__preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.formulario-servicio__preview img[hidden],
+.formulario-servicio__preview span[hidden] {
+  display: none;
+}
+
 .form-label {
   font-size: 0.9rem;
   font-weight: 500;
