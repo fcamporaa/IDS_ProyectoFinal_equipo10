@@ -18,11 +18,19 @@ from services.funciones_service import (
 )
 from services.peliculas_service import obtener_detalle_pelicula
 from services.servicios_service import (
+    obtener_servicios_del_backend,
     formatear_monto,
     obtener_servicios_disponibles,
 )
 from utils.csrf import crear_token_csrf, validar_token_csrf
 from utils.formatos import formatear_duracion, formatear_fecha_corta, formatear_hora
+from utils.temporizador_compra import (
+    contexto_temporizador_compra,
+    iniciar_temporizador_compra,
+    redirigir_compra_expirada,
+    registrar_pelicula_compra,
+    temporizador_compra_vencido,
+)
 from validators.compras_validators import validar_servicios_seleccionados
 
 compra_bp = Blueprint("compra", __name__, url_prefix="/compra")
@@ -91,6 +99,16 @@ def _armar_filas_butacas(butacas_lista: list[dict], butacas_seleccionadas_ids: s
     return filas_ordenadas
 
 
+@compra_bp.route("/expirada", methods=["GET"])
+def compra_expirada():
+    if not temporizador_compra_vencido():
+        compra = session.get("compra") or {}
+        if compra.get("butacas"):
+            return redirect(url_for("compra.seleccion_checkout"))
+        return redirect(url_for("compra.seleccion_butacas", id_funcion=compra.get("id_funcion")))
+    return redirigir_compra_expirada()
+
+
 @compra_bp.route("/butacas", methods=["GET", "POST"])
 def seleccion_butacas():
     """
@@ -99,6 +117,8 @@ def seleccion_butacas():
     POST: Recibe la selección del usuario, valida disponibilidad y persiste en session.
     """
     if request.method == "POST":
+        if temporizador_compra_vencido():
+            return redirigir_compra_expirada()
         id_funcion = request.form.get("id_funcion", type=int)
         raw_butacas = request.form.get("butacas_seleccionadas", "")
 
@@ -148,6 +168,7 @@ def seleccion_butacas():
         # Guardar la selección en la sesión de Flask
         session["compra"] = {
             "id_funcion": id_funcion,
+            "id_pelicula": func_detalle.get("id_pelicula") if isinstance(func_detalle, dict) else session.get("compra_id_pelicula"),
             "pelicula_titulo": func_detalle.get("titulo_pelicula", "Película") if isinstance(func_detalle, dict) else "Película",
             "complejo": func_detalle.get("nombre_local", "Cine Paradiso") if isinstance(func_detalle, dict) else "Cine Paradiso",
             "sala_numero": func_detalle.get("numero_sala", 1) if isinstance(func_detalle, dict) else 1,
@@ -168,6 +189,9 @@ def seleccion_butacas():
         }
 
         return redirect(url_for("compra.seleccion_servicios"))
+
+    if "compra_expira_en" in session and temporizador_compra_vencido():
+        return redirigir_compra_expirada()
 
     # Petición GET: Cargar mapa y datos
     id_funcion = request.args.get("id_funcion", type=int)
@@ -227,10 +251,19 @@ def seleccion_butacas():
             for idx, letra in enumerate(["A", "B", "C", "D", "E", "F", "G", "H"], start=1)
         ]
 
-    # Buscar detalles de la película
+        # Buscar detalles de la película
     id_pelicula = func_resp.get("id_pelicula", 1) if isinstance(func_resp, dict) else 1
-    peli_resp = obtener_detalle_pelicula(id_pelicula) if id_pelicula else None
-    if not isinstance(peli_resp, dict):
+    iniciar_temporizador_compra()
+    registrar_pelicula_compra(id_pelicula)
+    temporizador = contexto_temporizador_compra()
+
+    peli_resp, estado_pelicula = (
+        obtener_detalle_pelicula(id_pelicula)
+        if id_pelicula
+        else (None, 404)
+    )
+
+    if estado_pelicula != 200 or not isinstance(peli_resp, dict):
         peli_resp = {}
 
     titulo_pelicula = (
@@ -306,7 +339,7 @@ def seleccion_butacas():
             "sala_completa": f"Sala {num_sala} ({formato})",
             "horario_etiqueta": horario_etiqueta,
             "pantalla_tipo": f"PANTALLA {formato}",
-            "tiempo_restante": "10:00 min",
+            "tiempo_restante": f"{temporizador['tiempo_restante']} min",
             "precio_general": int(precio_base),
             "precio_vip": int(precio_vip),
         },
@@ -325,11 +358,17 @@ def seleccion_butacas():
         },
     }
 
-    return render_template("seleccion_butacas.html", c=datos_compra)
+    return render_template("seleccion_butacas.html", c=datos_compra, temporizador=temporizador)
 
 
 @compra_bp.route("/servicios", methods=["GET", "POST"])
 def seleccion_servicios():
+    """Renderiza Candy Bar, controla el vencimiento y conserva los servicios elegidos."""
+    if temporizador_compra_vencido():
+        return redirigir_compra_expirada()
+    if not (session.get("compra") or {}).get("butacas"):
+        return redirect(url_for("compra.seleccion_butacas"))
+
     """Renderiza Candy Bar y conserva sus cantidades en la sesión Flask."""
     if request.method == "POST":
         if not validar_token_csrf(request.form.get("csrf_token", "")):
@@ -394,6 +433,7 @@ def seleccion_servicios():
         servicio["precio"] * servicio["cantidad"]
         for servicio in servicios
     )
+    temporizador = contexto_temporizador_compra()
 
     datos_compra = {
         "pelicula": {
@@ -449,134 +489,213 @@ def seleccion_servicios():
         "seleccion_servicios.html",
         c=datos_compra,
         csrf_token=crear_token_csrf(),
+        temporizador=temporizador,
     )
 
 
 @compra_bp.route("/checkout")
 def seleccion_checkout():
     """
-    Renderiza la pantalla de Checkout y Pago final de la reserva.
-    Presenta los datos del comprador, formulario de tarjeta con cuotas y el resumen consolidado.
+    Muestra el checkout con los datos de la compra actual.
+    Recupera las butacas y los servicios desde la sesión.
+    Consulta los precios vigentes al backend.
     """
-    datos_compra = {
-        "tiempo_restante": "08:40",
-        "pelicula": {
-            "id_pelicula": 1,
-            "titulo": "Dune: Parte Dos",
-            "poster_url": "https://image.tmdb.org/t/p/w500/8b8R8l88Qje9dn9OE8PY05Nxl1X.jpg",
-            "badge_formato": "4D MOTION",
-            "badge_edad": "+13",
-            "especificaciones": "Subtitulada • 166 min",
-            "sala_completa": "Sala 1 (Atmos 4D Extreme)",
-            "dia_horario": "Viernes 24/10/2026 • 19:30 hs",
-            "complejo": "Cine Paradiso Centro",
-            "butacas_asignadas": "Fila E • Butacas 7, 8 (VIP 4D)",
-        },
-        "desglose": [
-            {
-                "titulo": "2x Entrada 4D Subtitulada ($8.500 c/u)",
+
+    # 1. Verificar que el usuario haya iniciado sesión
+    usuario = session.get("usuario")
+
+    if not usuario or not session.get("access_token"):
+        flash("Debés iniciar sesión para comprar.", "error")
+        return redirect(url_for("auth.login"))
+
+    # 2. Recuperar la compra de la sesión
+    compra = session.get("compra")
+
+    if not compra or not compra.get("id_funcion") or not compra.get("butacas"):
+        flash("Primero debés seleccionar tus butacas.", "error")
+        return redirect(url_for("compra.seleccion_butacas"))
+
+    if temporizador_compra_vencido():
+        return redirigir_compra_expirada()
+    temporizador = contexto_temporizador_compra()
+
+    # 3. Consultar los datos actuales de la función
+    funcion, estado = obtener_detalle_funcion_del_backend(
+        compra["id_funcion"]
+    )
+
+    if estado != 200 or not isinstance(funcion, dict):
+        flash("La función seleccionada ya no está disponible.", "error")
+        return redirect(url_for("compra.seleccion_butacas"))
+
+    # 4. Obtener los datos de la película
+    id_pelicula = funcion.get("id_pelicula")
+
+    pelicula, estado_pelicula = (
+        obtener_detalle_pelicula(id_pelicula)
+        if id_pelicula
+        else (None, 404)
+    )
+
+    if estado_pelicula != 200 or not isinstance(pelicula, dict):
+        pelicula = {}
+
+    # 5. Calcular el subtotal de las entradas
+    cantidad_entradas = len(compra["butacas"])
+
+    precio_unitario = float(funcion["precio_entrada"])
+
+    subtotal_entradas = precio_unitario * cantidad_entradas
+
+    # 6. Construir el desglose de las entradas
+    desglose = [
+        {
+            "titulo": f"{cantidad_entradas}x Entrada",
+            "subtexto": compra["pelicula_titulo"],
+            "precio": f"${subtotal_entradas:,.0f}".replace(",", "."),
+        }
+    ]
+
+    # 7. Recuperar los servicios seleccionados (si existen)
+    servicios_seleccionados = session.get("servicios_seleccionados", [])
+
+    subtotal_servicios = 0
+
+    if servicios_seleccionados:
+
+        catalogo, estado = obtener_servicios_del_backend()
+
+        if estado != 200 or not isinstance(catalogo, list):
+            flash("No se pudieron consultar los servicios.", "error")
+            return redirect(url_for("compra.seleccion_servicios"))
+
+        servicios_por_id = {
+            servicio["id_servicio"]: servicio
+            for servicio in catalogo
+        }
+
+        ids_procesados = set()
+
+        for item in servicios_seleccionados:
+
+            try:
+                id_servicio = int(item["id_servicio"])
+                cantidad = int(item["cantidad"])
+            except (KeyError, TypeError, ValueError):
+                flash("Hay un servicio inválido en la compra.", "error")
+                return redirect(url_for("compra.seleccion_servicios"))
+
+            servicio = servicios_por_id.get(id_servicio)
+
+            if (
+                servicio is None
+                or cantidad <= 0
+                or cantidad > 99
+                or id_servicio in ids_procesados
+            ):
+                flash("Hay un servicio inválido en la compra.", "error")
+                return redirect(url_for("compra.seleccion_servicios"))
+
+            ids_procesados.add(id_servicio)
+
+            precio = float(servicio["precio"])
+            subtotal = precio * cantidad
+
+            subtotal_servicios += subtotal
+
+            desglose.append({
+                "titulo": f"{cantidad}x {servicio['nombre']}",
                 "subtexto": None,
-                "precio": "$17.000",
-            },
-            {
-                "titulo": "1x Combo Mega Paradiso",
-                "subtexto": "1 Balde Popcorn XL + 2 Gaseosas 750ml + 1 Golosina",
-                "precio": "$14.500",
-            },
-            {
-                "titulo": "Estacionamiento Prepago (4 hs)",
-                "subtexto": "Acceso por calle Cerrito 1150",
-                "precio": "$4.500",
-            },
-        ],
-        "subtotal_parcial": "$36.000",
-        "cargo_servicio": "BONIFICADO ($0)",
-        "total": "$36.000",
-        "total_monto": 36000,
-        "cuotas": [
-            "3 cuotas de $12.000 (Programa Cuota Simple - Sin Interés)",
-            "1 pago de $36.000 (Sin Interés)",
-            "6 cuotas fijas de $7.200",
-        ],
-        "comprador_default": {
-            "nombre": "Mateo Alessandro Rossi",
-            "email": "mateo.rossi@cinemaparadiso.com.ar",
-            "dni": "39.842.109",
-            "telefono": "+54 9 11 4982-3390",
-            "tarjeta_numero": "4509 •••• •••• 8821",
-            "tarjeta_titular": "MATEO A ROSSI",
-            "tarjeta_vencimiento": "08/29",
-        },
-    }
+                "precio": f"${subtotal:,.0f}".replace(",", "."),
+            })
 
-    return render_template("checkout.html", c=datos_compra)
+    # 8. Calcular el total de la compra
+    total = subtotal_entradas + subtotal_servicios
 
+    total_formateado = f"${total:,.0f}".replace(",", ".")
 
-@compra_bp.route("/confirmacion")
-@compra_bp.route("/confirmacion/<int:id_compra>")
-def confirmacion_compra(id_compra: int = 89421):
-    """
-    Renderiza la pantalla de Confirmación de Compra y Comprobante Oficial (Paso 4).
-    Muestra el voucher digital de acceso a sala con código QR, detalle de facturación AFIP,
-    política de cancelación autogestionable e instrucciones de sala.
-    """
-    datos_confirmacion = {
-        "id_transaccion": "#CP-2026-89421",
-        "email_comprador": "mateo.rossi@cinemaparadiso.com.ar",
-        "codigo_qr": "QR-CP-89421-E7E8",
+    # 9. Preparar los datos visuales de la película
+    formato = funcion.get("formato", "")
+    idioma = funcion.get("idioma", "")
+
+    subtitulos = (
+        "Subtitulada"
+        if funcion.get("subtitulada")
+        else "Doblada"
+    )
+
+    duracion = formatear_duracion(pelicula.get("duracion_min"))
+
+    especificaciones = " • ".join(
+        dato for dato in [idioma, subtitulos, duracion] if dato
+    )
+
+    horario = funcion.get("inicio", compra.get("horario", ""))
+
+    try:
+        fecha_funcion = datetime.fromisoformat(horario)
+
+        horario = (
+            f"{formatear_fecha_corta(fecha_funcion.date())} "
+            f"{formatear_hora(fecha_funcion)}"
+        )
+    except (ValueError, TypeError):
+        pass
+
+    # 10. Preparar el diccionario que utiliza checkout.html
+    datos_compra = {
+
+        "tiempo_restante": temporizador["tiempo_restante"],
+
         "pelicula": {
-            "id_pelicula": 1,
-            "titulo": "Dune: Parte Dos",
-            "poster_url": "https://image.tmdb.org/t/p/w500/8b8R8l88Qje9dn9OE8PY05Nxl1X.jpg",
-            "badge_poster": "4D ATMOS",
-            "clasificacion": "SAM 13",
-            "duracion": "166 MIN",
-            "formato_sala": "4D D-BOX",
-            "idioma": "SUBTITULADA",
-            "direccion_sonido": "Dirección: Denis Villeneuve • Formato de Sonido Dolby Atmos 64 Canales",
-            "fecha": "Vie 24 Oct 2026",
-            "horario": "19:30 hs",
-            "complejo": "Centro (Corrientes 1240)",
-            "sala_nombre": "AUDITORIO CENTRO • SALA 1",
-            "butacas": "Fila E • Asientos 7 y 8",
-            "badge_butacas": "VIP D-BOX 4D",
+            "id_pelicula": id_pelicula,
+            "titulo": pelicula.get(
+                "titulo",
+                compra["pelicula_titulo"]
+            ),
+            "poster_url": pelicula.get("poster_url") or "",
+            "badge_formato": formato,
+            "badge_edad": pelicula.get("clasificacion") or "",
+            "especificaciones": especificaciones,
+            "sala_completa": compra["sala_completa"],
+            "dia_horario": horario,
+            "complejo": compra["complejo"],
+            "butacas_asignadas": ", ".join(
+                f"{butaca['fila']}-{butaca['numero']}"
+                for butaca in compra["butacas"]
+            ),
         },
-        "facturacion": {
-            "tipo": "FACTURA B • AFIP",
-            "items": [
-                {"descripcion": "2x Entrada 4D Subtitulada (Fila E: 7, 8)", "monto": "$17.000"},
-                {"descripcion": "1x Combo Mega Paradiso (Servicios Extras)", "monto": "$14.500"},
-                {"descripcion": "1x Estacionamiento Prepago (4 hs)", "monto": "$4.500"},
-            ],
-            "cargo_servicio": "100% BONIFICADO",
-            "cargo_servicio_monto": "$0",
-            "total": "$36.000",
-            "iva_discriminado": "$6.247,93",
-            "tarjeta_info": "Mastercard finalizada en 8821",
-            "cuotas_info": "Aprobado en 3 cuotas fijas de $12.000",
-            "cae": "CAE Nº: 74920194820184",
-            "vto_cae": "Fecha Vto CAE: 03/11/2026",
-        },
-        "adicionales": [
-            {
-                "tipo": "combo",
-                "nombre": "1x Combo Mega Paradiso",
-                "detalle": "Balde Pochoclos + 2 Bebidas Grandes",
-                "estado": "Listo",
-                "icono": "combo",
-            },
-            {
-                "tipo": "cochera",
-                "nombre": "1x Cochera Prepaga",
-                "detalle": "Hasta 4 hs cubiertas (Corrientes 1240)",
-                "subdetalle": "PATENTE: AB-829-QX",
-                "estado": "Activo",
-                "icono": "parking",
-            },
+
+        "desglose": desglose,
+
+        "subtotal_parcial": total_formateado,
+
+        "cargo_servicio": "BONIFICADO ($0)",
+
+        "total": total_formateado,
+
+        "total_monto": total,
+
+        # El proyecto actualmente solo admite pagos simulados
+        "cuotas": [
+            "Pago simulado de desarrollo"
         ],
-        "cancelacion": {
-            "limite_texto": "a las 19:30 hs del día anterior",
+
+        "comprador_default": {
+            "nombre": usuario.get("nombre", ""),
+            "email": usuario.get("email", ""),
+            "dni": "",
+            "telefono": "",
+            "tarjeta_numero": "",
+            "tarjeta_titular": "",
+            "tarjeta_vencimiento": "",
         },
     }
 
-    return render_template("confirmacion_compra.html", c=datos_confirmacion)
+    # 11. Renderizar el checkout
+    return render_template(
+        "checkout.html",
+        c=datos_compra,
+        csrf_token=crear_token_csrf(),
+        temporizador=temporizador,
+    )

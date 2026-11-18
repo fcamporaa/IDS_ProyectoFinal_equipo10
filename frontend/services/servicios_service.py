@@ -1,6 +1,13 @@
 from services.api_client import consultar_backend
 
 
+def obtener_servicios_del_backend():
+    """
+    Consulta GET /servicios al backend.
+    Devuelve los servicios disponibles y el código HTTP.
+    """
+    return consultar_backend("/servicios", metodo="GET")
+
 def formatear_monto(monto: float) -> str:
     """Formatea importes enteros para mostrarlos con separador argentino."""
     return f"${monto:,.0f}".replace(",", ".")
