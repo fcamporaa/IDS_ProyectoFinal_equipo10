@@ -292,6 +292,28 @@ def validar_texto_opcional(valor, nombre: str, largo_max: int) -> str | None:
     return validar_texto(valor, nombre, largo_max)
 
 
+def validar_url_opcional(valor, nombre: str, largo_max: int = 2048) -> str | None:
+    """Valida una URL HTTP(S) opcional; None o texto vacío limpian el valor."""
+    url = validar_texto_opcional(valor, nombre, largo_max)
+    if url is None:
+        return None
+
+    try:
+        partes = urllib.parse.urlsplit(url)
+        puerto = partes.port
+    except ValueError:
+        raise error_validacion(f"El campo {nombre} debe ser una URL HTTP o HTTPS válida.")
+
+    if (
+        partes.scheme.lower() not in ("http", "https")
+        or not partes.hostname
+        or puerto is not None and not 1 <= puerto <= 65535
+        or any(caracter.isspace() for caracter in url)
+    ):
+        raise error_validacion(f"El campo {nombre} debe ser una URL HTTP o HTTPS válida.")
+    return url
+
+
 def validar_booleano(valor, nombre: str) -> bool:
     """Valida que el valor sea true o false."""
     if not isinstance(valor, bool):

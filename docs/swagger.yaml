@@ -156,7 +156,7 @@ paths:
       tags:
         - Películas y Géneros
       summary: Lista la cartelera vigente
-      description: Obtiene el listado de películas que tienen funciones activas o programadas.
+      description: Obtiene el listado de películas activas que tienen al menos una función vigente (programada o en curso), ordenadas por título. Es un endpoint público.
       operationId: listarCartelera
       parameters:
         - name: id_genero
@@ -164,19 +164,22 @@ paths:
           required: false
           schema:
             type: integer
-          description: Filtrar películas por ID de género.
+            minimum: 1
+          description: Filtrar películas por ID de género (entero positivo).
         - name: titulo
           in: query
           required: false
           schema:
             type: string
-          description: Búsqueda parcial por título.
+            maxLength: 250
+          description: Búsqueda parcial por título (máximo 250 caracteres).
         - name: clasificacion
           in: query
           required: false
           schema:
             type: string
-          description: Filtrar por clasificación (ej. ATP, +13, +16, +18).
+            maxLength: 20
+          description: Filtrar por clasificación (ej. ATP, +13, +16, +18). Máximo 20 caracteres.
       responses:
         '200':
           description: Listado de películas en cartelera.
@@ -186,12 +189,18 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/PeliculaItem'
+        '400':
+          $ref: '#/components/responses/ErrorValidacion'
 
     post:
       tags:
         - Películas y Géneros
       summary: Guarda una película nueva (Solo Admin)
-      description: Registra una nueva película en la base local y asocia sus géneros.
+      description: >-
+        Registra una nueva película en la base local y asocia sus géneros en una sola transacción.
+        Responde 400 si los datos son inválidos, si algún id de género no existe
+        (error.validacion.generos_inexistentes) o si ya existe una película con el mismo origen_api e id_api
+        (error.validacion.pelicula_duplicada); en ese caso el mensaje indica cómo reactivarla si está dada de baja.
       operationId: crearPelicula
       security:
         - BearerAuth: []
@@ -215,12 +224,35 @@ paths:
         '403':
           $ref: '#/components/responses/ProhibidoAdmin'
 
+  /peliculas/admin:
+    get:
+      tags:
+        - Películas y Géneros
+      summary: Lista todas las películas para el ABM (Solo Admin)
+      description: Devuelve todas las películas, activas e inactivas, con sus géneros. Ordena primero las activas y luego por título.
+      operationId: listarPeliculasAdmin
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Listado completo de películas.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PeliculaDetalle'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '403':
+          $ref: '#/components/responses/ProhibidoAdmin'
+
   /peliculas/{id}:
     get:
       tags:
         - Películas y Géneros
       summary: Muestra el detalle de una película y sus funciones vigentes
-      description: Retorna sinopsis, tráiler, póster, géneros y las funciones activas programadas para esta película.
+      description: Retorna sinopsis, tráiler, póster, géneros y las funciones vigentes de esta película. Es un endpoint público y también devuelve las películas dadas de baja; el campo activa indica su estado.
       operationId: obtenerPeliculaDetalle
       parameters:
         - $ref: '#/components/parameters/PeliculaId'
@@ -238,7 +270,10 @@ paths:
       tags:
         - Películas y Géneros
       summary: Modifica los datos de una película existente (Solo Admin)
-      description: Actualiza los campos de una película (título, sinopsis, URLs, duración, etc.).
+      description: >-
+        Modificación parcial de una película: se envían solo los campos a cambiar y debe venir al menos uno.
+        Con activa en true se reactiva una película dada de baja. Si se envía generos_ids, reemplaza los géneros asociados.
+        Los campos origen_api e id_api no se modifican: si se envían, se ignoran.
       operationId: actualizarPelicula
       security:
         - BearerAuth: []
@@ -270,7 +305,7 @@ paths:
       tags:
         - Películas y Géneros
       summary: Da de baja una película de la cartelera (Solo Admin)
-      description: Marca la película como inactiva (baja lógica).
+      description: Marca la película como inactiva (baja lógica). Si ya estaba dada de baja, responde 200 igualmente.
       operationId: eliminarPelicula
       security:
         - BearerAuth: []
@@ -299,7 +334,10 @@ paths:
       tags:
         - Películas y Géneros
       summary: Busca películas clásicas en API externa (Solo Admin)
-      description: Consulta OMDb API o TMDb API por título para previsualizar datos antes de incorporarlos a la cartelera.
+      description: >-
+        Consulta OMDb por título (solo películas) para previsualizar datos antes de incorporarlos a la cartelera.
+        Si OMDb no encuentra resultados, responde 200 con una lista vacía.
+        Responde 502 si OMDb no está disponible o devuelve un error, y 500 si falta la clave OMDB_API_KEY en el servidor.
       operationId: buscarPeliculasExternas
       security:
         - BearerAuth: []
@@ -309,7 +347,16 @@ paths:
           required: true
           schema:
             type: string
-          description: Nombre o palabra clave de la película a buscar.
+            maxLength: 100
+          description: Nombre o palabra clave de la película a buscar (máximo 100 caracteres).
+        - name: titulo
+          in: query
+          required: false
+          deprecated: true
+          schema:
+            type: string
+            maxLength: 100
+          description: Alias de query por compatibilidad. Solo se usa si no se envía query.
       responses:
         '200':
           description: Resultados obtenidos desde la API externa.
@@ -325,6 +372,52 @@ paths:
           $ref: '#/components/responses/NoAutorizado'
         '403':
           $ref: '#/components/responses/ProhibidoAdmin'
+        '500':
+          $ref: '#/components/responses/ConfiguracionIncompleta'
+        '502':
+          $ref: '#/components/responses/ApiExternaNoDisponible'
+
+  /peliculas/externas/{id_api}:
+    get:
+      tags:
+        - Películas y Géneros
+      summary: Detalle de una película de OMDb para precargar la ficha (Solo Admin)
+      description: >-
+        Consulta OMDb por identificador y devuelve los datos normalizados para precargar el formulario del backoffice.
+        Los campos que OMDb no informa se devuelven en null.
+        Responde 404 si OMDb no encuentra la película, 502 si OMDb no está disponible o devuelve un error,
+        y 500 si falta la clave OMDB_API_KEY en el servidor.
+      operationId: obtenerPeliculaExterna
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id_api
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 50
+          description: Identificador de la película en OMDb.
+          example: tt0068646
+      responses:
+        '200':
+          description: Detalle de la película en OMDb.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PeliculaExternaDetalle'
+        '400':
+          $ref: '#/components/responses/ErrorValidacion'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '403':
+          $ref: '#/components/responses/ProhibidoAdmin'
+        '404':
+          $ref: '#/components/responses/RecursoNoEncontrado'
+        '500':
+          $ref: '#/components/responses/ConfiguracionIncompleta'
+        '502':
+          $ref: '#/components/responses/ApiExternaNoDisponible'
 
   /generos:
     get:
@@ -576,12 +669,35 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorRespuesta'
 
+  /funciones/admin:
+    get:
+      tags:
+        - Funciones
+      summary: Lista todas las funciones para el ABM (Solo Admin)
+      description: Retorna el listado completo de funciones incluyendo canceladas y finalizadas ordenadas por inicio descendente.
+      operationId: listarFuncionesAdmin
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Listado completo de funciones.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FuncionItem'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '403':
+          $ref: '#/components/responses/ProhibidoAdmin'
+
   /funciones/{id}:
     put:
       tags:
         - Funciones
-      summary: Modifica horario, precio o estado de una función (Solo Admin)
-      description: Actualiza los detalles de una función programada validando que no colisione con otras funciones de la sala.
+      summary: Modifica la programación, el precio o el estado de una función (Solo Admin)
+      description: Actualiza los campos editables de una función programada, recalculando el fin según la película y validando que no colisione con otras funciones de la sala.
       operationId: actualizarFuncion
       security:
         - BearerAuth: []
@@ -717,12 +833,62 @@ paths:
           $ref: '#/components/responses/ProhibidoAdmin'
 
   /servicios/{id}:
+    get:
+      tags:
+        - Servicios Adicionales
+      summary: Obtiene el detalle de un servicio activo
+      description: Retorna los datos del servicio, incluida su URL de imagen.
+      operationId: obtenerServicio
+      parameters:
+        - $ref: '#/components/parameters/ServicioId'
+      responses:
+        '200':
+          description: Detalle del servicio.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Servicio'
+        '404':
+          $ref: '#/components/responses/RecursoNoEncontrado'
+
     put:
       tags:
         - Servicios Adicionales
-      summary: Modifica los datos o el precio de un servicio (Solo Admin)
-      description: Actualiza nombre, tipo o precio de un servicio adicional existente.
+      summary: Modifica los datos de un servicio (Solo Admin)
+      description: Actualiza los campos enviados, incluida imagen_url; null o texto vacío limpian la imagen.
       operationId: actualizarServicio
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ServicioId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServicioActualizarRequest'
+      responses:
+        '200':
+          description: Servicio actualizado correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Servicio'
+        '400':
+          $ref: '#/components/responses/ErrorValidacion'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '403':
+          $ref: '#/components/responses/ProhibidoAdmin'
+        '404':
+          $ref: '#/components/responses/RecursoNoEncontrado'
+
+    patch:
+      tags:
+        - Servicios Adicionales
+      summary: Actualiza parcialmente un servicio (Solo Admin)
+      description: Actualiza los campos enviados; null o texto vacío limpian imagen_url.
+      operationId: actualizarParcialmenteServicio
       security:
         - BearerAuth: []
       parameters:
@@ -1267,6 +1433,18 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorRespuesta'
+    ConfiguracionIncompleta:
+      description: Falta una configuración obligatoria en el servidor, por ejemplo la clave OMDB_API_KEY (500 Internal Server Error). La respuesta no expone el valor de la clave.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorRespuesta'
+    ApiExternaNoDisponible:
+      description: La API externa no respondió, devolvió un formato inválido o respondió con un error (502 Bad Gateway, código error.externo.api_no_disponible).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorRespuesta'
 
   schemas:
     # --- Estándar de Error de la API ---
@@ -1464,28 +1642,38 @@ components:
         - titulo
         - origen_api
         - generos_ids
-        - duracion_min 
+        - duracion_min
       properties:
         titulo:
           type: string
+          minLength: 1
+          maxLength: 250
           example: 'Pulp Fiction'
         sinopsis:
           type: string
+          maxLength: 10000
           example: 'Historias entrelazadas en los bajos fondos de Los Ángeles.'
         poster_url:
           type: string
+          maxLength: 1000
           example: 'https://image.tmdb.org/pulp_fiction.jpg'
         trailer_url:
           type: string
+          maxLength: 1000
           example: 'https://youtube.com/watch?v=s7EdQ4FqbhY'
         duracion_min:
           type: integer
+          minimum: 1
+          maximum: 32767
           example: 154
         clasificacion:
           type: string
+          maxLength: 20
           example: '+18'
         anio_estreno:
           type: integer
+          minimum: 1888
+          description: Desde 1888 hasta el año actual más 5.
           example: 1994
         origen_api:
           type: string
@@ -1493,36 +1681,56 @@ components:
           example: 'OMDB'
         id_api:
           type: string
+          maxLength: 50
+          description: Obligatorio cuando origen_api no es CUSTOM.
           example: 'tt0110912'
         generos_ids:
           type: array
+          minItems: 1
+          description: Ids de géneros existentes. Los ids repetidos se eliminan.
           items:
             type: integer
+            minimum: 1
           example: [1, 4]
 
     PeliculaActualizarRequest:
       type: object
+      minProperties: 1
+      description: Todos los campos son opcionales, pero debe enviarse al menos uno. Los campos desconocidos (por ejemplo origen_api o id_api) se ignoran.
       properties:
         titulo:
           type: string
+          minLength: 1
+          maxLength: 250
         sinopsis:
           type: string
+          maxLength: 10000
         poster_url:
           type: string
+          maxLength: 1000
         trailer_url:
           type: string
+          maxLength: 1000
         duracion_min:
           type: integer
+          minimum: 1
+          maximum: 32767
         clasificacion:
           type: string
+          maxLength: 20
         anio_estreno:
           type: integer
+          minimum: 1888
         activa:
           type: boolean
+          description: Con true reactiva una película dada de baja.
         generos_ids:
           type: array
+          minItems: 1
+          description: Reemplaza todos los géneros asociados a la película.
           items:
             type: integer
+            minimum: 1
 
     PeliculaExternaItem:
       type: object
@@ -1535,12 +1743,56 @@ components:
           example: 'The Godfather'
         anio:
           type: integer
+          nullable: true
           example: 1972
         poster:
           type: string
+          nullable: true
           example: 'https://m.media-amazon.com/images/M/godfather.jpg'
         origen:
           type: string
+          enum: ['OMDB']
+          example: 'OMDB'
+
+    PeliculaExternaDetalle:
+      type: object
+      description: Ficha de OMDb normalizada. Los campos que OMDb no informa son null.
+      properties:
+        id_api:
+          type: string
+          example: 'tt0068646'
+        titulo:
+          type: string
+          nullable: true
+          example: 'The Godfather'
+        anio_estreno:
+          type: integer
+          nullable: true
+          example: 1972
+        poster_url:
+          type: string
+          nullable: true
+          example: 'https://m.media-amazon.com/images/M/godfather.jpg'
+        sinopsis:
+          type: string
+          nullable: true
+        duracion_min:
+          type: integer
+          nullable: true
+          example: 175
+        clasificacion:
+          type: string
+          nullable: true
+          example: 'R'
+        generos:
+          type: array
+          description: Nombres de género tal como los informa OMDb (en inglés). El backoffice los mapea a los géneros locales.
+          items:
+            type: string
+          example: ['Crime', 'Drama']
+        origen_api:
+          type: string
+          enum: ['OMDB']
           example: 'OMDB'
 
     ResenaItem:
@@ -1748,10 +2000,26 @@ components:
     FuncionActualizarRequest:
       type: object
       properties:
+        id_pelicula:
+          type: integer
+          example: 10
+        id_sala:
+          type: integer
+          example: 2
         inicio:
           type: string
           format: date-time
           example: '2026-11-15T20:30:00'
+        formato:
+          type: string
+          enum: ['2D', '3D', '4D']
+          example: '2D'
+        idioma:
+          type: string
+          example: 'Español'
+        subtitulada:
+          type: boolean
+          example: false
         precio_entrada:
           type: number
           format: float
@@ -1825,6 +2093,12 @@ components:
         activo:
           type: boolean
           example: true
+        imagen_url:
+          type: string
+          format: uri
+          nullable: true
+          description: URL HTTP(S) de la imagen o null si no tiene imagen.
+          example: https://cdn.example.com/servicios/pochoclos.jpg
 
     ServicioCrearRequest:
       type: object
@@ -1844,6 +2118,12 @@ components:
           type: number
           format: float
           example: 2500.00
+        imagen_url:
+          type: string
+          format: uri
+          nullable: true
+          description: URL HTTP(S) de la imagen; puede omitirse, enviarse como null o como texto vacío.
+          example: https://cdn.example.com/servicios/estacionamiento.jpg
 
     ServicioActualizarRequest:
       type: object
@@ -1858,6 +2138,11 @@ components:
           format: float
         activo:
           type: boolean
+        imagen_url:
+          type: string
+          format: uri
+          nullable: true
+          description: URL HTTP(S) de la imagen; null o texto vacío limpian el valor actual.
 
     # --- Compras y Pagos ---
     ItemServicioCompraRequest:

@@ -123,6 +123,7 @@ CREATE TABLE `servicios` (
   `tipo` enum('COMIDA','BEBIDA') NOT NULL,
   `precio` decimal(10,2) NOT NULL,
   `activo` tinyint(1) NOT NULL DEFAULT 1,
+  `imagen_url` TEXT DEFAULT NULL,
   PRIMARY KEY (`id_servicio`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 

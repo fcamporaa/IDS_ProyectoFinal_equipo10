@@ -11,13 +11,14 @@
 {% set reservas_activas = reservas_activas|default([], true) %}
 {% set compras_pasadas = compras_pasadas|default([], true) %}
 {% set peliculas_vistas = peliculas_vistas|default([], true) %}
+{% set solo_datos = solo_datos|default(false) %}
 
 <section class="perfil-identity">
     <div class="perfil-identity__inner container">
         <div class="perfil-identity__person">
             <div class="perfil-avatar" aria-hidden="true">{{ usuario.get('nombre', 'U')[:1]|upper }}</div>
             <div class="perfil-identity__copy">
-                <p class="perfil-eyebrow">Área de cliente</p>
+                <p class="perfil-eyebrow">{{ 'Cuenta de administración' if solo_datos else 'Área de cliente' }}</p>
                 <h1>{{ usuario.get('nombre', 'Mi perfil') }}</h1>
                 <div class="perfil-identity__meta">
                     {% if usuario.get('email') %}<span>{{ usuario.email }}</span>{% endif %}
@@ -27,6 +28,7 @@
             </div>
         </div>
 
+        {% if not solo_datos %}
         <dl class="perfil-stats" aria-label="Resumen de actividad">
             <div class="perfil-stat">
                 <dt>Películas vistas</dt>
@@ -41,6 +43,11 @@
                 <dd>{{ compras_pasadas|length }}</dd>
             </div>
         </dl>
+        {% else %}
+        <div class="perfil-stats">
+            <a class="perfil-action perfil-action--secondary" href="{{ url_for('dashboard.index') }}">Ir al Dashboard</a>
+        </div>
+        {% endif %}
     </div>
 </section>
 
@@ -50,6 +57,7 @@
     {% endif %}
 
     <div class="perfil-layout" data-profile-layout>
+        {% if not solo_datos %}
         <nav class="perfil-tabs" role="tablist" aria-label="Secciones del perfil">
             <a class="perfil-tab is-active" id="tab-reservas" href="#perfil-reservas" role="tab"
                 aria-controls="perfil-reservas" aria-selected="true" tabindex="0">
@@ -142,12 +150,13 @@
                 </div>
             {% endif %}
         </section>
+        {% endif %}
 
-        <section class="perfil-panel" id="perfil-datos" role="tabpanel" aria-labelledby="tab-datos" tabindex="0">
+        <section class="perfil-panel{% if solo_datos %} is-active{% endif %}" id="perfil-datos" role="tabpanel" aria-labelledby="tab-datos" tabindex="0">
             <div class="perfil-section-heading">
                 <div>
                     <p class="perfil-eyebrow">Tu cuenta</p>
-                    <h2>Datos personales y facturación</h2>
+                    <h2>{{ 'Datos personales' if solo_datos else 'Datos personales y facturación' }}</h2>
                 </div>
             </div>
 
@@ -177,6 +186,7 @@
                     </form>
                 </section>
 
+                {% if not solo_datos %}
                 <section class="perfil-data-section" aria-labelledby="perfil-datos-fiscales">
                     <h3 id="perfil-datos-fiscales">Facturación AFIP</h3>
                     {% set datos_fiscales = datos_facturacion|default({}, true) %}
@@ -190,6 +200,7 @@
                     <p class="perfil-data-empty">No hay datos de facturación registrados.</p>
                     {% endif %}
                 </section>
+                {% endif %}
             </div>
         </section>
     </div>

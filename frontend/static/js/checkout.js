@@ -1,25 +1,29 @@
-/* Interactividad de Checkout y Temporizador de Pago */
-document.addEventListener('DOMContentLoaded', function () {
-    let totalSeconds = 8 * 60 + 40;
-    const countdownEl = document.getElementById('checkoutCountdown');
-
-    if (countdownEl) {
-        setInterval(function () {
-            if (totalSeconds > 0) {
-                totalSeconds--;
-                const mins = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
-                const secs = String(totalSeconds % 60).padStart(2, '0');
-                countdownEl.textContent = `${mins}:${secs}`;
-            }
-        }, 1000);
-    }
-});
-
 document.addEventListener("DOMContentLoaded", function () {
 
     const form = document.getElementById("checkoutForm");
 
     if (!form) return;
+
+    // Comprueba el dígito de control de un número de tarjeta (algoritmo de Luhn).
+    // No verifica que la tarjeta exista, esté habilitada o tenga fondos.
+    function cumpleLuhn(numero) {
+        let suma = 0;
+        let duplicar = false;
+
+        for (let i = numero.length - 1; i >= 0; i--) {
+            let digito = Number(numero[i]);
+
+            if (duplicar) {
+                digito *= 2;
+                if (digito > 9) digito -= 9;
+            }
+
+            suma += digito;
+            duplicar = !duplicar;
+        }
+
+        return suma % 10 === 0 && !/^0+$/.test(numero);
+    }
 
     form.addEventListener("submit", function (event) {
 
@@ -39,6 +43,10 @@ document.addEventListener("DOMContentLoaded", function () {
             .getElementById("inputCvv")
             .value.trim();
 
+        const dni = document
+            .getElementById("inputDni")
+            .value.trim();
+
         const email = document
             .getElementById("inputEmail")
             .value.trim();
@@ -47,10 +55,17 @@ document.addEventListener("DOMContentLoaded", function () {
             .getElementById("inputEmailConfirm")
             .value.trim();
 
-        // Validar número de tarjeta: entre 13 y 19 dígitos
+        // Validar formato y cantidad de dígitos (13 a 19).
         if (!/^\d{13,19}$/.test(numeroTarjeta)) {
             event.preventDefault();
-            alert("El número de tarjeta no tiene un formato válido.");
+            alert("Ingresá un número de tarjeta de entre 13 y 19 dígitos.");
+            return;
+        }
+
+        // Validar el dígito de control.
+        if (!cumpleLuhn(numeroTarjeta)) {
+            event.preventDefault();
+            alert("El número de tarjeta no supera la verificación de Luhn.");
             return;
         }
 
@@ -87,6 +102,13 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!/^\d{3,4}$/.test(cvv)) {
             event.preventDefault();
             alert("El código de seguridad debe tener 3 o 4 dígitos.");
+            return;
+        }
+
+        // Validar DNI argentino: de 1.000.000 a 99.999.999, sin separadores.
+        if (!/^[1-9][0-9]{6,7}$/.test(dni)) {
+            event.preventDefault();
+            alert("Ingresá un DNI válido de 7 u 8 dígitos, sin puntos ni espacios.");
             return;
         }
 

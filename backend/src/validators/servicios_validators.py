@@ -1,7 +1,7 @@
 from decimal import Decimal, InvalidOperation
 
 from src.constants import TIPOS_SERVICIO
-from src.utils import construir_error_api
+from src.utils import construir_error_api, validar_url_opcional
 
 
 def validar_id_servicio(id_servicio: int) -> int:
@@ -55,7 +55,8 @@ def validar_crear_servicio(datos: dict) -> dict:
             "Se esperaba un objeto JSON con los datos del servicio.",
         )
 
-    campos_permitidos = {"nombre", "tipo", "precio"}
+    campos_permitidos = {"nombre", "tipo", "precio", "imagen_url"}
+    campos_requeridos = {"nombre", "tipo", "precio"}
     campos_desconocidos = set(datos) - campos_permitidos
     if campos_desconocidos:
         return construir_error_api(
@@ -64,7 +65,7 @@ def validar_crear_servicio(datos: dict) -> dict:
             f"Los campos no están permitidos: {', '.join(sorted(campos_desconocidos))}.",
         )
 
-    campos_faltantes = campos_permitidos - set(datos)
+    campos_faltantes = campos_requeridos - set(datos)
     if campos_faltantes:
         return construir_error_api(
             "error.validacion.campos_requeridos",
@@ -81,18 +82,25 @@ def validar_crear_servicio(datos: dict) -> dict:
         )
 
     tipo = datos.get("tipo")
-    if not isinstance(tipo, str) or tipo not in TIPOS_SERVICIO:
+    if not isinstance(tipo, str) or not tipo.strip() or len(tipo.strip()) > 50:
         return construir_error_api(
             "error.validacion.tipo_servicio",
             "Tipo de servicio inválido",
-            "El tipo debe ser COMIDA o BEBIDA.",
+            "El tipo de servicio es obligatorio y debe tener hasta 50 caracteres.",
         )
 
     precio = validar_precio_servicio(datos.get("precio"))
     if isinstance(precio, dict):
         return precio
 
-    return {"nombre": nombre.strip(), "tipo": tipo, "precio": precio, "activo": 1}
+    imagen_url = validar_url_opcional(datos.get("imagen_url"), "imagen_url")
+    return {
+        "nombre": nombre.strip(),
+        "tipo": tipo.strip().upper(),
+        "precio": precio,
+        "activo": 1,
+        "imagen_url": imagen_url,
+    }
 
 
 def validar_actualizar_servicio(datos: dict) -> dict:
@@ -104,7 +112,7 @@ def validar_actualizar_servicio(datos: dict) -> dict:
             "Se esperaba un objeto JSON con los datos del servicio.",
         )
 
-    campos_permitidos = {"nombre", "tipo", "precio", "activo"}
+    campos_permitidos = {"nombre", "tipo", "precio", "activo", "imagen_url"}
     campos_desconocidos = set(datos) - campos_permitidos
     if campos_desconocidos:
         return construir_error_api(
@@ -133,13 +141,13 @@ def validar_actualizar_servicio(datos: dict) -> dict:
 
     if "tipo" in datos:
         tipo = datos["tipo"]
-        if not isinstance(tipo, str) or tipo not in TIPOS_SERVICIO:
+        if not isinstance(tipo, str) or not tipo.strip() or len(tipo.strip()) > 50:
             return construir_error_api(
                 "error.validacion.tipo_servicio",
                 "Tipo de servicio inválido",
-                "El tipo debe ser COMIDA o BEBIDA.",
+                "El tipo de servicio es obligatorio y debe tener hasta 50 caracteres.",
             )
-        datos_validados["tipo"] = tipo
+        datos_validados["tipo"] = tipo.strip().upper()
 
     if "precio" in datos:
         precio = validar_precio_servicio(datos["precio"])
@@ -156,5 +164,10 @@ def validar_actualizar_servicio(datos: dict) -> dict:
                 "El campo activo debe ser verdadero o falso.",
             )
         datos_validados["activo"] = 1 if activo else 0
+
+    if "imagen_url" in datos:
+        datos_validados["imagen_url"] = validar_url_opcional(
+            datos["imagen_url"], "imagen_url"
+        )
 
     return datos_validados

@@ -1,20 +1,51 @@
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
-from services.compras_service import (
-    enviar_compra_al_backend, obtener_compra_del_backend,
-    reenviar_comprobante_al_backend)
 from utils.csrf import crear_token_csrf, validar_token_csrf
 from validators.compras_validators import validar_formulario_compra
 from services.peliculas_service import obtener_detalle_pelicula
 from email.utils import parsedate_to_datetime
 from datetime import datetime, timedelta
+from services.compras_service import (
+    enviar_compra_al_backend,
+    obtener_compra_del_backend,
+    reenviar_comprobante_al_backend,
+    cancelar_compra_al_backend)
 import base64
 import io
 import qrcode
+from utils.temporizador_compra import (
+    limpiar_compra_temporal,
+    iniciar_temporizador_compra,
+    redirigir_compra_expirada,
+    temporizador_compra_vencido,
+)
 
 compras_bp = Blueprint("compras", __name__)
 
+
+@compras_bp.route("/compra/checkout-integracion", methods=["GET"])
+def checkout():
+    iniciar_temporizador_compra()
+    return render_template("client/checkout.html", csrf_token=crear_token_csrf())
+
+
+def _extraer_mensaje_error_backend(respuesta, fallback: str) -> str:
+    if isinstance(respuesta, dict):
+        errores = respuesta.get("errors")
+        if isinstance(errores, list) and errores:
+            primero = errores[0] if isinstance(errores[0], dict) else {}
+            mensaje = primero.get("description") or primero.get("message")
+            if mensaje:
+                return str(mensaje)
+        mensaje = respuesta.get("error") or respuesta.get("mensaje")
+        if mensaje:
+            return str(mensaje)
+    return fallback
+
+
 @compras_bp.route("/compra/confirmar", methods=["POST"])
 def confirmar_compra():
+    if temporizador_compra_vencido():
+        return redirigir_compra_expirada()
     if not validar_token_csrf(request.form.get("csrf_token", "")):
         return "Formulario vencido o CSRF inválido.", 400
     token = session.get("access_token")
@@ -23,16 +54,23 @@ def confirmar_compra():
         return redirect(url_for("home.index"))
     try:
         datos = validar_formulario_compra(
-        request.form,
-        session.get("compra", {}).get("servicios", [])
+            request.form,
+            session.get("servicios_seleccionados", []),
         )
     except ValueError as error:
         flash(str(error), "error")
         return redirect(url_for("compra.seleccion_checkout"))
     compra, estado = enviar_compra_al_backend(datos, token)
     if estado == 201 and isinstance(compra, dict) and type(compra.get("id_compra")) is int:
+        limpiar_compra_temporal()
         return redirect(url_for("compras.compra_exitosa", id_compra=compra["id_compra"]))
-    flash("No se pudo confirmar la compra. Revisá la función, las butacas y la sesión.", "error")
+    flash(
+        _extraer_mensaje_error_backend(
+            compra,
+            "No se pudo confirmar la compra. Revisá la función, las butacas y la sesión.",
+        ),
+        "error",
+    )
     return redirect(url_for("compra.seleccion_checkout"))
 
 
@@ -68,7 +106,9 @@ def compra_exitosa(id_compra: int):
         return resultado
 
     # Obtener información adicional de la película
-    pelicula = obtener_detalle_pelicula(funcion["id_pelicula"]) or {}
+    pelicula, estado_pelicula = obtener_detalle_pelicula(funcion["id_pelicula"])
+    if estado_pelicula != 200 or not isinstance(pelicula, dict):
+        pelicula = {}
 
     # Interpretar fecha y horario de la función
     inicio_texto = str(funcion.get("inicio") or "")
@@ -97,6 +137,16 @@ def compra_exitosa(id_compra: int):
     limite_cancelacion = (
         (fecha_funcion - timedelta(hours=24)).strftime("%d/%m/%Y %H:%M")
         if fecha_funcion else "24 horas antes de la función"
+    )
+
+    puede_cancelar = (
+    compra.get("estado") == "PAGADA"
+    and not compra.get("qr_validado_en")
+    and fecha_funcion is not None
+    and fecha_funcion > (
+        datetime.now(fecha_funcion.tzinfo)
+        + timedelta(hours=24)
+    )
     )
 
     # Construir descripción de las butacas
@@ -205,6 +255,7 @@ def compra_exitosa(id_compra: int):
 
         "cancelacion": {
             "limite_texto": limite_cancelacion,
+            "habilitada": puede_cancelar,
         },
     }
 
@@ -229,3 +280,56 @@ def reenviar_email(id_compra: int):
     else:
         flash("No se pudo enviar el comprobante.", "error")
     return redirect(url_for("compras.compra_exitosa", id_compra=id_compra))
+
+
+@compras_bp.route("/compras/<int:id_compra>/cancelar", methods=["POST"])
+def cancelar_compra_web(id_compra: int):
+    """
+    Recibe la solicitud de cancelación del usuario
+    y la envía al backend mediante PUT.
+    """
+
+    # 1. Validar el token CSRF
+    if not validar_token_csrf(request.form.get("csrf_token", "")):
+        flash("Formulario vencido o inválido.", "error")
+        return redirect(
+            url_for("compras.compra_exitosa", id_compra=id_compra)
+        )
+
+    # 2. Verificar autenticación
+    token = session.get("access_token")
+
+    if not token:
+        flash("Debés iniciar sesión para cancelar la compra.", "error")
+        return redirect(url_for("auth.login"))
+
+    # 3. Solicitar la cancelación al backend
+    respuesta, estado = cancelar_compra_al_backend(id_compra, token)
+
+    # 4. Procesar el resultado
+    if (
+        estado == 200
+        and isinstance(respuesta, dict)
+        and respuesta.get("estado") == "CANCELADA"
+    ):
+        flash("La compra fue cancelada correctamente.", "success")
+
+    else:
+        mensaje = "No se pudo cancelar la compra."
+
+        if isinstance(respuesta, dict):
+            errores = respuesta.get("errors", [])
+
+            if errores:
+                mensaje = (
+                    errores[0].get("description")
+                    or errores[0].get("message")
+                    or mensaje
+                )
+
+        flash(mensaje, "error")
+
+    # 5. Volver al comprobante actualizado
+    return redirect(
+        url_for("compras.compra_exitosa", id_compra=id_compra)
+    )

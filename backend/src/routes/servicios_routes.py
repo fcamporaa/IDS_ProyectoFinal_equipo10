@@ -1,6 +1,8 @@
 from flask import jsonify, request
 from src.services.servicios_services import (
     listar_servicios,
+    obtener_servicio_activo,
+    listar_servicios_admin,
     crear_servicio,
     actualizar_servicio,
     eliminar_servicio,
@@ -20,6 +22,28 @@ def register_servicios_routes(app):
         """GET /servicios: Lista los servicios adicionales activos."""
         return jsonify(listar_servicios()), 200
 
+    @app.route("/servicios/<int:id>", methods=["GET"])
+    def get_servicio(id):
+        """GET /servicios/{id}: Obtiene el detalle de un servicio activo."""
+        id_validado = validar_id_servicio(id)
+        if isinstance(id_validado, dict):
+            return jsonify(id_validado), 400
+
+        servicio = obtener_servicio_activo(id_validado)
+        if servicio is None:
+            return jsonify(construir_error_api(
+                "error.servicio.no_encontrado",
+                "Servicio no encontrado",
+                "No existe un servicio activo con el ID indicado.",
+            )), 404
+        return jsonify(servicio), 200
+
+    @app.route("/servicios/admin", methods=["GET"])
+    def get_servicios_admin():
+        """GET /servicios/admin: Lista todos los servicios, activos e inactivos (Solo Admin)."""
+        validar_admin(request.headers.get("Authorization"))
+        return jsonify(listar_servicios_admin()), 200
+
     @app.route("/servicios", methods=["POST"])
     def post_servicio():
         """POST /servicios: Crea un servicio adicional (Solo Admin)."""
@@ -34,9 +58,9 @@ def register_servicios_routes(app):
             return jsonify(resultado), 400
         return jsonify(resultado), 201
 
-    @app.route("/servicios/<int:id>", methods=["PUT"])
+    @app.route("/servicios/<int:id>", methods=["PUT", "PATCH"])
     def put_servicio(id):
-        """PUT /servicios/{id}: Modifica un servicio existente (Solo Admin)."""
+        """PUT/PATCH /servicios/{id}: Modifica un servicio existente (Solo Admin)."""
         validar_admin(request.headers.get("Authorization"))
 
         id_validado = validar_id_servicio(id)

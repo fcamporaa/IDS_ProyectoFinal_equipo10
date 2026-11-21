@@ -129,10 +129,21 @@ def index():
         flash(extraer_mensaje_error(perfil, "No se pudo cargar tu perfil."), "error")
         return redirect(url_for("home.index"))
 
-    if perfil.get("rol") != "CLIENTE":
-        return redirect(url_for("dashboard.index"))
-
     session["usuario"] = perfil
+    es_cliente = perfil.get("rol") == "CLIENTE"
+    if not es_cliente:
+        return render_template(
+            "client/perfil_cliente.html",
+            usuario_activo=perfil,
+            reservas_activas=[],
+            compras_pasadas=[],
+            peliculas_vistas=[],
+            datos_facturacion={},
+            error_backend=None,
+            solo_datos=True,
+            csrf_token=crear_token_csrf(),
+        )
+
     compras, estado_compras = obtener_mis_compras(token)
     error_backend = None
     if estado_compras != 200 or not isinstance(compras, list):

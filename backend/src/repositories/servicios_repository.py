@@ -4,7 +4,7 @@ from src.db import ejecutar_consulta, ejecutar_mutacion
 def obtener_servicios_activos_db() -> list[dict]:
     """Obtiene todos los servicios donde activo = 1."""
     query = """
-        SELECT id_servicio, nombre, tipo, precio, activo
+        SELECT id_servicio, nombre, tipo, precio, activo, imagen_url
         FROM servicios
         WHERE activo = 1
         ORDER BY nombre
@@ -12,10 +12,20 @@ def obtener_servicios_activos_db() -> list[dict]:
     return ejecutar_consulta(query)
 
 
+def obtener_servicios_admin_db() -> list[dict]:
+    """Obtiene todos los servicios, activos e inactivos, para el ABM."""
+    query = """
+        SELECT id_servicio, nombre, tipo, precio, activo, imagen_url
+        FROM servicios
+        ORDER BY activo DESC, nombre
+    """
+    return ejecutar_consulta(query)
+
+
 def buscar_servicio_por_id_db(id_servicio: int) -> dict | None:
     """Busca un servicio por su id_servicio."""
     query = """
-        SELECT id_servicio, nombre, tipo, precio, activo
+        SELECT id_servicio, nombre, tipo, precio, activo, imagen_url
         FROM servicios
         WHERE id_servicio = %(id_servicio)s
     """
@@ -38,15 +48,17 @@ def buscar_servicio_por_nombre_db(nombre: str) -> dict | None:
 def insertar_servicio_db(datos: dict) -> int:
     """Inserta un nuevo servicio en la tabla servicios."""
     query = """
-        INSERT INTO servicios (nombre, tipo, precio, activo)
-        VALUES (%(nombre)s, %(tipo)s, %(precio)s, %(activo)s)
+        INSERT INTO servicios (nombre, tipo, precio, activo, imagen_url)
+        VALUES (%(nombre)s, %(tipo)s, %(precio)s, %(activo)s, %(imagen_url)s)
     """
+    if "activo" not in datos:
+        datos = dict(datos, activo=1)
     return ejecutar_mutacion(query, datos)
 
 
 def actualizar_servicio_db(id_servicio: int, datos: dict) -> int:
     """Actualiza un servicio existente."""
-    columnas_permitidas = ("nombre", "tipo", "precio", "activo")
+    columnas_permitidas = ("nombre", "tipo", "precio", "activo", "imagen_url")
     campos_actualizables = [campo for campo in columnas_permitidas if campo in datos]
     if not campos_actualizables:
         return 0
