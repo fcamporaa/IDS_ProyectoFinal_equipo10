@@ -28,7 +28,7 @@ def listar_salas_por_local(id_local: int) -> list[dict]:
     # Verificar que el local exista
     local = buscar_local_por_id_db(id_local)
     if not local:
-        raise error_no_encontrado(f"No existe el complejo con ID {id_local}.")
+        raise error_no_encontrado("El complejo seleccionado ya no está disponible.")
 
     # Traer las salas del local con su capacidad calculada
     salas = obtener_salas_por_local_db(id_local)
@@ -49,7 +49,7 @@ def obtener_detalle_sala(id_sala: int) -> dict:
     # Verificar que la sala exista
     sala = buscar_sala_por_id_db(id_sala)
     if not sala:
-        raise error_no_encontrado(f"No existe la sala con ID {id_sala}.")
+        raise error_no_encontrado("La sala seleccionada ya no está disponible.")
 
     # Obtener la distribución de butacas
     butacas_db = obtener_butacas_por_sala_db(id_sala)
@@ -79,7 +79,7 @@ def actualizar_configuracion_sala(id_sala: int, datos: dict) -> dict:
     # Verificar que la sala exista antes de actualizar
     sala = buscar_sala_por_id_db(id_sala)
     if not sala:
-        raise error_no_encontrado(f"No existe la sala con ID {id_sala}.")
+        raise error_no_encontrado("La sala seleccionada ya no está disponible.")
 
     # Guardar cambios y devolver los datos actualizados
     actualizar_sala_db(id_sala, datos)

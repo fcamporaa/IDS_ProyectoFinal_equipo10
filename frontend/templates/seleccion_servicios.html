@@ -45,10 +45,6 @@
                                         data-ahora-servidor-ms="{{ temporizador.ahora_servidor_ms }}"
                                         data-url-expiracion="{{ url_for('compra.compra_expirada') }}">{{ temporizador.tiempo_restante }}</strong>
                             </div>
-                            <button type="submit" name="accion" value="omitir" class="btn-skip-step-link" title="Omitir selección de confitería y avanzar al checkout">
-                                <span>Omitir este paso</span>
-                                <span aria-hidden="true">→</span>
-                            </button>
                         </div>
                     </div>
                     <h1 class="catalog-main-title">Servicios Extras & Combos</h1>
@@ -211,9 +207,6 @@
                             <polyline points="12 5 19 12 12 19"></polyline>
                         </svg>
                     </button>
-
-                    <!-- Enlace Secundario: Omitir Paso -->
-                    <button type="submit" name="accion" value="omitir" class="link-skip-bottom">Omitir este paso y pagar entradas</button>
 
                     <!-- Leyenda de Compra Oficial Asegurada -->
                     <div class="official-guarantee-note">

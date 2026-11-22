@@ -37,15 +37,15 @@ def validar_autorizacion(encabezado: str | None) -> dict:
         return construir_error_api(
             "error.auth.token_requerido",
             "Autenticación requerida",
-            "Envía un token válido como Bearer en el encabezado Authorization.",
+            "Iniciá sesión nuevamente para continuar.",
         )
 
     usuario_id = validar_token_acceso(partes_autorizacion[1])
     if usuario_id is None:
         return construir_error_api(
             "error.auth.token_invalido",
-            "Token inválido",
-            "El token es inválido o expiró.",
+            "Sesión vencida",
+            "Tu sesión venció. Volvé a iniciar sesión.",
         )
 
     return {"usuario_id": usuario_id}
@@ -65,8 +65,8 @@ def validar_autorizacion_admin(encabezado: str | None) -> dict:
         return {
             **construir_error_api(
                 "error.auth.token_invalido",
-                "Token inválido",
-                "El usuario asociado al token no existe o está inactivo.",
+                "Cuenta no disponible",
+                "La cuenta no está disponible. Volvé a iniciar sesión.",
             ),
             "status": 401,
         }
@@ -76,7 +76,7 @@ def validar_autorizacion_admin(encabezado: str | None) -> dict:
             **construir_error_api(
                 "error.auth.prohibido",
                 "Acceso denegado",
-                "El usuario no tiene rol ADMINISTRADOR para ejecutar esta acción.",
+                "No tenés permisos para realizar esta acción.",
             ),
             "status": 403,
         }
@@ -95,7 +95,7 @@ def validar_registro_usuario(datos: dict) -> dict:
         return construir_error_api(
             "error.validacion.cuerpo",
             "Cuerpo de solicitud inválido",
-            "Se esperaba un objeto JSON con los datos del registro.",
+            "Los datos del registro no pudieron procesarse.",
         )
 
     campos_permitidos = {"nombre", "email", "contrasena", "numero_socio"}
@@ -144,7 +144,7 @@ def validar_registro_usuario(datos: dict) -> dict:
         return construir_error_api(
             "error.validacion.contrasena",
             "Contraseña inválida",
-            "La contraseña debe tener al menos 8 caracteres, incluir mayúscula, minúscula y número, y no superar 72 bytes en UTF-8.",
+            "La contraseña debe tener al menos 8 caracteres, incluir mayúscula, minúscula y número",
         )
 
     numero_socio = datos.get("numero_socio")
@@ -175,7 +175,7 @@ def validar_login_usuario(datos: dict) -> dict:
         return construir_error_api(
             "error.validacion.cuerpo",
             "Cuerpo de solicitud inválido",
-            "Se esperaba un objeto JSON con email y contraseña.",
+            "Los datos de inicio de sesión no pudieron procesarse.",
         )
 
     campos_permitidos = {"email", "contrasena"}
@@ -263,7 +263,7 @@ def validar_actualizacion_perfil(datos: dict) -> dict:
             return construir_error_api(
                 "error.validacion.contrasena",
                 "Contraseña inválida",
-                "La contraseña debe tener al menos 8 caracteres, incluir mayúscula, minúscula y número, y no superar 72 bytes en UTF-8.",
+                "La contraseña debe tener al menos 8 caracteres, incluir mayúscula, minúscula y número",
             )
         datos_validados["contrasena"] = contrasena
 

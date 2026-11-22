@@ -28,13 +28,9 @@ TEXTOS_OPCIONALES_PELICULA = {
 def _validar_generos_ids(valor) -> list[int]:
     """Valida la lista de ids de género: no vacía, enteros positivos, sin repetidos."""
     if not isinstance(valor, list) or not valor:
-        raise error_validacion(
-            "El campo generos_ids debe ser una lista con al menos un id de género."
-        )
+        raise error_validacion("Seleccioná al menos un género.")
     if not all(es_entero(g) and g > 0 for g in valor):
-        raise error_validacion(
-            "El campo generos_ids debe contener solo enteros positivos."
-        )
+        raise error_validacion("La selección de géneros no es válida.")
     return list(dict.fromkeys(valor))
 
 
@@ -113,10 +109,7 @@ def validar_crear_pelicula(datos: dict) -> dict:
 
     origen_api = datos.get("origen_api")
     if not isinstance(origen_api, str) or origen_api not in ORIGENES_API_PELICULAS:
-        raise error_validacion(
-            "El campo origen_api debe ser uno de: "
-            f"{', '.join(sorted(ORIGENES_API_PELICULAS))}."
-        )
+        raise error_validacion("Seleccioná un origen válido para la película.")
 
     id_api = validar_texto_opcional(datos.get("id_api"), "id_api", 50)
     if origen_api != "CUSTOM" and id_api is None:
