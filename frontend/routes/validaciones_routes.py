@@ -52,7 +52,7 @@ def _validar_filtros_historial(args) -> dict:
     resultado = (args.get("resultado") or "").strip().upper()
     if resultado:
         if resultado not in RESULTADOS_VALIDOS:
-            raise ValueError("El filtro de resultado debe ser EXITO, REUTILIZADO o FALLIDO.")
+            raise ValueError("Seleccioná un resultado válido: exitoso, fallido o reutilizado.")
         filtros["resultado"] = resultado
 
     id_compra_raw = (args.get("id_compra") or "").strip()

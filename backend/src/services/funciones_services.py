@@ -26,7 +26,7 @@ from src.utils import (
 def _obtener_funcion_o_404(id_funcion: int) -> dict:
     funcion = buscar_funcion_por_id_db(id_funcion)
     if funcion is None:
-        raise error_no_encontrado(f"No existe la función con id {id_funcion}.")
+        raise error_no_encontrado("La función seleccionada ya no está disponible.")
     return funcion
 
 

@@ -9,8 +9,8 @@ def validar_id_servicio(id_servicio: int) -> int:
     if isinstance(id_servicio, bool) or not isinstance(id_servicio, int) or id_servicio <= 0:
         return construir_error_api(
             "error.validacion.id_servicio",
-            "ID de servicio inválido",
-            "El ID del servicio debe ser un entero positivo.",
+            "Servicio inválido",
+            "No pudimos identificar el servicio seleccionado.",
         )
     return id_servicio
 
@@ -20,7 +20,7 @@ def validar_precio_servicio(precio) -> Decimal | dict:
         return construir_error_api(
             "error.validacion.precio",
             "Precio inválido",
-            "El precio debe ser un número positivo con hasta dos decimales y un máximo de 99999999.99.",
+            "Ingresá un precio válido de hasta dos decimales.",
         )
 
     try:
@@ -29,7 +29,7 @@ def validar_precio_servicio(precio) -> Decimal | dict:
         return construir_error_api(
             "error.validacion.precio",
             "Precio inválido",
-            "El precio debe ser un número positivo con hasta dos decimales y un máximo de 99999999.99.",
+            "Ingresá un precio válido de hasta dos decimales.",
         )
 
     if (
@@ -41,7 +41,7 @@ def validar_precio_servicio(precio) -> Decimal | dict:
         return construir_error_api(
             "error.validacion.precio",
             "Precio inválido",
-            "El precio debe ser un número positivo con hasta dos decimales y un máximo de 99999999.99.",
+            "Ingresá un precio válido de hasta dos decimales.",
         )
     return precio_decimal
 

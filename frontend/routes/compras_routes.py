@@ -47,10 +47,10 @@ def confirmar_compra():
     if temporizador_compra_vencido():
         return redirigir_compra_expirada()
     if not validar_token_csrf(request.form.get("csrf_token", "")):
-        return "Formulario vencido o CSRF inválido.", 400
+        return "La sesión del formulario venció. Volvé a intentarlo.", 400
     token = session.get("access_token")
     if not token:
-        flash("Necesitás iniciar sesión antes de comprar. El login web pertenece a US-02.", "error")
+        flash("Necesitás iniciar sesión para realizar la compra.", "error")
         return redirect(url_for("home.index"))
     try:
         datos = validar_formulario_compra(
@@ -272,7 +272,7 @@ def reenviar_email(id_compra: int):
         return "Solicitud inválida.", 400
     token = session.get("access_token")
     if not token:
-        flash("Necesitás iniciar sesión antes de comprar. El login web pertenece a US-02.", "error")
+        flash("Necesitás iniciar sesión antes de comprar.", "error")
         return redirect(url_for("home.index"))
     respuesta, estado = reenviar_comprobante_al_backend(id_compra, token)
     if estado == 200:
@@ -291,7 +291,7 @@ def cancelar_compra_web(id_compra: int):
 
     # 1. Validar el token CSRF
     if not validar_token_csrf(request.form.get("csrf_token", "")):
-        flash("Formulario vencido o inválido.", "error")
+        flash("La sesión del formulario venció. Volvé a intentarlo.", "error")
         return redirect(
             url_for("compras.compra_exitosa", id_compra=id_compra)
         )

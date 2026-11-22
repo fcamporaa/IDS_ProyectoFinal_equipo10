@@ -151,10 +151,7 @@ def seleccion_butacas():
                 flash(f"La butaca seleccionada (ID {id_b}) no existe en esta función.", "error")
                 return redirect(url_for("compra.seleccion_butacas", id_funcion=id_funcion))
             if b.get("estado") in ("OCUPADA", "RESERVADA"):
-                flash(
-                    f"La butaca elegida (Fila {b.get('fila', '')} N° {b.get('numero', '')}) ya no está disponible.",
-                    "error",
-                )
+                flash("Una de las butacas seleccionadas ya no está disponible.", "error")
                 return redirect(url_for("compra.seleccion_butacas", id_funcion=id_funcion))
             butacas_elegidas.append(b)
 
@@ -485,7 +482,7 @@ def seleccion_servicios():
 
     if request.method == "POST":
         if not validar_token_csrf(request.form.get("csrf_token", "")):
-            flash("Formulario vencido o CSRF inválido.", "error")
+            flash("Formulario inválido.", "error")
             return redirect(url_for("compra.seleccion_servicios"))
 
         try:
