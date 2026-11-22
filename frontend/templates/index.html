@@ -24,10 +24,12 @@
             <h2 class="billboard-title">Cartelera Semanal</h2>
         </div>
 
-        {% if lista_peliculas or genero_activo %}
+        {% if generos %}
             <!-- Panel de Filtros Rápido (Fecha, Búsqueda en Vivo y Géneros) -->
             {% include 'components/barra_filtros.html' %}
+        {% endif %}
 
+        {% if lista_peliculas %}
             <!-- Grilla de Tarjetas de Películas (4 Columnas Responsive) -->
             <div class="movies-grid" id="moviesBillboardGrid">
                 {% for pelicula in lista_peliculas %}

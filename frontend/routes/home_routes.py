@@ -19,7 +19,10 @@ def index():
         flash(str(error), "error")
         filtros = {}
 
-    respuesta, estado = obtener_cartelera_vigente(filtros)
+    filtros_backend = {
+        clave: valor for clave, valor in filtros.items() if clave != "id_genero"
+    }
+    respuesta, estado = obtener_cartelera_vigente(filtros_backend)
     backend_disponible = estado == 200 and isinstance(respuesta, list)
     peliculas = (
         [adaptar_pelicula_para_card(p) for p in respuesta]
