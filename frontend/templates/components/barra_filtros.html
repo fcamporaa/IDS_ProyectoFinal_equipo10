@@ -5,15 +5,15 @@
 
 <div class="movie-filter-panel" aria-label="Filtros de Cartelera">
     <!-- Chips de Géneros a la Izquierda -->
-    <div class="genre-chips-group" id="genreFilterBar" role="tablist" aria-label="Filtro por género">
+    <form class="genre-chips-group" id="genreFilterBar" method="get"
+          action="{{ url_for('home.index') }}#cartelera" aria-label="Filtro por género">
         <span class="genre-label">Géneros:</span>
-        <button type="button" class="genre-chip active" data-genre="todos">Todos</button>
-        <button type="button" class="genre-chip" data-genre="accion">Acción</button>
-        <button type="button" class="genre-chip" data-genre="scifi">Ciencia Ficción</button>
-        <button type="button" class="genre-chip" data-genre="drama">Drama</button>
-        <button type="button" class="genre-chip" data-genre="terror">Terror</button>
-        <button type="button" class="genre-chip" data-genre="animacion">Animación</button>
-    </div>
+        <button type="submit" class="genre-chip{% if not genero_activo %} active{% endif %}">Todos</button>
+        {% for g in generos | default([], true) %}
+            <button type="submit" name="id_genero" value="{{ g.id_genero }}"
+                    class="genre-chip{% if genero_activo == g.id_genero %} active{% endif %}">{{ g.nombre }}</button>
+        {% endfor %}
+    </form>
 
     <!-- Buscador en Vivo a la Derecha -->
     <div class="live-search-wrapper">

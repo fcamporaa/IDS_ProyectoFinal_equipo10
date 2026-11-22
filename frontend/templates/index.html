@@ -24,7 +24,7 @@
             <h2 class="billboard-title">Cartelera Semanal</h2>
         </div>
 
-        {% if lista_peliculas %}
+        {% if lista_peliculas or genero_activo %}
             <!-- Panel de Filtros Rápido (Fecha, Búsqueda en Vivo y Géneros) -->
             {% include 'components/barra_filtros.html' %}
 
