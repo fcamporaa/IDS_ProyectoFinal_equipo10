@@ -6,6 +6,18 @@ def enviar_compra_al_backend(datos: dict, token: str):
     return consultar_backend("/compras", token=token, metodo="POST", datos=datos)
 
 
+def reservar_butacas_en_backend(datos: dict, token: str):
+    """Solicita al backend un apartado temporal para las butacas del checkout."""
+    return consultar_backend("/compras/reservas", token=token, metodo="POST", datos=datos)
+
+
+def liberar_reserva_en_backend(token_reserva: str, token: str):
+    """Libera el apartado temporal asociado a la sesión de compra."""
+    return consultar_backend(
+        f"/compras/reservas/{token_reserva}", token=token, metodo="DELETE"
+    )
+
+
 def obtener_compra_del_backend(id_compra: int, token: str):
     """Obtiene el comprobante y detalle de una compra por su identificador."""
     return consultar_backend(f"/compras/{id_compra}", token=token, metodo="GET")

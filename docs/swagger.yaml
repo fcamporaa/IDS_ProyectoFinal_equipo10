@@ -141,6 +141,8 @@ paths:
           $ref: '#/components/responses/ErrorValidacion'
         '401':
           $ref: '#/components/responses/NoAutorizado'
+        '403':
+          $ref: '#/components/responses/ProhibidoAdmin'
         '409':
           description: El nuevo email ya está en uso por otra cuenta.
           content:
@@ -221,6 +223,12 @@ paths:
           $ref: '#/components/responses/ErrorValidacion'
         '401':
           $ref: '#/components/responses/NoAutorizado'
+        '403':
+          description: El usuario autenticado no tiene rol CLIENTE.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuesta'
         '403':
           $ref: '#/components/responses/ProhibidoAdmin'
 
@@ -953,10 +961,10 @@ paths:
       summary: Procesa una nueva compra de entradas y servicios
       description: |
         Realiza la transacción de compra:
-        1. Valida que las butacas seleccionadas sigan libres en la función.
+        1. Valida que las butacas seleccionadas tengan un token de apartado vigente del cliente.
         2. Calcula el subtotal de entradas y servicios adicionales agregados.
         3. En entorno de desarrollo, simula la aprobación del pago (medio `TARJETA_SIMULADA` y ALLOW_SIMULATED_PAYMENTS=true). NO cobra tarjetas reales.
-        4. Guarda la compra y las entradas con transacción y control de butacas.
+        4. Guarda la compra y las entradas con transacción, consume los apartados temporales y controla conflictos.
         5. Genera un token QR y prepara el comprobante HTML con QR; el envío SMTP es opcional.
       operationId: procesarCompra
       security:
@@ -978,10 +986,109 @@ paths:
           $ref: '#/components/responses/ErrorValidacion'
         '401':
           $ref: '#/components/responses/NoAutorizado'
+        '403':
+          description: El usuario autenticado no tiene rol CLIENTE.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuesta'
         '501':
           description: No hay pasarela de pago real; habilitar solo el modo simulado de desarrollo.
         '409':
           description: Una o más butacas seleccionadas ya fueron adquiridas o reservadas por otro usuario.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuesta'
+
+  /compras/reservas:
+    post:
+      tags:
+        - Compras y Entradas
+      summary: Aparta temporalmente butacas para el checkout
+      description: Aparta en forma atómica las butacas solicitadas durante el tiempo restante de compra, hasta un máximo de 10 minutos.
+      operationId: reservarButacasTemporalmente
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id_funcion, butacas_ids, token_reserva, duracion_segundos]
+              properties:
+                id_funcion:
+                  type: integer
+                  minimum: 1
+                butacas_ids:
+                  type: array
+                  minItems: 1
+                  maxItems: 20
+                  items:
+                    type: integer
+                    minimum: 1
+                token_reserva:
+                  type: string
+                  minLength: 32
+                  maxLength: 64
+                duracion_segundos:
+                  type: integer
+                  minimum: 1
+                  maximum: 600
+      responses:
+        '201':
+          description: Butacas apartadas para el cliente.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token_reserva:
+                    type: string
+                  estado:
+                    type: string
+                    example: RESERVADA
+        '400':
+          $ref: '#/components/responses/ErrorValidacion'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '403':
+          description: El usuario autenticado no tiene rol CLIENTE.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuesta'
+        '409':
+          description: Una o más butacas ya están ocupadas o apartadas por otro cliente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuesta'
+
+  /compras/reservas/{token_reserva}:
+    delete:
+      tags:
+        - Compras y Entradas
+      summary: Libera un apartado temporal de butacas
+      operationId: liberarReservaTemporal
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: token_reserva
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 32
+            maxLength: 64
+      responses:
+        '200':
+          description: Apartado liberado.
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '403':
+          description: El usuario autenticado no tiene rol CLIENTE.
           content:
             application/json:
               schema:
@@ -2164,6 +2271,7 @@ components:
       required:
         - id_funcion
         - butacas_ids
+        - token_reserva
         - medio_pago
       properties:
         id_funcion:
@@ -2175,6 +2283,10 @@ components:
             type: integer
           minItems: 1
           example: [15, 16]
+        token_reserva:
+          type: string
+          minLength: 32
+          maxLength: 64
         servicios:
           type: array
           items:

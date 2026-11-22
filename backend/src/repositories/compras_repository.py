@@ -86,6 +86,111 @@ def obtener_servicios_por_compra_db(id_compra: int) -> list[dict]:
     return ejecutar_consulta(query, {"id_compra": id_compra})
 
 
+def reservar_butacas_temporalmente_db(
+    id_funcion: int,
+    ids_butacas: list[int],
+    id_usuario: int,
+    token_reserva: str,
+    expira_en,
+) -> None:
+    """Aparta todas las butacas juntas, serializando la operación por función."""
+    conexion = obtener_conexion()
+    try:
+        with conexion.cursor() as cursor:
+            cursor.execute(
+                """SELECT id_sala FROM funciones
+                   WHERE id_funcion = %s AND estado = 'PROGRAMADA' AND inicio > %s
+                   FOR UPDATE""",
+                (id_funcion, ahora_local()),
+            )
+            funcion = cursor.fetchone()
+            if not funcion:
+                error_de_negocio("compras.funcion", "Función no disponible",
+                                 "La función no existe o ya comenzó.", HTTP_NO_ENCONTRADO)
+
+            marcadores = ",".join(["%s"] * len(ids_butacas))
+            cursor.execute(
+                f"""SELECT id_butaca FROM butacas
+                    WHERE id_sala = %s AND activa = 1
+                      AND id_butaca IN ({marcadores}) FOR UPDATE""",
+                (funcion["id_sala"], *ids_butacas),
+            )
+            if len(cursor.fetchall()) != len(ids_butacas):
+                error_de_negocio("compras.butacas", "Butacas inválidas",
+                                 "Alguna butaca no pertenece a la sala o está inactiva.", HTTP_SOLICITUD_INVALIDA)
+
+            cursor.execute(
+                """SELECT id_usuario, expira_en FROM reservas_temporales_butacas
+                   WHERE token_reserva = %s FOR UPDATE""",
+                (token_reserva,),
+            )
+            reservas_existentes = cursor.fetchall()
+            if any(reserva["id_usuario"] != id_usuario for reserva in reservas_existentes):
+                error_de_negocio("compras.reserva", "Reserva inválida",
+                                 "El token de reserva pertenece a otro usuario.", HTTP_CONFLICTO)
+            if reservas_existentes:
+                vencimiento_previo = min(
+                    reserva["expira_en"] for reserva in reservas_existentes
+                )
+                if vencimiento_previo <= ahora_local():
+                    error_de_negocio("compras.reserva_expirada", "Reserva vencida",
+                                     "El apartado de butacas ya venció.", HTTP_CONFLICTO)
+                expira_en = min(expira_en, vencimiento_previo)
+
+            cursor.execute(
+                f"""SELECT id_entrada FROM entradas
+                    WHERE id_funcion = %s AND id_butaca IN ({marcadores})
+                      AND estado IN ('RESERVADA', 'OCUPADA') LIMIT 1""",
+                (id_funcion, *ids_butacas),
+            )
+            if cursor.fetchone():
+                error_de_negocio("compras.ocupacion", "Butacas ocupadas",
+                                 "Una de las butacas ya fue comprada o reservada.", HTTP_CONFLICTO)
+
+            cursor.execute(
+                f"""SELECT id_butaca FROM reservas_temporales_butacas
+                    WHERE id_funcion = %s AND id_butaca IN ({marcadores})
+                      AND expira_en > %s AND token_reserva <> %s
+                    LIMIT 1""",
+                (id_funcion, *ids_butacas, ahora_local(), token_reserva),
+            )
+            if cursor.fetchone():
+                error_de_negocio("compras.ocupacion", "Butacas reservadas",
+                                 "Una de las butacas está siendo reservada por otro usuario.", HTTP_CONFLICTO)
+
+            cursor.execute(
+                """DELETE FROM reservas_temporales_butacas
+                   WHERE id_usuario = %s AND token_reserva = %s""",
+                (id_usuario, token_reserva),
+            )
+            cursor.execute(
+                f"""DELETE FROM reservas_temporales_butacas
+                    WHERE id_funcion = %s AND id_butaca IN ({marcadores})
+                      AND expira_en <= %s""",
+                (id_funcion, *ids_butacas, ahora_local()),
+            )
+            cursor.executemany(
+                """INSERT INTO reservas_temporales_butacas
+                   (id_funcion, id_butaca, id_usuario, token_reserva, expira_en)
+                   VALUES (%s, %s, %s, %s, %s)""",
+                [(id_funcion, id_butaca, id_usuario, token_reserva, expira_en)
+                 for id_butaca in ids_butacas],
+            )
+        conexion.commit()
+    except Exception:
+        conexion.rollback()
+        raise
+    finally:
+        conexion.close()
+
+
+def liberar_reserva_temporal_db(id_usuario: int, token_reserva: str) -> None:
+    ejecutar_mutacion(
+        "DELETE FROM reservas_temporales_butacas WHERE id_usuario = %s AND token_reserva = %s",
+        (id_usuario, token_reserva),
+    )
+
+
 def actualizar_estado_compra_db(id_compra: int, estado: str, cancelada_en: str = None) -> int:
     """Actualiza el estado de la compra."""
     query = """
@@ -198,6 +303,17 @@ def registrar_compra_pagada_db(
                 error_de_negocio("compras.ocupacion", "Butacas ocupadas",
                                  "Una de las butacas acaba de ser reservada.", HTTP_CONFLICTO)
 
+            cursor.execute(
+                f"""SELECT id_butaca FROM reservas_temporales_butacas
+                                        WHERE id_funcion = %s AND id_usuario = %s AND token_reserva = %s
+                                            AND expira_en > %s AND id_butaca IN ({marcadores_butacas})
+                    FOR UPDATE""",
+                                (datos["id_funcion"], id_usuario, datos["token_reserva"], ahora_local(), *butacas),
+            )
+            if len(cursor.fetchall()) != len(butacas):
+                error_de_negocio("compras.reserva_expirada", "Reserva no vigente",
+                                 "El apartado de butacas venció o ya no pertenece a esta compra.", HTTP_CONFLICTO)
+
             servicios = datos["servicios"]
             precios_servicios = {}
             if servicios:
@@ -235,6 +351,10 @@ def registrar_compra_pagada_db(
                    VALUES (%s, %s, %s, %s, 'OCUPADA')""",
                 [(id_compra, datos["id_funcion"], id_butaca, funcion["precio_entrada"])
                  for id_butaca in butacas],
+            )
+            cursor.execute(
+                "DELETE FROM reservas_temporales_butacas WHERE id_usuario = %s AND token_reserva = %s",
+                (id_usuario, datos["token_reserva"]),
             )
             if servicios:
                 cursor.executemany(

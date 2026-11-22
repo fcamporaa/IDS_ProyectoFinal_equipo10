@@ -11,6 +11,8 @@ from src.utils import ahora_local, error_de_negocio
 from src.constants import FORMATO_DATETIME_SQL
 from src.repositories.compras_repository import (
     verificar_butacas_disponibles_db,
+    reservar_butacas_temporalmente_db,
+    liberar_reserva_temporal_db,
     insertar_compra_db,
     insertar_entradas_db,
     insertar_servicios_compra_db,
@@ -41,6 +43,23 @@ def procesar_compra(id_usuario: int, datos: dict) -> dict:
         # El commit de la compra ya ocurrió: un fallo de SMTP no debe liberar las entradas.
         compra["email_estado"] = "ERROR"
     return compra
+
+
+def reservar_butacas_temporalmente(id_usuario: int, datos: dict) -> dict:
+    """Aparta las butacas por el tiempo restante del checkout."""
+    expira_en = ahora_local() + timedelta(seconds=datos["duracion_segundos"])
+    reservar_butacas_temporalmente_db(
+        datos["id_funcion"],
+        datos["butacas_ids"],
+        id_usuario,
+        datos["token_reserva"],
+        expira_en,
+    )
+    return {"token_reserva": datos["token_reserva"], "estado": "RESERVADA"}
+
+
+def liberar_reserva_temporal(id_usuario: int, token_reserva: str) -> None:
+    liberar_reserva_temporal_db(id_usuario, token_reserva)
 
 
 def listar_mis_compras(id_usuario: int) -> list[dict]:

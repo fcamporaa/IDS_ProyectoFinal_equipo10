@@ -68,6 +68,9 @@ def validar_formulario_compra(formulario, servicios_seleccionados=None) -> dict:
 
     if formulario.get("medio_pago") != "TARJETA_SIMULADA":
         raise ValueError("Solo existe el pago simulado de desarrollo.")
+    token_reserva = formulario.get("token_reserva", "").strip()
+    if not 32 <= len(token_reserva) <= 64:
+        raise ValueError("La reserva temporal venció. Volvé a seleccionar tus butacas.")
     servicios = validar_servicios_seleccionados(servicios_seleccionados or [])
     return {
         "id_funcion": id_funcion,
@@ -75,4 +78,5 @@ def validar_formulario_compra(formulario, servicios_seleccionados=None) -> dict:
         "medio_pago": "TARJETA_SIMULADA",
         "email_comprobante": email,
         "servicios": servicios,
+        "token_reserva": token_reserva,
     }

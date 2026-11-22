@@ -1,4 +1,5 @@
 import json
+import secrets
 from datetime import datetime
 
 from flask import (
@@ -22,6 +23,7 @@ from services.servicios_service import (
     formatear_monto,
     obtener_servicios_disponibles,
 )
+from services.compras_service import reservar_butacas_en_backend, liberar_reserva_en_backend
 from utils.csrf import crear_token_csrf, validar_token_csrf
 from utils.formatos import formatear_duracion, formatear_fecha_corta, formatear_hora
 from utils.temporizador_compra import (
@@ -35,7 +37,11 @@ from validators.compras_validators import validar_servicios_seleccionados
 compra_bp = Blueprint("compra", __name__, url_prefix="/compra")
 
 
-def _armar_filas_butacas(butacas_lista: list[dict], butacas_seleccionadas_ids: set[int]) -> list[dict]:
+def _armar_filas_butacas(
+    butacas_lista: list[dict],
+    butacas_seleccionadas_ids: set[int],
+    butacas_reservadas_por_sesion: set[int],
+) -> list[dict]:
     """
     Agrupa la lista plana de butacas recibida del backend por letra de fila
     y las distribuye en los tres bloques de la sala (izquierda, centro, derecha).
@@ -49,8 +55,14 @@ def _armar_filas_butacas(butacas_lista: list[dict], butacas_seleccionadas_ids: s
         estado_db = b.get("estado", "DISPONIBLE")
         id_butaca = b.get("id_butaca")
 
-        if estado_db in ("OCUPADA", "RESERVADA"):
+        if estado_db == "OCUPADA":
             estado = "ocupada"
+        elif estado_db == "RESERVADA":
+            estado = (
+                "seleccionada"
+                if id_butaca in butacas_reservadas_por_sesion
+                else "ocupada"
+            )
         elif id_butaca in butacas_seleccionadas_ids:
             estado = "seleccionada"
         else:
@@ -105,6 +117,10 @@ def compra_expirada():
         if compra.get("butacas"):
             return redirect(url_for("compra.seleccion_checkout"))
         return redirect(url_for("compra.seleccion_butacas", id_funcion=compra.get("id_funcion")))
+    token_reserva = session.get("token_reserva_butacas")
+    access_token = session.get("access_token")
+    if token_reserva and access_token:
+        liberar_reserva_en_backend(token_reserva, access_token)
     return redirigir_compra_expirada()
 
 
@@ -144,16 +160,54 @@ def seleccion_butacas():
 
         todas_butacas = mapa_resp.get("butacas") or []
         mapa_dict = {b["id_butaca"]: b for b in todas_butacas}
+        compra_previa = session.get("compra") or {}
+        token_previo = session.get("token_reserva_butacas")
+        ids_reservadas_por_sesion = {
+            butaca["id_butaca"]
+            for butaca in compra_previa.get("butacas", [])
+            if token_previo
+            and compra_previa.get("id_funcion") == id_funcion
+            and "id_butaca" in butaca
+        }
         butacas_elegidas = []
         for id_b in ids_butacas:
             b = mapa_dict.get(id_b)
             if b is None:
                 flash(f"La butaca seleccionada (ID {id_b}) no existe en esta función.", "error")
                 return redirect(url_for("compra.seleccion_butacas", id_funcion=id_funcion))
-            if b.get("estado") in ("OCUPADA", "RESERVADA"):
+            if b.get("estado") == "OCUPADA" or (
+                b.get("estado") == "RESERVADA"
+                and id_b not in ids_reservadas_por_sesion
+            ):
                 flash("Una de las butacas seleccionadas ya no está disponible.", "error")
                 return redirect(url_for("compra.seleccion_butacas", id_funcion=id_funcion))
             butacas_elegidas.append(b)
+
+        token_acceso = session.get("access_token")
+        if token_acceso:
+            token_reserva = token_previo or secrets.token_hex(32)
+            temporizador = contexto_temporizador_compra()
+            respuesta_reserva, estado_reserva = reservar_butacas_en_backend(
+                {
+                    "id_funcion": id_funcion,
+                    "butacas_ids": ids_butacas,
+                    "token_reserva": token_reserva,
+                    "duracion_segundos": temporizador["duracion_restante_segundos"],
+                },
+                token_acceso,
+            )
+            if estado_reserva != 201:
+                errores = (
+                    respuesta_reserva.get("errors", [])
+                    if isinstance(respuesta_reserva, dict)
+                    else []
+                )
+                mensaje = errores[0].get("description") if errores else None
+                flash(mensaje or "No se pudieron apartar las butacas elegidas.", "error")
+                return redirect(
+                    url_for("compra.seleccion_butacas", id_funcion=id_funcion)
+                )
+            session["token_reserva_butacas"] = token_reserva
 
         # Obtener detalle de función para precio y datos de la orden
         func_detalle, _ = obtener_detalle_funcion_del_backend(id_funcion)
@@ -228,10 +282,15 @@ def seleccion_butacas():
         else []
     )
     ids_seleccionadas = {b["id_butaca"] for b in butacas_previas if "id_butaca" in b}
+    ids_reservadas_por_sesion = (
+        ids_seleccionadas if session.get("token_reserva_butacas") else set()
+    )
 
     # Armar filas dinámicas si el backend respondió
     butacas_db = mapa_resp.get("butacas", []) if isinstance(mapa_resp, dict) else []
-    filas_construidas = _armar_filas_butacas(butacas_db, ids_seleccionadas)
+    filas_construidas = _armar_filas_butacas(
+        butacas_db, ids_seleccionadas, ids_reservadas_por_sesion
+    )
 
     # Buscar detalles de la película
     peli_resp, estado_pelicula = (
@@ -554,6 +613,24 @@ def seleccion_checkout():
     if temporizador_compra_vencido():
         return redirigir_compra_expirada()
     temporizador = contexto_temporizador_compra()
+
+    token_reserva = session.get("token_reserva_butacas") or secrets.token_hex(32)
+    datos_reserva = {
+        "id_funcion": compra["id_funcion"],
+        "butacas_ids": [butaca["id_butaca"] for butaca in compra["butacas"]],
+        "token_reserva": token_reserva,
+        "duracion_segundos": temporizador["duracion_restante_segundos"],
+    }
+    reserva, estado_reserva = reservar_butacas_en_backend(
+        datos_reserva, session["access_token"]
+    )
+    if estado_reserva != 201:
+        session.pop("token_reserva_butacas", None)
+        errores = reserva.get("errors", []) if isinstance(reserva, dict) else []
+        mensaje = errores[0].get("description") if errores else None
+        flash(mensaje or "No se pudieron apartar las butacas. Volvé a seleccionarlas.", "error")
+        return redirect(url_for("compra.seleccion_butacas", id_funcion=compra["id_funcion"]))
+    session["token_reserva_butacas"] = token_reserva
 
     # 3. Consultar los datos actuales de la función
     funcion, estado = obtener_detalle_funcion_del_backend(

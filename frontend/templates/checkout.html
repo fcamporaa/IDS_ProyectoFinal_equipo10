@@ -65,6 +65,10 @@
                         name="medio_pago"
                         value="TARJETA_SIMULADA">
 
+                    <input type="hidden"
+                        name="token_reserva"
+                        value="{{ session['token_reserva_butacas'] }}">
+
 
                     <!-- Bloque 1: Datos del Comprador -->
                     <div class="checkout-card-block">
