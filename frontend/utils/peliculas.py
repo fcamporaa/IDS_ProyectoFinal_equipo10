@@ -115,7 +115,10 @@ def adaptar_pelicula_para_card(p: dict) -> dict:
     Pasa a card_pelicula.html solo lo que el backend informa en el listado.
     Lo que no viene (formato, sala, horarios) no se completa: el template lo oculta.
     """
-    nombres = [g["nombre"] for g in p.get("generos", []) if g.get("nombre")]
+    generos = [
+        genero for genero in p.get("generos", []) if isinstance(genero, dict)
+    ]
+    nombres = [genero["nombre"] for genero in generos if genero.get("nombre")]
     return {
         "sinopsis": p.get("sinopsis"),
         "backdrop_url": p.get("backdrop_url") or p.get("poster_url"),
@@ -126,7 +129,11 @@ def adaptar_pelicula_para_card(p: dict) -> dict:
         "clasificacion": p.get("clasificacion"),
         "duracion_min": p.get("duracion_min"),
         "genero": " / ".join(nombres),
-        "genero_slug": " ".join(nombre.lower() for nombre in nombres),
+        "generos_ids": [
+            genero["id_genero"]
+            for genero in generos
+            if genero.get("id_genero") is not None
+        ],
     }
 
 
