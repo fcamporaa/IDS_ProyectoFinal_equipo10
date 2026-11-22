@@ -1,0 +1,48 @@
+{# Componente Reutilizable: Tarjeta de Reseña Individual
+   Parámetros esperados en 'resena' o 'r':
+   - id_resena: Identificador de la reseña
+   - nombre_usuario: Nombre del espectador autor
+   - puntuacion: Entero de 1 a 5
+   - comentario: Texto de la opinión
+   - fecha_legible: Fecha formateada
+   - es_propia: Booleano que indica si pertenece al usuario logueado
+#}
+{% set item = resena | default(r) %}
+<article class="review-card {% if item.es_propia %}review-card--own{% endif %}">
+    <header class="review-card__header">
+        <div class="review-card__author-info">
+            <div class="review-card__avatar" aria-hidden="true">
+                {{ item.nombre_usuario[:1] | upper }}
+            </div>
+            <div class="review-card__author-meta">
+                <span class="review-card__author-name">
+                    {{ item.nombre_usuario }}
+                    {% if item.es_propia %}
+                    <span class="review-badge-own">Tu reseña</span>
+                    {% endif %}
+                </span>
+                <span class="review-card__verified-badge">
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" aria-hidden="true">
+                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                    </svg>
+                    Espectador verificado
+                </span>
+            </div>
+        </div>
+        <div class="review-card__rating-wrap">
+            <div class="review-stars" aria-label="Calificación: {{ item.puntuacion }} de 5 estrellas">
+                {% for i in range(1, 6) %}
+                    <span class="star-icon {% if i <= item.puntuacion %}star-icon--filled{% else %}star-icon--empty{% endif %}">★</span>
+                {% endfor %}
+            </div>
+            {% if item.fecha_legible %}
+            <time class="review-card__date">{{ item.fecha_legible }}</time>
+            {% endif %}
+        </div>
+    </header>
+    {% if item.comentario %}
+    <p class="review-card__comment">{{ item.comentario }}</p>
+    {% else %}
+    <p class="review-card__comment review-card__comment--empty">Sin comentario escrito.</p>
+    {% endif %}
+</article>

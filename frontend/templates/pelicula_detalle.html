@@ -100,15 +100,25 @@
                 <!-- Título y Puntuaciones -->
                 <div class="movie-title-block">
                     <h1 class="movie-main-title">{{ p.titulo }}</h1>
-                    {% if p.titulo_original or p.puntuacion_imdb or p.porcentaje_critica %}
                     <div class="movie-subtitle-meta">
+                        {% if p.titulo_original %}
                         <span class="meta-original-title">Título Original: <em>{{ p.titulo_original }}</em></span>
+                        {% endif %}
+                        {% if p.puntuacion_imdb %}
                         <span class="meta-bullet">•</span>
                         <span class="meta-rating-imdb">★ <strong>{{ p.puntuacion_imdb }}</strong></span>
+                        {% endif %}
+                        {% if p.porcentaje_critica %}
                         <span class="meta-bullet">•</span>
                         <span class="meta-critics-score">👍 <strong>{{ p.porcentaje_critica }}</strong></span>
+                        {% endif %}
+                        {% if resenas_data and resenas_data.promedio %}
+                        <span class="meta-bullet">•</span>
+                        <a href="#seccion-resenas" class="meta-rating-audiencia" title="Ver opiniones de los espectadores">
+                            ★ <strong>{{ resenas_data.promedio }}</strong> <small>({{ resenas_data.total }} {{ 'opinión' if resenas_data.total == 1 else 'opiniones' }})</small>
+                        </a>
+                        {% endif %}
                     </div>
-                    {% endif %}
                 </div>
 
                 <!-- Bloque de Sinopsis -->
@@ -287,7 +297,10 @@
     </div>
 </section>
 
-<!-- SECCIÓN 3: Barra Inferior Fija / Sticky Bottom Selection Bar -->
+<!-- SECCIÓN 3: Reseñas y Puntuaciones del Público -->
+{% include 'components/seccion_resenas.html' %}
+
+<!-- SECCIÓN 4: Barra Inferior Fija / Sticky Bottom Selection Bar -->
 <aside class="sticky-selection-bar" aria-label="Resumen de selección de entradas">
     <div class="container sticky-bar-container">
         <!-- Detalle de Selección Izquierda -->
