@@ -2,7 +2,7 @@
 -- Datos Semilla (Seeds) para Cine Paradiso
 -- Cátedra Lanzillotta - IDS 2026
 -- =============================================================================
-
+SET NAMES utf8mb4;
 USE `proyecto_integrador`;
 
 -- 1. Usuarios de prueba (contraseñas hasheadas con bcrypt)
