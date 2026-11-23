@@ -8,7 +8,7 @@
 <header class="main-header">
     <div class="header-container container">
         
-        <!-- Lado Izquierdo: Marca y Selector de Sede -->
+        <!-- Lado Izquierdo: Marca -->
         <div class="header-brand-group">
             <a href="{{ url_for('home.index') }}" class="brand-link" title="Inicio - Cinema Paradiso">
                 <!-- Isotipo de Claqueta Cinematográfica -->
@@ -27,16 +27,6 @@
                     <span class="brand-tagline">ESTUDIOS &amp; SALAS</span>
                 </div>
             </a>
-
-            <!-- Selector de Complejo Activo (3 sedes reales del proyecto) -->
-            <div class="complex-selector-wrapper">
-                <span class="selector-icon">📍</span>
-                <select class="complex-select" id="complexSelector" aria-label="Seleccionar complejo">
-                    <option value="centro" selected>Cine Paradiso Centro (Av. Corrientes 1240)</option>
-                    <option value="palermo">Cine Paradiso Palermo (Humboldt 1920)</option>
-                    <option value="belgrano">Cine Paradiso Belgrano (Av. Cabildo 2180)</option>
-                </select>
-            </div>
         </div>
 
         <!-- Lado Derecho: Acceso y Sesión -->

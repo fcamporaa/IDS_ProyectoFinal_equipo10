@@ -231,8 +231,7 @@
 /* Botones Guardar / Compartir */
 .poster-actions-row {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
+    grid-template-columns: minmax(0, 1fr);
 }
 
 .btn-poster-action {
