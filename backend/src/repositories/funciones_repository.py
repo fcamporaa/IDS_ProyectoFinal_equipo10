@@ -39,6 +39,27 @@ def obtener_funciones_db(filtros: dict) -> list[dict]:
     return ejecutar_consulta(query, tuple(parametros))
 
 
+def sincronizar_estados_funciones_db() -> None:
+    """Actualiza estados temporales usando la hora nativa de MySQL."""
+    ejecutar_mutacion(
+        """
+        UPDATE funciones
+        SET estado = 'FINALIZADA'
+        WHERE estado NOT IN ('CANCELADA', 'FINALIZADA')
+          AND fin <= NOW();
+        """
+    )
+    ejecutar_mutacion(
+        """
+        UPDATE funciones
+        SET estado = 'EN_CURSO'
+        WHERE estado NOT IN ('CANCELADA', 'EN_CURSO', 'FINALIZADA')
+          AND inicio <= NOW()
+          AND fin > NOW();
+        """
+    )
+
+
 def obtener_funciones_admin_db() -> list[dict]:
     """Lista todas las funciones, incluyendo canceladas y finalizadas, para el ABM."""
     query = SELECT_FUNCION_DETALLE + " ORDER BY f.inicio DESC;"

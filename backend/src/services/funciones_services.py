@@ -12,6 +12,7 @@ from src.repositories.funciones_repository import (
     obtener_estado_butacas_funcion_db,
     obtener_funciones_admin_db,
     obtener_funciones_db,
+    sincronizar_estados_funciones_db,
     tiene_entradas_activas_db,
 )
 from src.utils import (
@@ -62,6 +63,7 @@ def listar_funciones(filtros: dict) -> list[dict]:
 
 def listar_funciones_admin() -> list[dict]:
     """Lista todas las funciones para el ABM, sin filtrar por estado ni vigencia."""
+    sincronizar_estados_funciones_db()
     return [formatear_funcion(f) for f in obtener_funciones_admin_db()]
 
 
