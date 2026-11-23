@@ -25,7 +25,13 @@ from services.servicios_service import (
 )
 from services.compras_service import reservar_butacas_en_backend, liberar_reserva_en_backend
 from utils.csrf import crear_token_csrf, validar_token_csrf
-from utils.formatos import formatear_duracion, formatear_fecha_corta, formatear_hora
+from utils.formatos import (
+    formatear_duracion,
+    formatear_fecha_corta,
+    formatear_hora,
+    formatear_fecha_hora,
+    parsear_datetime_seguro,
+)
 from utils.temporizador_compra import (
     contexto_temporizador_compra,
     iniciar_temporizador_compra,
@@ -334,13 +340,7 @@ def seleccion_butacas():
 
     # Formato de horario
     inicio_raw = func_resp.get("inicio", "") if isinstance(func_resp, dict) else ""
-    horario_etiqueta = "Horario a confirmar"
-    if inicio_raw:
-        try:
-            dt = datetime.fromisoformat(inicio_raw)
-            horario_etiqueta = f"{formatear_fecha_corta(dt.date())} {formatear_hora(dt)}"
-        except Exception:
-            horario_etiqueta = inicio_raw
+    horario_etiqueta = formatear_fecha_hora(inicio_raw) or "Horario a confirmar"
 
     # Resumen lateral
     ubicaciones_resumen = []
@@ -447,9 +447,14 @@ def seleccion_servicios():
         sala_completa = compra_actual.get("sala_completa") or f"Sala {sala_numero} ({formato})"
         sala_badge = f"SALA {sala_numero} • {formato}".upper()
 
-        inicio_dt = _parsear_inicio(funcion.get("inicio") or compra_actual.get("horario", ""))
+        inicio_dt = parsear_datetime_seguro(
+            funcion.get("inicio") or compra_actual.get("horario", "")
+        )
         if inicio_dt:
-            horario_etiqueta = f"{formatear_fecha_corta(inicio_dt.date())} {formatear_hora(inicio_dt)} • {'Subtitulada' if subtitulada else 'Doblada'}"
+            horario_etiqueta = (
+                f"{formatear_fecha_hora(inicio_dt)} • "
+                f"{'Subtitulada' if subtitulada else 'Doblada'}"
+            )
         else:
             horario_etiqueta = compra_actual.get("horario") or "Horario a confirmar"
 
@@ -743,17 +748,8 @@ def seleccion_checkout():
         dato for dato in [idioma, subtitulos, duracion] if dato
     )
 
-    horario = funcion.get("inicio", compra.get("horario", ""))
-
-    try:
-        fecha_funcion = datetime.fromisoformat(horario)
-
-        horario = (
-            f"{formatear_fecha_corta(fecha_funcion.date())} "
-            f"{formatear_hora(fecha_funcion)}"
-        )
-    except (ValueError, TypeError):
-        pass
+    horario_raw = funcion.get("inicio", compra.get("horario", ""))
+    horario = formatear_fecha_hora(horario_raw) or horario_raw
 
     # 10. Preparar el diccionario que utiliza checkout.html
     datos_compra = {
