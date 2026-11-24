@@ -932,7 +932,7 @@ paths:
       tags:
         - Servicios Adicionales
       summary: Crea un nuevo servicio adicional (Solo Admin)
-      description: Registra un producto o servicio adicional (tipo COMIDA o BEBIDA).
+      description: Registra un producto o servicio adicional (tipo COMIDA, BEBIDA, OBJETO, PROMOCION o COMBO).
       operationId: crearServicio
       security:
         - BearerAuth: []
@@ -2363,7 +2363,7 @@ components:
           example: 'Combo Pochoclos Grande + Gaseosa'
         tipo:
           type: string
-          enum: ['COMIDA', 'BEBIDA']
+          enum: ['COMIDA', 'BEBIDA', 'OBJETO', 'PROMOCION', 'COMBO']
           example: 'COMIDA'
         precio:
           type: number
@@ -2391,7 +2391,7 @@ components:
           example: 'Estacionamiento 3 Horas'
         tipo:
           type: string
-          enum: ['COMIDA', 'BEBIDA']
+          enum: ['COMIDA', 'BEBIDA', 'OBJETO', 'PROMOCION', 'COMBO']
           example: 'COMIDA'
         precio:
           type: number
@@ -2411,7 +2411,7 @@ components:
           type: string
         tipo:
           type: string
-          enum: ['COMIDA', 'BEBIDA']
+          enum: ['COMIDA', 'BEBIDA', 'OBJETO', 'PROMOCION', 'COMBO']
         precio:
           type: number
           format: float
