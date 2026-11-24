@@ -21,7 +21,7 @@ tags:
   - name: Autenticación y Usuarios
     description: Gestión de registro, inicio de sesión y perfil de usuarios (Clientes y Administradores).
   - name: Películas y Géneros
-    description: Consulta y administración del catálogo de películas, géneros y búsqueda externa (OMDb / TMDb).
+    description: Consulta y administración del catálogo de películas, géneros y búsqueda externa (OMDb).
   - name: Locales, Salas y Butacas
     description: Complejos de cines, infraestructura de salas y distribución física de butacas.
   - name: Funciones
@@ -203,6 +203,7 @@ paths:
         Responde 400 si los datos son inválidos, si algún id de género no existe
         (error.validacion.generos_inexistentes) o si ya existe una película con el mismo origen_api e id_api
         (error.validacion.pelicula_duplicada); en ese caso el mensaje indica cómo reactivarla si está dada de baja.
+        La duplicación solo se controla para OMDB y TMDB: las películas CUSTOM no se comparan.
       operationId: crearPelicula
       security:
         - BearerAuth: []
@@ -223,12 +224,6 @@ paths:
           $ref: '#/components/responses/ErrorValidacion'
         '401':
           $ref: '#/components/responses/NoAutorizado'
-        '403':
-          description: El usuario autenticado no tiene rol CLIENTE.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorRespuesta'
         '403':
           $ref: '#/components/responses/ProhibidoAdmin'
 
@@ -260,7 +255,7 @@ paths:
       tags:
         - Películas y Géneros
       summary: Muestra el detalle de una película y sus funciones vigentes
-      description: Retorna sinopsis, tráiler, póster, géneros y las funciones vigentes de esta película. Es un endpoint público y también devuelve las películas dadas de baja; el campo activa indica su estado.
+      description: Retorna sinopsis, tráiler, póster, géneros y las funciones vigentes de esta película. Es un endpoint público y también devuelve las películas dadas de baja; el campo activa indica su estado. Responde 400 si el id no es un entero positivo.
       operationId: obtenerPeliculaDetalle
       parameters:
         - $ref: '#/components/parameters/PeliculaId'
@@ -271,6 +266,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PeliculaConFunciones'
+        '400':
+          $ref: '#/components/responses/ErrorValidacion'
         '404':
           $ref: '#/components/responses/RecursoNoEncontrado'
 
@@ -330,6 +327,8 @@ paths:
                   mensaje:
                     type: string
                     example: Película dada de baja con éxito.
+        '400':
+          $ref: '#/components/responses/ErrorValidacion'
         '401':
           $ref: '#/components/responses/NoAutorizado'
         '403':
@@ -344,6 +343,7 @@ paths:
       summary: Busca películas clásicas en API externa (Solo Admin)
       description: >-
         Consulta OMDb por título (solo películas) para previsualizar datos antes de incorporarlos a la cartelera.
+        Debe enviarse query o, como alias, titulo: si no llega ninguno de los dos, responde 400.
         Si OMDb no encuentra resultados, responde 200 con una lista vacía.
         Responde 502 si OMDb no está disponible o devuelve un error, y 500 si falta la clave OMDB_API_KEY en el servidor.
       operationId: buscarPeliculasExternas
@@ -352,11 +352,11 @@ paths:
       parameters:
         - name: query
           in: query
-          required: true
+          required: false
           schema:
             type: string
             maxLength: 100
-          description: Nombre o palabra clave de la película a buscar (máximo 100 caracteres).
+          description: Nombre o palabra clave de la película a buscar (máximo 100 caracteres). Es obligatorio enviar query o titulo.
         - name: titulo
           in: query
           required: false
@@ -364,7 +364,7 @@ paths:
           schema:
             type: string
             maxLength: 100
-          description: Alias de query por compatibilidad. Solo se usa si no se envía query.
+          description: Alias de query por compatibilidad (máximo 100 caracteres). Solo se usa si no se envía query.
       responses:
         '200':
           description: Resultados obtenidos desde la API externa.
@@ -449,7 +449,7 @@ paths:
       tags:
         - Películas y Géneros
       summary: Lista reseñas y puntuaciones de una película
-      description: Retorna las puntuaciones (1 a 5) y comentarios dejados por usuarios verificados para una película.
+      description: Retorna las puntuaciones (1 a 5) y comentarios dejados por usuarios verificados para una película, de la más reciente a la más antigua. Es un endpoint público. Responde 400 si el id no es un entero positivo y 404 si la película no existe.
       operationId: listarResenasPelicula
       parameters:
         - $ref: '#/components/parameters/PeliculaId'
@@ -462,6 +462,8 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/ResenaItem'
+        '400':
+          $ref: '#/components/responses/ErrorValidacion'
         '404':
           $ref: '#/components/responses/RecursoNoEncontrado'
 
@@ -469,7 +471,11 @@ paths:
       tags:
         - Películas y Géneros
       summary: Registra una puntuación y reseña
-      description: Permite registrar una puntuación (1 a 5) y comentario, validando que el usuario tenga una compra para esa película con el QR validado.
+      description: >-
+        Permite a un usuario logueado (cualquier rol) registrar una puntuación (1 a 5) y un comentario opcional sobre una película.
+        Se exige indicar la compra (id_compra) y esa compra debe ser del usuario, corresponder a una función de esa película,
+        estar PAGADA y tener el QR ya validado en puerta. Se admite una sola reseña por compra: si la compra ya tiene una, responde 400.
+        Responde 404 si la película no existe.
       operationId: crearResenaPelicula
       security:
         - BearerAuth: []
@@ -493,11 +499,13 @@ paths:
         '401':
           $ref: '#/components/responses/NoAutorizado'
         '403':
-          description: El usuario no posee una compra con QR validado para esta película.
+          description: La compra no existe, no es del usuario, no corresponde a esta película, no está pagada o su QR todavía no fue validado (código error.auth.prohibido).
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorRespuesta'
+        '404':
+          $ref: '#/components/responses/RecursoNoEncontrado'
 
   # =========================================================================
   # 3. Locales, Salas y Butacas
@@ -951,6 +959,29 @@ paths:
                 $ref: '#/components/schemas/Servicio'
         '400':
           $ref: '#/components/responses/ErrorValidacion'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '403':
+          $ref: '#/components/responses/ProhibidoAdmin'
+
+  /servicios/admin:
+    get:
+      tags:
+        - Servicios Adicionales
+      summary: Lista todos los servicios para el ABM (Solo Admin)
+      description: Devuelve todos los servicios, activos e inactivos. Ordena primero los activos y luego por nombre.
+      operationId: listarServiciosAdmin
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Listado completo de servicios.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Servicio'
         '401':
           $ref: '#/components/responses/NoAutorizado'
         '403':
@@ -1576,7 +1607,8 @@ components:
       required: true
       schema:
         type: integer
-      description: ID único de la película.
+        minimum: 1
+      description: ID único de la película (entero positivo).
     SalaId:
       name: id
       in: path
@@ -1810,23 +1842,29 @@ components:
           example: 'Back to the Future'
         sinopsis:
           type: string
+          nullable: true
           example: 'Marty McFly viaja al año 1955 en una máquina del tiempo construida por el Dr. Emmett Brown.'
         poster_url:
           type: string
           format: uri
+          nullable: true
           example: 'https://image.tmdb.org/t/p/w500/back_to_the_future.jpg'
         trailer_url:
           type: string
           format: uri
+          nullable: true
           example: 'https://youtube.com/watch?v=qvsgGtivCgs'
         duracion_min:
           type: integer
+          nullable: true
           example: 116
         clasificacion:
           type: string
+          nullable: true
           example: 'ATP'
         anio_estreno:
           type: integer
+          nullable: true
           example: 1985
         activa:
           type: boolean
@@ -1847,6 +1885,8 @@ components:
               example: 'TMDB'
             id_api:
               type: string
+              nullable: true
+              description: Identificador en la API externa. Es null en las películas CUSTOM.
               example: 'tt0088763'
 
     PeliculaConFunciones:
@@ -1944,6 +1984,7 @@ components:
         anio_estreno:
           type: integer
           minimum: 1888
+          description: Desde 1888 hasta el año actual más 5.
         activa:
           type: boolean
           description: Con true reactiva una película dada de baja.
@@ -2037,6 +2078,7 @@ components:
           example: 5
         comentario:
           type: string
+          nullable: true
           example: 'Excelente calidad de imagen en la sala 2, película clásica imperdible.'
         creada_en:
           type: string
@@ -2051,7 +2093,8 @@ components:
       properties:
         id_compra:
           type: integer
-          description: ID de la compra correspondiente donde ya se validó el QR.
+          minimum: 1
+          description: ID de la compra pagada, del usuario y de esta película, donde ya se validó el QR. Cada compra admite una sola reseña.
           example: 1042
         puntuacion:
           type: integer
@@ -2060,6 +2103,8 @@ components:
           example: 5
         comentario:
           type: string
+          maxLength: 1000
+          description: Opcional.
           example: 'Excelente sonido y butacas muy cómodas.'
 
     # --- Locales y Salas ---
