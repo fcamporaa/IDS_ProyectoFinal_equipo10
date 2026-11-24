@@ -76,3 +76,47 @@ En la carpeta [`docs/postman/`](docs/postman) disponés de:
 - `Cine_Paradiso_API.postman_collection.json`: Los 28 endpoints documentados y organizados por módulo.
 - `Cine_Paradiso_Local.postman_environment.json`: Entorno con variables locales y captura automática de tokens al iniciar sesión.
 
+---
+
+## 6. Configuración del Correo Emisor (SMTP)
+
+Para habilitar el envío automático de comprobantes de compra con código QR:
+
+**Paso 1. Configurar el archivo de entorno**
+
+Desde la raíz del repositorio, ejecutar (solo si el archivo no existe):
+
+```bash
+cp backend/.env.example backend/.env
+```
+
+Abrir `backend/.env` y configurar:
+
+```dotenv
+EMAIL_MODE=smtp
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=cineparadiso15@gmail.com
+SMTP_PASSWORD=189u49sjhit
+SMTP_FROM=cineparadiso15@gmail.com
+SMTP_STARTTLS=true
+```
+
+> **Nota:** La contraseña indicada es de ejemplo. Reemplazarla por la contraseña de aplicación válida de la cuenta Gmail compartida.
+
+**Paso 2. Instalar las dependencias**
+
+En una terminal:
+
+```bash
+cd backend
+source .venv/bin/activate
+pip install -r requirements.txt
+pip install "qrcode[pil]"
+```
+
+**Paso 3. Reiniciar el backend**
+
+```bash
+python app.py
+```
