@@ -395,3 +395,20 @@ def eliminar(id_funcion):
 
     flash(extraer_mensaje_error(respuesta), "error")
     return redirect(url_for("admin_funciones.index"))
+
+@admin_funciones_bp.route("/<int:id_funcion>/reactivar", methods=["POST"])
+@admin_required
+def reactivar(id_funcion):
+    """Reactiva una función cancelada volviéndola a estado PROGRAMADA."""
+    token = session["access_token"]
+    respuesta, estado = actualizar_funcion(
+        token, id_funcion, {"estado": "PROGRAMADA"}
+    )
+    if estado in (401, 403):
+        return _redirigir_sesion_expirada()
+    if estado == 200:
+        flash("Función reactivada correctamente.", "success")
+        return redirect(url_for("admin_funciones.index"))
+
+    flash(extraer_mensaje_error(respuesta), "error")
+    return redirect(url_for("admin_funciones.index"))

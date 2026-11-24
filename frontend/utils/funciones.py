@@ -28,7 +28,8 @@ def preparar_funcion_para_tabla(funcion: dict) -> dict:
     estado = (f_copy.get("estado") or "PROGRAMADA").upper()
     f_copy["estado"] = estado
     f_copy["puede_editar"] = estado not in ESTADOS_FUNCION_TERMINALES
-    f_copy["puede_baja"] = estado not in ESTADOS_FUNCION_TERMINALES
+    f_copy["puede_baja"] = estado not in ESTADOS_FUNCION_TERMINALES 
+    f_copy["puede_reactivar"] = estado == "CANCELADA"
 
     inicio_raw = f_copy.get("inicio")
     fin_raw = f_copy.get("fin")

@@ -108,7 +108,16 @@
                   </form>
                   {% endif %}
 
-                  {% if not funcion.puede_editar and not funcion.puede_baja %}
+                  {% if funcion.puede_reactivar %}
+                  <form method="POST"
+                        action="{{ url_for('admin_funciones.reactivar', id_funcion=funcion.id_funcion) }}">
+                    {% with texto='Reactivar', tipo='submit', variante='secondary', clase_extra='admin-funciones__action' %}
+                      {% include 'components/button.html' %}
+                    {% endwith %}
+                  </form>
+                  {% endif %}
+
+                  {% if not funcion.puede_editar and not funcion.puede_baja and not funcion.puede_reactivar %}
                   <span class="admin-funciones__sin-acciones">—</span>
                   {% endif %}
                 </div>
@@ -123,7 +132,7 @@
         {% if funcion.puede_baja %}
           {% with id_modal='modal-baja-' ~ funcion.id_funcion,
                   titulo='Confirmar baja de función',
-                  mensaje='¿Querés cancelar la función de "' ~ funcion.titulo_pelicula ~ '" del ' ~ funcion.fecha_legible ~ ' a las ' ~ funcion.hora_inicio ~ '? La función quedará cancelada y no se podrá reactivar.',
+                  mensaje='¿Querés cancelar la función de "' ~ funcion.titulo_pelicula ~ '" del ' ~ funcion.fecha_legible ~ ' a las ' ~ funcion.hora_inicio ~ '? La función quedará cancelada y podrás reactivarla más adelante si el horario sigue disponible.',
                   accion=url_for('admin_funciones.eliminar', id_funcion=funcion.id_funcion),
                   texto_confirmar='Sí, cancelar función',
                   texto_cancelar='Volver' %}

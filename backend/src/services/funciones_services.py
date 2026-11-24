@@ -81,9 +81,22 @@ def crear_funcion(datos: dict) -> dict:
 def actualizar_funcion(id_funcion: int, cambios: dict) -> dict:
     """Modifica película, sala, horario, formato, idioma, subtítulos, precio o estado."""
     actual = _obtener_funcion_o_404(id_funcion)
+    if actual["estado"] == "CANCELADA" and cambios == {"estado": "PROGRAMADA"}:
+        if actual["inicio"] <= ahora_local():
+            raise error_conflicto(
+                "No se puede reactivar una función cuyo horario de inicio ya pasó."
+            )
+        _obtener_pelicula_activa(actual["id_pelicula"])
+        _obtener_sala_activa(actual["id_sala"])
+        _verificar_sala_libre(
+            actual["id_sala"], actual["inicio"], actual["fin"], id_funcion
+        )
+        actualizar_funcion_db(id_funcion, {**actual, "estado": "PROGRAMADA"})
+        return formatear_funcion(buscar_funcion_por_id_db(id_funcion))
+
     if actual["estado"] in ESTADOS_FUNCION_TERMINALES:
         raise error_conflicto(f"No se puede modificar una función {actual['estado']}.")
-
+    
     id_pelicula = cambios.get("id_pelicula", actual["id_pelicula"])
     id_sala = cambios.get("id_sala", actual["id_sala"])
     inicio = cambios.get("inicio", actual["inicio"])
