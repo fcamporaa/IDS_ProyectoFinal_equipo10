@@ -12,11 +12,11 @@ _CLAVE_PELICULA = "compra_id_pelicula"
 _CLAVE_FUNCION = "compra_id_funcion"
 
 
-def iniciar_temporizador_compra(
+def registrar_contexto_compra(
     id_funcion: int | None = None,
     id_pelicula: int | None = None,
 ) -> None:
-    """Conserva el plazo en la misma función y lo reinicia al cambiar de función."""
+    """Conserva el contexto de la compra y descarta selecciones de otra función."""
     compra_previa = session.get("compra") or {}
     funcion_previa = session.get(_CLAVE_FUNCION) or compra_previa.get("id_funcion")
     pelicula_previa = session.get(_CLAVE_PELICULA) or compra_previa.get("id_pelicula")
@@ -34,12 +34,24 @@ def iniciar_temporizador_compra(
     if cambio_de_funcion or cambio_de_pelicula:
         limpiar_compra_temporal()  # Evita reutilizar butacas y servicios de otra función.
 
-    if _CLAVE_VENCIMIENTO not in session:
-        session[_CLAVE_VENCIMIENTO] = time.time() + DURACION_COMPRA_SEGUNDOS
     if id_funcion is not None:
         session[_CLAVE_FUNCION] = id_funcion
     if id_pelicula is not None:
         session[_CLAVE_PELICULA] = id_pelicula
+
+
+def iniciar_temporizador_compra(
+    id_funcion: int | None = None,
+    id_pelicula: int | None = None,
+) -> None:
+    """Inicia el plazo una sola vez, después de reservar las butacas."""
+    registrar_contexto_compra(id_funcion, id_pelicula)
+    if _CLAVE_VENCIMIENTO not in session:
+        session[_CLAVE_VENCIMIENTO] = time.time() + DURACION_COMPRA_SEGUNDOS
+
+
+def temporizador_compra_iniciado() -> bool:
+    return _CLAVE_VENCIMIENTO in session
 
 
 def temporizador_compra_vencido() -> bool:

@@ -46,10 +46,13 @@ from utils.formatos import (
     parsear_datetime_seguro,
 )
 from utils.temporizador_compra import (
+    DURACION_COMPRA_SEGUNDOS,
     contexto_temporizador_compra,
     iniciar_temporizador_compra,
     limpiar_compra_temporal,
+    registrar_contexto_compra,
     redirigir_compra_expirada,
+    temporizador_compra_iniciado,
     temporizador_compra_vencido,
 )
 from validators.compras_validators import (
@@ -157,7 +160,7 @@ def seleccion_butacas():
     POST: Recibe la selección del usuario, valida disponibilidad y persiste en session.
     """
     if request.method == "POST":
-        if temporizador_compra_vencido():
+        if temporizador_compra_iniciado() and temporizador_compra_vencido():
             return redirigir_compra_expirada()
         id_funcion = request.form.get("id_funcion", type=int)
         raw_butacas = request.form.get("butacas_seleccionadas", "")
@@ -211,13 +214,17 @@ def seleccion_butacas():
         token_acceso = session.get("access_token")
         if token_acceso:
             token_reserva = token_previo or secrets.token_hex(32)
-            temporizador = contexto_temporizador_compra()
+            duracion_segundos = (
+                contexto_temporizador_compra()["duracion_restante_segundos"]
+                if temporizador_compra_iniciado()
+                else DURACION_COMPRA_SEGUNDOS
+            )
             respuesta_reserva, estado_reserva = reservar_butacas_en_backend(
                 {
                     "id_funcion": id_funcion,
                     "butacas_ids": ids_butacas,
                     "token_reserva": token_reserva,
-                    "duracion_segundos": temporizador["duracion_restante_segundos"],
+                    "duracion_segundos": duracion_segundos,
                 },
                 token_acceso,
             )
@@ -233,6 +240,11 @@ def seleccion_butacas():
                     url_for("compra.seleccion_butacas", id_funcion=id_funcion)
                 )
             session["token_reserva_butacas"] = token_reserva
+
+        iniciar_temporizador_compra(
+            id_funcion=id_funcion,
+            id_pelicula=session.get("compra_id_pelicula"),
+        )
 
         # Obtener detalle de función para precio y datos de la orden
         func_detalle, _ = obtener_detalle_funcion_del_backend(id_funcion)
@@ -294,10 +306,14 @@ def seleccion_butacas():
         return redirect(url_for("peliculas.detalle_pelicula", id_pelicula=func_resp["id_pelicula"]))
 
     id_pelicula = func_resp.get("id_pelicula")
-    iniciar_temporizador_compra(id_funcion=id_funcion, id_pelicula=id_pelicula)
-    if temporizador_compra_vencido():
+    registrar_contexto_compra(id_funcion=id_funcion, id_pelicula=id_pelicula)
+    if temporizador_compra_iniciado() and temporizador_compra_vencido():
         return redirigir_compra_expirada()
-    temporizador = contexto_temporizador_compra()
+    temporizador = (
+        contexto_temporizador_compra()
+        if temporizador_compra_iniciado()
+        else None
+    )
 
     # Obtener butacas de la sesión previa si corresponden a esta función
     compra_sesion = session.get("compra", {})
@@ -394,7 +410,11 @@ def seleccion_butacas():
             "sala_completa": f"Sala {num_sala} ({formato})",
             "horario_etiqueta": horario_etiqueta,
             "pantalla_tipo": f"PANTALLA {formato}",
-            "tiempo_restante": f"{temporizador['tiempo_restante']} min",
+            "tiempo_restante": (
+                f"{temporizador['tiempo_restante']} min"
+                if temporizador
+                else "10:00 min"
+            ),
             "precio_general": int(precio_base),
             "precio_vip": int(precio_vip),
         },
