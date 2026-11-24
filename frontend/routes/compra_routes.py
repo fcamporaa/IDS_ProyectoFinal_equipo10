@@ -23,6 +23,7 @@ from services.funciones_service import (
 )
 from services.peliculas_service import obtener_detalle_pelicula
 from services.servicios_service import (
+    TIPOS_SERVICIO,
     obtener_servicios_del_backend,
     formatear_monto,
     obtener_servicios_disponibles,
@@ -536,8 +537,7 @@ def seleccion_servicios():
             },
             "categorias_filtro": [
                 {"id": "todos", "nombre": "Todos los Servicios"},
-                {"id": "comida", "nombre": "COMIDA"},
-                {"id": "bebida", "nombre": "BEBIDA"},
+                *({"id": tipo.lower(), "nombre": tipo} for tipo in TIPOS_SERVICIO),
             ],
             "servicios": servicios,
             "servicios_seleccionados": [
