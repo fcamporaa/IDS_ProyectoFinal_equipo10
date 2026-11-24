@@ -3,7 +3,7 @@
 -- Cátedra Lanzillotta - IDS 2026
 -- Compatible con MySQL 8.0, MariaDB y TiDB Cloud (DDL Directo con AUTO_INCREMENT)
 -- =============================================================================
-
+SET NAMES utf8mb4;
 CREATE DATABASE IF NOT EXISTS `proyecto_integrador`;
 USE `proyecto_integrador`;
 

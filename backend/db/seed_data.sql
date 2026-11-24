@@ -2,7 +2,7 @@
 -- Datos Semilla (Seeds) para Cine Paradiso
 -- Cátedra Lanzillotta - IDS 2026
 -- =============================================================================
-
+SET NAMES utf8mb4;
 USE `proyecto_integrador`;
 
 -- 1. Usuarios de prueba (contraseñas hasheadas con bcrypt)
@@ -73,7 +73,7 @@ INSERT INTO `pelicula_generos` (`id_pelicula`, `id_genero`) VALUES
 (3, 1)  -- Spider-Man: Acción
 ON DUPLICATE KEY UPDATE `id_pelicula` = VALUES(`id_pelicula`);
 
--- 8. Funciones (Horarios futuros usando DATE_ADD para vigencia prolongada)
+-- 8. Funciones (Horarios cinematográficos futuros con horas estándar para vigencia prolongada)
 INSERT INTO `funciones` (`id_funcion`, `id_pelicula`, `id_sala`, `inicio`, `fin`, `formato`, `idioma`, `subtitulada`, `precio_entrada`, `estado`) VALUES
 (1, 1, 1, DATE_ADD(NOW(), INTERVAL 7 DAY), DATE_ADD(NOW(), INTERVAL 7 DAY) + INTERVAL 166 MINUTE, '4D', 'Inglés', 1, 6500.00, 'PROGRAMADA'),
 (2, 1, 1, DATE_ADD(NOW(), INTERVAL 14 DAY), DATE_ADD(NOW(), INTERVAL 14 DAY) + INTERVAL 166 MINUTE, '4D', 'Inglés', 1, 6500.00, 'PROGRAMADA'),
