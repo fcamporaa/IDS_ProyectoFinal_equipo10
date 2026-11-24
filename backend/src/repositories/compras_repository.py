@@ -328,7 +328,24 @@ def registrar_compra_pagada_db(
                     error_de_negocio("compras.servicios", "Servicio no disponible",
                                      "Algún adicional no existe o está inactivo.", HTTP_SOLICITUD_INVALIDA)
 
-            subtotal_entradas = funcion["precio_entrada"] * len(butacas)
+            # Consultar fila de cada butaca para aplicar recargo del 25% a filas VIP (E, F, G)
+            cursor.execute(
+                f"SELECT id_butaca, fila FROM butacas WHERE id_butaca IN ({marcadores_butacas})",
+                tuple(butacas),
+            )
+            filas_butacas = {b["id_butaca"]: b["fila"] for b in cursor.fetchall()}
+
+            subtotal_entradas = Decimal("0.00")
+            precios_butacas = {}
+            for id_butaca in butacas:
+                fila = filas_butacas.get(id_butaca, "")
+                if fila in ("E", "F", "G"):
+                    pr = round(Decimal(str(funcion["precio_entrada"])) * Decimal("1.25"), 2)
+                else:
+                    pr = Decimal(str(funcion["precio_entrada"]))
+                precios_butacas[id_butaca] = pr
+                subtotal_entradas += pr
+
             subtotal_servicios = sum((
                 precios_servicios[s["id_servicio"]] * s["cantidad"] for s in servicios
             ), Decimal("0.00"))
@@ -349,7 +366,7 @@ def registrar_compra_pagada_db(
                 """INSERT INTO entradas
                    (id_compra, id_funcion, id_butaca, precio_unitario, estado)
                    VALUES (%s, %s, %s, %s, 'OCUPADA')""",
-                [(id_compra, datos["id_funcion"], id_butaca, funcion["precio_entrada"])
+                [(id_compra, datos["id_funcion"], id_butaca, precios_butacas[id_butaca])
                  for id_butaca in butacas],
             )
             cursor.execute(

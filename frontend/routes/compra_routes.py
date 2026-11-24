@@ -241,7 +241,19 @@ def seleccion_butacas():
             if isinstance(func_detalle, dict)
             else 8500.0
         )
-        subtotal = precio_unitario * len(butacas_elegidas)
+        precio_vip = round(precio_unitario * 1.25, 2)
+        butacas_guardadas = []
+        for b in butacas_elegidas:
+            es_vip = b.get("fila") in ("E", "F", "G")
+            pr = precio_vip if es_vip else precio_unitario
+            butacas_guardadas.append({
+                "id_butaca": b["id_butaca"],
+                "fila": b["fila"],
+                "numero": b["numero"],
+                "es_vip": es_vip,
+                "precio": pr,
+            })
+        subtotal = sum(b["precio"] for b in butacas_guardadas)
 
         # Guardar la selección en la sesión de Flask
         session["compra"] = {
@@ -253,16 +265,8 @@ def seleccion_butacas():
             "sala_completa": f"Sala {func_detalle.get('numero_sala', 1)} ({func_detalle.get('formato', '2D')})" if isinstance(func_detalle, dict) else "Sala 1",
             "horario": func_detalle.get("inicio", "") if isinstance(func_detalle, dict) else "",
             "precio_unitario": precio_unitario,
-            "butacas": [
-                {
-                    "id_butaca": b["id_butaca"],
-                    "fila": b["fila"],
-                    "numero": b["numero"],
-                    "precio": precio_unitario,
-                }
-                for b in butacas_elegidas
-            ],
-            "total_butacas": len(butacas_elegidas),
+            "butacas": butacas_guardadas,
+            "total_butacas": len(butacas_guardadas),
             "subtotal_entradas": subtotal,
         }
 
@@ -397,6 +401,8 @@ def seleccion_butacas():
             "tiempo_restante": f"{temporizador['tiempo_restante']} min",
             "precio_general": int(precio_base),
             "precio_vip": int(precio_vip),
+            "precio_general_formato": formatear_precio(precio_base),
+            "precio_vip_formato": formatear_precio(precio_vip),
         },
         "sala": {
             "filas": filas_construidas,
@@ -511,6 +517,36 @@ def seleccion_servicios():
         )
         total = subtotal_entradas + subtotal_candy
 
+        entradas_items = []
+        vip_butacas = [b for b in butacas if b.get("es_vip") or b.get("fila") in ("E", "F", "G")]
+        gen_butacas = [b for b in butacas if not (b.get("es_vip") or b.get("fila") in ("E", "F", "G"))]
+        if gen_butacas:
+            sub_gen = sum(float(b.get("precio", precio_unitario)) for b in gen_butacas)
+            txt_gen = ", ".join(f"{b.get('fila')}-{b.get('numero')}" for b in gen_butacas)
+            entradas_items.append({
+                "descripcion": f"{len(gen_butacas)}x Entrada {formato}",
+                "detalle": f"Butacas {txt_gen}",
+                "subtotal": sub_gen,
+                "subtotal_formato": formatear_monto(sub_gen),
+            })
+        if vip_butacas:
+            precio_vip = round(precio_unitario * 1.25, 2)
+            sub_vip = sum(float(b.get("precio", precio_vip)) for b in vip_butacas)
+            txt_vip = ", ".join(f"{b.get('fila')}-{b.get('numero')}" for b in vip_butacas)
+            entradas_items.append({
+                "descripcion": f"{len(vip_butacas)}x Entrada VIP ({formato})",
+                "detalle": f"Butacas {txt_vip}",
+                "subtotal": sub_vip,
+                "subtotal_formato": formatear_monto(sub_vip),
+            })
+        if not entradas_items:
+            entradas_items.append({
+                "descripcion": f"{len(butacas)}x Entrada {formato}",
+                "detalle": f"Butacas {butacas_texto}",
+                "subtotal": subtotal_entradas,
+                "subtotal_formato": formatear_monto(subtotal_entradas),
+            })
+
         return {
             "pelicula": {
                 "id_pelicula": id_pelicula,
@@ -524,14 +560,7 @@ def seleccion_servicios():
                 "complejo": complejo,
             },
             "entradas": {
-                "items": [
-                    {
-                        "descripcion": f"{len(butacas)}x Entrada {formato}",
-                        "detalle": f"Butacas {butacas_texto}",
-                        "subtotal": subtotal_entradas,
-                        "subtotal_formato": formatear_monto(subtotal_entradas),
-                    }
-                ],
+                "items": entradas_items,
                 "subtotal": subtotal_entradas,
                 "subtotal_formato": formatear_monto(subtotal_entradas),
             },
@@ -680,17 +709,37 @@ def seleccion_checkout():
     cantidad_entradas = len(compra["butacas"])
 
     precio_unitario = float(funcion["precio_entrada"])
+    precio_vip = round(precio_unitario * 1.25, 2)
 
-    subtotal_entradas = precio_unitario * cantidad_entradas
+    # 6. Construir el desglose de las entradas considerando butacas VIP
+    desglose = []
+    vip_butacas = [b for b in compra["butacas"] if b.get("es_vip") or b.get("fila") in ("E", "F", "G")]
+    gen_butacas = [b for b in compra["butacas"] if not (b.get("es_vip") or b.get("fila") in ("E", "F", "G"))]
 
-    # 6. Construir el desglose de las entradas
-    desglose = [
-        {
+    subtotal_entradas = 0.0
+    if gen_butacas:
+        sub_gen = sum(float(b.get("precio", precio_unitario)) for b in gen_butacas)
+        subtotal_entradas += sub_gen
+        desglose.append({
+            "titulo": f"{len(gen_butacas)}x Entrada {funcion.get('formato', '2D')}",
+            "subtexto": compra["pelicula_titulo"],
+            "precio": f"${sub_gen:,.0f}".replace(",", "."),
+        })
+    if vip_butacas:
+        sub_vip = sum(float(b.get("precio", precio_vip)) for b in vip_butacas)
+        subtotal_entradas += sub_vip
+        desglose.append({
+            "titulo": f"{len(vip_butacas)}x Entrada VIP ({funcion.get('formato', '2D')})",
+            "subtexto": compra["pelicula_titulo"],
+            "precio": f"${sub_vip:,.0f}".replace(",", "."),
+        })
+    if not desglose:
+        subtotal_entradas = float(compra.get("subtotal_entradas") or (precio_unitario * cantidad_entradas))
+        desglose.append({
             "titulo": f"{cantidad_entradas}x Entrada",
             "subtexto": compra["pelicula_titulo"],
             "precio": f"${subtotal_entradas:,.0f}".replace(",", "."),
-        }
-    ]
+        })
 
     # 7. Recuperar los servicios seleccionados (si existen)
     servicios_seleccionados = session.get("servicios_seleccionados", [])
