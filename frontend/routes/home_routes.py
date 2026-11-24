@@ -1,5 +1,5 @@
 from flask import Blueprint, flash, render_template, request
-from services.peliculas_service import obtener_cartelera_vigente
+from services.peliculas_service import obtener_cartelera_vigente, obtener_generos
 from utils.filtros import validar_filtros_cartelera
 from utils.peliculas import adaptar_pelicula_para_card
 
@@ -19,15 +19,24 @@ def index():
         flash(str(error), "error")
         filtros = {}
 
-    respuesta, estado = obtener_cartelera_vigente(filtros)
+    filtros_backend = {
+        clave: valor for clave, valor in filtros.items() if clave != "id_genero"
+    }
+    respuesta, estado = obtener_cartelera_vigente(filtros_backend)
     backend_disponible = estado == 200 and isinstance(respuesta, list)
     peliculas = (
         [adaptar_pelicula_para_card(p) for p in respuesta]
         if backend_disponible
         else []
     )
+    generos, estado_generos = obtener_generos()
+    if estado_generos != 200 or not isinstance(generos, list):
+        generos = []
+
     return render_template(
         "index.html",
         peliculas=peliculas,
         backend_disponible=backend_disponible,
+        generos=generos,
+        genero_activo=filtros.get("id_genero"),
     )

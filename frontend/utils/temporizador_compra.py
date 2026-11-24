@@ -66,6 +66,7 @@ def contexto_temporizador_compra() -> dict:
     return {
         "expira_en_ms": int(expira_en * 1000),
         "ahora_servidor_ms": int(ahora * 1000),
+        "duracion_restante_segundos": restante,
         "tiempo_restante": f"{restante // 60:02d}:{restante % 60:02d}",
     }
 
@@ -78,6 +79,7 @@ def limpiar_compra_temporal() -> int | None:
     session.pop(_CLAVE_PELICULA, None)
     session.pop(_CLAVE_FUNCION, None)
     session.pop("servicios_seleccionados", None)
+    session.pop("token_reserva_butacas", None)
     return id_pelicula
 
 

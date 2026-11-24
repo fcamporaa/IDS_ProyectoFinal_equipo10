@@ -2,7 +2,7 @@
 -- Datos Semilla (Seeds) para Cine Paradiso
 -- Cátedra Lanzillotta - IDS 2026
 -- =============================================================================
-
+SET NAMES utf8mb4;
 USE `proyecto_integrador`;
 
 -- 1. Usuarios de prueba (contraseñas hasheadas con bcrypt)
@@ -28,17 +28,19 @@ ON DUPLICATE KEY UPDATE `nombre` = VALUES(`nombre`);
 -- 3. Complejos (Locales)
 INSERT INTO `locales` (`id_local`, `nombre`, `direccion`, `activo`) VALUES
 (1, 'Cine Paradiso Centro', 'Av. Corrientes 1240, CABA', 1),
-(2, 'Cine Paradiso Palermo', 'Av. Santa Fe 3200, CABA', 1)
+(2, 'Cine Paradiso Palermo', 'Av. Santa Fe 3200, CABA', 1),
+(3, 'Cine Paradiso Belgrano', 'Av. Cabildo 2180, CABA', 1)
 ON DUPLICATE KEY UPDATE `nombre` = VALUES(`nombre`);
 
 -- 4. Salas
 INSERT INTO `salas` (`id_sala`, `id_local`, `numero`, `activa`) VALUES
 (1, 1, 1, 1),
 (2, 1, 2, 1),
-(3, 2, 1, 1)
+(3, 2, 1, 1),
+(4, 3, 1, 1)
 ON DUPLICATE KEY UPDATE `numero` = VALUES(`numero`);
 
--- 5. Butacas para Salas 1 y 2 (Filas A, B, C; Butacas 1 a 6)
+-- 5. Butacas para Salas 1 a 4
 INSERT INTO `butacas` (`id_butaca`, `id_sala`, `fila`, `numero`, `activa`) VALUES
 -- Sala 1
 (1, 1, 'A', 1, 1), (2, 1, 'A', 2, 1), (3, 1, 'A', 3, 1), (4, 1, 'A', 4, 1), (5, 1, 'A', 5, 1), (6, 1, 'A', 6, 1),
@@ -49,7 +51,10 @@ INSERT INTO `butacas` (`id_butaca`, `id_sala`, `fila`, `numero`, `activa`) VALUE
 (23, 2, 'B', 1, 1), (24, 2, 'B', 2, 1), (25, 2, 'B', 3, 1), (26, 2, 'B', 4, 1), 
 -- Sala 3
 (27, 3, 'A', 1, 1), (28, 3, 'A', 2, 1), (29, 3, 'A', 3, 1), (30, 3, 'A', 4, 1),
-(31, 3, 'B', 1, 1), (32, 3, 'B', 2, 1), (33, 3, 'B', 3, 1), (34, 3, 'B', 4, 1)
+(31, 3, 'B', 1, 1), (32, 3, 'B', 2, 1), (33, 3, 'B', 3, 1), (34, 3, 'B', 4, 1),
+-- Sala 4 (Belgrano)
+(35, 4, 'A', 1, 1), (36, 4, 'A', 2, 1), (37, 4, 'A', 3, 1), (38, 4, 'A', 4, 1),
+(39, 4, 'B', 1, 1), (40, 4, 'B', 2, 1), (41, 4, 'B', 3, 1), (42, 4, 'B', 4, 1)
 ON DUPLICATE KEY UPDATE `activa` = VALUES(`activa`);
 
 -- 6. Películas
@@ -68,12 +73,13 @@ INSERT INTO `pelicula_generos` (`id_pelicula`, `id_genero`) VALUES
 (3, 1)  -- Spider-Man: Acción
 ON DUPLICATE KEY UPDATE `id_pelicula` = VALUES(`id_pelicula`);
 
--- 8. Funciones (Horarios futuros usando DATE_ADD para vigencia prolongada)
+-- 8. Funciones (Horarios cinematográficos futuros con horas estándar para vigencia prolongada)
 INSERT INTO `funciones` (`id_funcion`, `id_pelicula`, `id_sala`, `inicio`, `fin`, `formato`, `idioma`, `subtitulada`, `precio_entrada`, `estado`) VALUES
 (1, 1, 1, DATE_ADD(NOW(), INTERVAL 7 DAY), DATE_ADD(NOW(), INTERVAL 7 DAY) + INTERVAL 166 MINUTE, '4D', 'Inglés', 1, 6500.00, 'PROGRAMADA'),
 (2, 1, 1, DATE_ADD(NOW(), INTERVAL 14 DAY), DATE_ADD(NOW(), INTERVAL 14 DAY) + INTERVAL 166 MINUTE, '4D', 'Inglés', 1, 6500.00, 'PROGRAMADA'),
 (3, 2, 2, DATE_ADD(NOW(), INTERVAL 10 DAY), DATE_ADD(NOW(), INTERVAL 10 DAY) + INTERVAL 180 MINUTE, '2D', 'Inglés', 1, 4800.00, 'PROGRAMADA'),
-(4, 3, 3, DATE_ADD(NOW(), INTERVAL 15 DAY), DATE_ADD(NOW(), INTERVAL 15 DAY) + INTERVAL 140 MINUTE, '3D', 'Español', 0, 5200.00, 'PROGRAMADA')
+(4, 3, 3, DATE_ADD(NOW(), INTERVAL 15 DAY), DATE_ADD(NOW(), INTERVAL 15 DAY) + INTERVAL 140 MINUTE, '3D', 'Español', 0, 5200.00, 'PROGRAMADA'),
+(5, 3, 4, DATE_ADD(NOW(), INTERVAL 16 DAY), DATE_ADD(NOW(), INTERVAL 16 DAY) + INTERVAL 140 MINUTE, '3D', 'Español', 0, 5200.00, 'PROGRAMADA')
 ON DUPLICATE KEY UPDATE `inicio` = VALUES(`inicio`), `fin` = VALUES(`fin`), `estado` = VALUES(`estado`);
 
 -- 9. Entradas disponibles para las funciones
@@ -87,7 +93,23 @@ INSERT INTO `entradas` (`id_entrada`, `id_funcion`, `id_butaca`, `precio_unitari
 (7, 2, 1, 6500.00, 'DISPONIBLE'),
 (8, 2, 2, 6500.00, 'DISPONIBLE'),
 (9, 3, 19, 4800.00, 'DISPONIBLE'),
-(10, 3, 20, 4800.00, 'DISPONIBLE')
+(10, 3, 20, 4800.00, 'DISPONIBLE'),
+(11, 4, 27, 5200.00, 'DISPONIBLE'),
+(12, 4, 28, 5200.00, 'DISPONIBLE'),
+(13, 4, 29, 5200.00, 'DISPONIBLE'),
+(14, 4, 30, 5200.00, 'DISPONIBLE'),
+(15, 4, 31, 5200.00, 'DISPONIBLE'),
+(16, 4, 32, 5200.00, 'DISPONIBLE'),
+(17, 4, 33, 5200.00, 'DISPONIBLE'),
+(18, 4, 34, 5200.00, 'DISPONIBLE'),
+(19, 5, 35, 5200.00, 'DISPONIBLE'),
+(20, 5, 36, 5200.00, 'DISPONIBLE'),
+(21, 5, 37, 5200.00, 'DISPONIBLE'),
+(22, 5, 38, 5200.00, 'DISPONIBLE'),
+(23, 5, 39, 5200.00, 'DISPONIBLE'),
+(24, 5, 40, 5200.00, 'DISPONIBLE'),
+(25, 5, 41, 5200.00, 'DISPONIBLE'),
+(26, 5, 42, 5200.00, 'DISPONIBLE')
 ON DUPLICATE KEY UPDATE `estado` = VALUES(`estado`);
 
 -- 10. Servicios Adicionales (Candy Bar)

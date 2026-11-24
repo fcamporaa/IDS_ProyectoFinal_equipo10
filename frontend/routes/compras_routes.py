@@ -4,6 +4,13 @@ from validators.compras_validators import validar_formulario_compra
 from services.peliculas_service import obtener_detalle_pelicula
 from email.utils import parsedate_to_datetime
 from datetime import datetime, timedelta
+from utils.formatos import (
+    formatear_fecha_corta,
+    formatear_hora,
+    formatear_fecha_hora,
+    formatear_precio,
+    parsear_datetime_seguro,
+)
 from services.compras_service import (
     enviar_compra_al_backend,
     obtener_compra_del_backend,
@@ -94,17 +101,6 @@ def compra_exitosa(id_compra: int):
     entradas = compra.get("entradas", [])
     servicios = compra.get("servicios", [])
 
-    # Formatear importes
-    def formatear_precio(valor):
-        numero = float(valor or 0)
-        entero, centavos = f"{numero:,.2f}".split(".")
-        resultado = f"${entero.replace(',', '.')}"
-
-        if centavos != "00":
-            resultado += f",{centavos}"
-
-        return resultado
-
     # Obtener información adicional de la película
     pelicula, estado_pelicula = obtener_detalle_pelicula(funcion["id_pelicula"])
     if estado_pelicula != 200 or not isinstance(pelicula, dict):
@@ -112,31 +108,15 @@ def compra_exitosa(id_compra: int):
 
     # Interpretar fecha y horario de la función
     inicio_texto = str(funcion.get("inicio") or "")
-    fecha_funcion = None
+    fecha_funcion = parsear_datetime_seguro(inicio_texto)
 
-    try:
-        fecha_funcion = datetime.fromisoformat(
-            inicio_texto.replace("Z", "+00:00")
-        )
-    except ValueError:
-        try:
-            fecha_funcion = parsedate_to_datetime(inicio_texto)
-        except (ValueError, TypeError):
-            pass
-
-    fecha = (
-        fecha_funcion.strftime("%d/%m/%Y")
-        if fecha_funcion else inicio_texto
-    )
-
-    horario = (
-        fecha_funcion.strftime("%H:%M hs")
-        if fecha_funcion else ""
-    )
-
+    fecha = formatear_fecha_corta(fecha_funcion) if fecha_funcion else inicio_texto
+    horario = formatear_hora(fecha_funcion) if fecha_funcion else ""
+    limite_dt = (fecha_funcion - timedelta(hours=24)) if fecha_funcion else None
     limite_cancelacion = (
-        (fecha_funcion - timedelta(hours=24)).strftime("%d/%m/%Y %H:%M")
-        if fecha_funcion else "24 horas antes de la función"
+        formatear_fecha_hora(limite_dt)
+        if limite_dt
+        else "24 horas antes de la función"
     )
 
     puede_cancelar = (

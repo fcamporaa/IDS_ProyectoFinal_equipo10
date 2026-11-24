@@ -6,11 +6,13 @@ from src.services.qr_services import crear_token_qr
 from src.services.comprobantes_services import enviar_comprobante_compra
 from src.repositories.compras_repository import registrar_compra_pagada_db, obtener_detalle_comprobante_db
 from src.constants import HTTP_NO_IMPLEMENTADO, HTTP_CONFLICTO
-from src.utils import ahora_local, error_de_negocio
+from src.utils import ahora_local, construir_error_api, error_de_negocio, formatear_datetime_iso
 
 from src.constants import FORMATO_DATETIME_SQL
 from src.repositories.compras_repository import (
     verificar_butacas_disponibles_db,
+    reservar_butacas_temporalmente_db,
+    liberar_reserva_temporal_db,
     insertar_compra_db,
     insertar_entradas_db,
     insertar_servicios_compra_db,
@@ -22,7 +24,6 @@ from src.repositories.compras_repository import (
     liberar_butacas_compra_db,
     cancelar_compra_atomica_db,
 )
-from src.utils import construir_error_api
 
 
 def procesar_compra(id_usuario: int, datos: dict) -> dict:
@@ -43,9 +44,42 @@ def procesar_compra(id_usuario: int, datos: dict) -> dict:
     return compra
 
 
+def reservar_butacas_temporalmente(id_usuario: int, datos: dict) -> dict:
+    """Aparta las butacas por el tiempo restante del checkout."""
+    expira_en = ahora_local() + timedelta(seconds=datos["duracion_segundos"])
+    reservar_butacas_temporalmente_db(
+        datos["id_funcion"],
+        datos["butacas_ids"],
+        id_usuario,
+        datos["token_reserva"],
+        expira_en,
+    )
+    return {"token_reserva": datos["token_reserva"], "estado": "RESERVADA"}
+
+
+def liberar_reserva_temporal(id_usuario: int, token_reserva: str) -> None:
+    liberar_reserva_temporal_db(id_usuario, token_reserva)
+
+
 def listar_mis_compras(id_usuario: int) -> list[dict]:
     """Devuelve el historial de compras del cliente logueado."""
-    return obtener_compras_por_usuario_db(id_usuario)
+    compras = obtener_compras_por_usuario_db(id_usuario)
+    return [
+        {
+            **c,
+            "fecha_funcion": (
+                formatear_datetime_iso(c["fecha_funcion"])
+                if c.get("fecha_funcion")
+                else None
+            ),
+            "creada_en": (
+                formatear_datetime_iso(c["creada_en"])
+                if c.get("creada_en")
+                else None
+            ),
+        }
+        for c in compras
+    ]
 
 
 def obtener_detalle_compra(id_compra: int, id_usuario: int) -> dict:
@@ -64,6 +98,8 @@ def obtener_detalle_compra(id_compra: int, id_usuario: int) -> dict:
             "No posee autorización para consultar esta compra.",
         )
 
+    inicio_dt = compra.pop("inicio")
+    fin_dt = compra.pop("fin")
     compra["funcion"] = {
         "id_funcion": compra.pop("id_funcion"),
         "id_pelicula": compra.pop("id_pelicula"),
@@ -71,8 +107,8 @@ def obtener_detalle_compra(id_compra: int, id_usuario: int) -> dict:
         "id_sala": compra.pop("id_sala"),
         "numero_sala": compra.pop("numero_sala"),
         "nombre_local": compra.pop("nombre_local"),
-        "inicio": compra.pop("inicio"),
-        "fin": compra.pop("fin"),
+        "inicio": formatear_datetime_iso(inicio_dt) if inicio_dt else None,
+        "fin": formatear_datetime_iso(fin_dt) if fin_dt else None,
         "formato": compra.pop("formato"),
         "idioma": compra.pop("idioma"),
         "subtitulada": bool(compra.pop("subtitulada")),
@@ -80,6 +116,13 @@ def obtener_detalle_compra(id_compra: int, id_usuario: int) -> dict:
         "estado": compra.pop("estado_funcion"),
     }
     compra.pop("id_usuario")
+    compra["creada_en"] = (
+        formatear_datetime_iso(compra["creada_en"])
+        if compra.get("creada_en")
+        else None
+    )
+    if compra.get("qr_validado_en"):
+        compra["qr_validado_en"] = formatear_datetime_iso(compra["qr_validado_en"])
     compra["entradas"] = obtener_entradas_por_compra_db(id_compra)
     compra["servicios"] = obtener_servicios_por_compra_db(id_compra)
     return compra

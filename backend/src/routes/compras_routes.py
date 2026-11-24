@@ -8,11 +8,17 @@ from src.services.compras_services import (
 from src.validators.compras_validators import (
     validar_id_compra,
     validar_datos_compra,
+    validar_datos_reserva_temporal,
 )
 from src.validators.auth_validators import validar_autorizacion
 from src.services.auth_services import obtener_perfil_usuario
 from src.utils import construir_error_api
+from src.utils import validar_usuario
 from src.services.compras_services import reenviar_comprobante
+from src.services.compras_services import (
+    liberar_reserva_temporal,
+    reservar_butacas_temporalmente,
+)
 
 
 def register_compras_routes(app):
@@ -35,6 +41,30 @@ def register_compras_routes(app):
             return jsonify(datos), 400
         compra = procesar_compra(autorizacion["usuario_id"], datos)
         return jsonify(compra), 201
+
+    @app.route("/compras/reservas", methods=["POST"])
+    def post_reserva_temporal():
+        """Aparta temporalmente las butacas elegidas por el cliente autenticado."""
+        usuario = validar_usuario(request.headers.get("Authorization"))
+        if usuario["rol"] != "CLIENTE":
+            return jsonify(construir_error_api(
+                "error.auth.prohibido", "Acceso denegado", "Se requiere rol cliente."
+            )), 403
+        datos = validar_datos_reserva_temporal(request.get_json(silent=True))
+        if "errors" in datos:
+            return jsonify(datos), 400
+        return jsonify(reservar_butacas_temporalmente(usuario["id_usuario"], datos)), 201
+
+    @app.route("/compras/reservas/<string:token_reserva>", methods=["DELETE"])
+    def delete_reserva_temporal(token_reserva):
+        """Libera los apartados temporales que pertenecen al cliente autenticado."""
+        usuario = validar_usuario(request.headers.get("Authorization"))
+        if usuario["rol"] != "CLIENTE":
+            return jsonify(construir_error_api(
+                "error.auth.prohibido", "Acceso denegado", "Se requiere rol cliente."
+            )), 403
+        liberar_reserva_temporal(usuario["id_usuario"], token_reserva)
+        return jsonify({"mensaje": "Reserva temporal liberada."}), 200
 
     @app.route("/compras/<int:id>/reenviar-comprobante", methods=["POST"])
     def post_reenviar_comprobante(id):

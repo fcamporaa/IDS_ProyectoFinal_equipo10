@@ -1,0 +1,139 @@
+{% extends 'layout.html' %}
+
+{% block title %}Gestión de Salas | Cinema Paradiso{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/admin_salas.css') }}">
+{% endblock %}
+
+{% block content %}
+<main class="admin-salas">
+  <div class="admin-salas__container">
+
+    <header class="admin-salas__header">
+      <div>
+        <span class="admin-salas__eyebrow">Backoffice</span>
+        <h1 class="admin-salas__title">Gestión de Salas</h1>
+        <p class="admin-salas__subtitle">
+          Creá salas con su grilla de butacas y administrá su disponibilidad por complejo.
+        </p>
+      </div>
+      <div class="admin-salas__header-actions">
+        <a href="{{ url_for('dashboard.index') }}" class="admin-salas__back">← Volver al dashboard</a>
+        <a href="{{ url_for('home.index') }}" class="admin-salas__back">← Volver a la cartelera</a>
+        {% with url_destino=url_for('admin_salas.index') ~ '?nuevo=1', texto='+ Nueva sala', variante='primary' %}
+          {% include 'components/button.html' %}
+        {% endwith %}
+      </div>
+    </header>
+
+    {% include 'components/mensajes.html' %}
+
+    {% if error_backend %}
+      <div class="alert alert-danger" role="alert">
+        {{ error_backend }}
+      </div>
+    {% endif %}
+
+    <div id="contenedor-formulario" class="admin-salas__form-container {% if abrir_formulario %}admin-salas__form-container--activo{% endif %}">
+      {% include 'components/formulario_sala.html' %}
+    </div>
+
+    {% if abrir_butacas and id_sala_butacas %}
+      <div class="admin-salas__form-container admin-salas__form-container--activo">
+        {% include 'components/formulario_butacas_sala.html' %}
+      </div>
+    {% endif %}
+
+    <section class="admin-salas__listado">
+      <div class="admin-salas__table-header">
+        <h2>Salas registradas ({{ salas | length }})</h2>
+      </div>
+
+      {% if salas %}
+        <div class="admin-salas__table-wrapper">
+          <table class="admin-salas__table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Complejo</th>
+                <th>Nº sala</th>
+                <th>Capacidad</th>
+                <th>Estado</th>
+                <th class="text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for sala in salas %}
+                <tr>
+                  <td>#{{ sala.id_sala }}</td>
+                  <td class="font-weight-bold">{{ sala.nombre_local }}</td>
+                  <td>{{ sala.numero }}</td>
+                  <td>{{ sala.capacidad }}</td>
+                  <td>
+                    {% if sala.activa %}
+                      <span class="badge badge-estado badge-estado--activo">Activa</span>
+                    {% else %}
+                      <span class="badge badge-estado badge-estado--inactivo">Inactiva</span>
+                    {% endif %}
+                  </td>
+                  <td class="text-right admin-salas__actions-cell">
+                    {% with texto='Editar', url_destino=url_for('admin_salas.editar', id=sala.id_sala), variante='secondary', clase_extra='admin-salas__action' %}
+                      {% include 'components/button.html' %}
+                    {% endwith %}
+
+                    {% if sala.capacidad == 0 %}
+                      {% with texto='Generar butacas', url_destino=url_for('admin_salas.formulario_butacas', id=sala.id_sala), variante='secondary', clase_extra='admin-salas__action' %}
+                        {% include 'components/button.html' %}
+                      {% endwith %}
+                    {% endif %}
+
+                    {% if sala.activa %}
+                      <form method="POST" action="{{ url_for('admin_salas.eliminar', id=sala.id_sala) }}"
+                            data-confirmar-baja data-modal-destino="modal-baja-{{ sala.id_sala }}"
+                            class="confirm-baja-form">
+                        {% with texto='Dar de baja', tipo='submit', variante='danger', clase_extra='admin-salas__action' %}
+                          {% include 'components/button.html' %}
+                        {% endwith %}
+                      </form>
+                    {% else %}
+                      <form method="POST" action="{{ url_for('admin_salas.reactivar', id=sala.id_sala) }}" class="inline-form">
+                        <button type="submit" class="btn-action btn-action--reactivate" title="Reactivar">
+                          Reactivar
+                        </button>
+                      </form>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        {% for sala in salas %}
+          {% if sala.activa %}
+            {% with id_modal='modal-baja-' ~ sala.id_sala,
+                    titulo='Confirmar baja de sala',
+                    mensaje='¿Estás seguro que deseás dar de baja la sala ' ~ sala.numero ~ ' de ' ~ sala.nombre_local ~ '? No se podrá programar nuevas funciones en ella.',
+                    accion=url_for('admin_salas.eliminar', id=sala.id_sala),
+                    texto_confirmar='Sí, dar de baja',
+                    texto_cancelar='Cancelar' %}
+              {% include 'components/modal_confirmacion.html' %}
+            {% endwith %}
+          {% endif %}
+        {% endfor %}
+      {% else %}
+        <div class="admin-salas__empty">
+          <p>No hay salas registradas en el sistema.</p>
+        </div>
+      {% endif %}
+    </section>
+
+  </div>
+</main>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/modal.js') }}"></script>
+<script src="{{ url_for('static', filename='js/admin_salas.js') }}"></script>
+{% endblock %}

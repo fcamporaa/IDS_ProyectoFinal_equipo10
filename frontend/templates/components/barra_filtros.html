@@ -5,14 +5,15 @@
 
 <div class="movie-filter-panel" aria-label="Filtros de Cartelera">
     <!-- Chips de Géneros a la Izquierda -->
-    <div class="genre-chips-group" id="genreFilterBar" role="tablist" aria-label="Filtro por género">
+    <div class="genre-chips-group" id="genreFilterBar" role="group" aria-label="Filtro por género">
         <span class="genre-label">Géneros:</span>
-        <button type="button" class="genre-chip active" data-genre="todos">Todos</button>
-        <button type="button" class="genre-chip" data-genre="accion">Acción</button>
-        <button type="button" class="genre-chip" data-genre="scifi">Ciencia Ficción</button>
-        <button type="button" class="genre-chip" data-genre="drama">Drama</button>
-        <button type="button" class="genre-chip" data-genre="terror">Terror</button>
-        <button type="button" class="genre-chip" data-genre="animacion">Animación</button>
+        <button type="button" class="genre-chip{% if not genero_activo %} active{% endif %}"
+                data-genre-id="" aria-pressed="{{ 'true' if not genero_activo else 'false' }}">Todos</button>
+        {% for g in generos | default([], true) %}
+            <button type="button" data-genre-id="{{ g.id_genero }}"
+                    class="genre-chip{% if genero_activo == g.id_genero %} active{% endif %}"
+                    aria-pressed="{{ 'true' if genero_activo == g.id_genero else 'false' }}">{{ g.nombre }}</button>
+        {% endfor %}
     </div>
 
     <!-- Buscador en Vivo a la Derecha -->

@@ -1,4 +1,5 @@
 from src.db import ejecutar_consulta, ejecutar_mutacion
+from src.utils import ahora_local
 
 SELECT_FUNCION_DETALLE = """
     SELECT f.id_funcion, f.id_pelicula, p.titulo AS titulo_pelicula,
@@ -36,6 +37,27 @@ def obtener_funciones_db(filtros: dict) -> list[dict]:
 
     query = SELECT_FUNCION_DETALLE + " WHERE " + " AND ".join(condiciones) + " ORDER BY f.inicio;"
     return ejecutar_consulta(query, tuple(parametros))
+
+
+def sincronizar_estados_funciones_db() -> None:
+    """Actualiza estados temporales usando la hora nativa de MySQL."""
+    ejecutar_mutacion(
+        """
+        UPDATE funciones
+        SET estado = 'FINALIZADA'
+        WHERE estado NOT IN ('CANCELADA', 'FINALIZADA')
+          AND fin <= NOW();
+        """
+    )
+    ejecutar_mutacion(
+        """
+        UPDATE funciones
+        SET estado = 'EN_CURSO'
+        WHERE estado NOT IN ('CANCELADA', 'EN_CURSO', 'FINALIZADA')
+          AND inicio <= NOW()
+          AND fin > NOW();
+        """
+    )
 
 
 def obtener_funciones_admin_db() -> list[dict]:
@@ -145,19 +167,25 @@ def cancelar_funcion_db(id_funcion: int) -> int:
 def obtener_estado_butacas_funcion_db(id_funcion: int) -> list[dict]:
     """
     Butacas activas de la sala de la función con su estado para esa función.
-    Solo cuentan entradas RESERVADA u OCUPADA: sin ellas la butaca está DISPONIBLE
-    (las entradas canceladas o ya liberadas no la bloquean ni duplican filas).
+    Considera entradas activas y apartados temporales vigentes; las canceladas,
+    liberadas o expiradas no bloquean la butaca.
     """
     query = """
-        SELECT b.id_butaca, b.fila, b.numero,
-               COALESCE(e.estado, 'DISPONIBLE') AS estado,
+         SELECT b.id_butaca, b.fila, b.numero,
+             COALESCE(e.estado, CASE
+                 WHEN r.id_reserva_temporal IS NOT NULL THEN 'RESERVADA'
+                 ELSE 'DISPONIBLE'
+             END) AS estado,
                e.id_entrada
         FROM funciones f
         JOIN butacas b ON b.id_sala = f.id_sala AND b.activa = 1
         LEFT JOIN entradas e ON e.id_funcion = f.id_funcion
                             AND e.id_butaca = b.id_butaca
                             AND e.estado IN ('RESERVADA', 'OCUPADA')
+                    LEFT JOIN reservas_temporales_butacas r ON r.id_funcion = f.id_funcion
+                                        AND r.id_butaca = b.id_butaca
+                                                AND r.expira_en > %s
         WHERE f.id_funcion = %s
         ORDER BY b.fila, b.numero;
     """
-    return ejecutar_consulta(query, (id_funcion,))
+    return ejecutar_consulta(query, (ahora_local(), id_funcion))

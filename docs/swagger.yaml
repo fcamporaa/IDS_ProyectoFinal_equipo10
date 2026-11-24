@@ -141,6 +141,8 @@ paths:
           $ref: '#/components/responses/ErrorValidacion'
         '401':
           $ref: '#/components/responses/NoAutorizado'
+        '403':
+          $ref: '#/components/responses/ProhibidoAdmin'
         '409':
           description: El nuevo email ya está en uso por otra cuenta.
           content:
@@ -221,6 +223,12 @@ paths:
           $ref: '#/components/responses/ErrorValidacion'
         '401':
           $ref: '#/components/responses/NoAutorizado'
+        '403':
+          description: El usuario autenticado no tiene rol CLIENTE.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuesta'
         '403':
           $ref: '#/components/responses/ProhibidoAdmin'
 
@@ -537,6 +545,75 @@ paths:
         '404':
           $ref: '#/components/responses/RecursoNoEncontrado'
 
+    post:
+      tags:
+        - Locales, Salas y Butacas
+      summary: Crea una sala con su grilla de butacas (Solo Admin)
+      description: >
+        Alta de sala en el complejo indicado. Genera butacas activas según
+        `filas` (letras A..Z) y `asientos_por_fila` en una única transacción.
+        El número de sala debe ser único dentro del complejo.
+      operationId: crearSala
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID del complejo de cine.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SalaCrearRequest'
+      responses:
+        '201':
+          description: Sala creada con su distribución de butacas.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalaConButacas'
+        '400':
+          $ref: '#/components/responses/ErrorValidacion'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '403':
+          $ref: '#/components/responses/ProhibidoAdmin'
+        '404':
+          $ref: '#/components/responses/RecursoNoEncontrado'
+        '409':
+          description: Ya existe una sala con ese número en el complejo, o el complejo está inactivo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuesta'
+
+  /salas/admin:
+    get:
+      tags:
+        - Locales, Salas y Butacas
+      summary: Lista todas las salas para el ABM (Solo Admin)
+      description: Retorna salas activas e inactivas con el nombre del complejo y la capacidad calculada.
+      operationId: listarSalasAdmin
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Listado administrativo de salas.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SalaAdminItem'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '403':
+          $ref: '#/components/responses/ProhibidoAdmin'
+
   /salas/{id}:
     get:
       tags:
@@ -587,6 +664,53 @@ paths:
           $ref: '#/components/responses/ProhibidoAdmin'
         '404':
           $ref: '#/components/responses/RecursoNoEncontrado'
+        '409':
+          description: Conflicto de número de sala duplicado en el mismo complejo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuesta'
+
+  /salas/{id}/butacas:
+    post:
+      tags:
+        - Locales, Salas y Butacas
+      summary: Genera butacas para una sala vacía (Solo Admin)
+      description: >
+        Crea la grilla física de butacas cuando la sala aún no tiene asientos.
+        Falla con 409 si la sala ya tiene butacas registradas.
+      operationId: generarButacasSala
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/SalaId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ButacasGenerarRequest'
+      responses:
+        '201':
+          description: Butacas generadas; retorna el detalle de la sala.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalaConButacas'
+        '400':
+          $ref: '#/components/responses/ErrorValidacion'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '403':
+          $ref: '#/components/responses/ProhibidoAdmin'
+        '404':
+          $ref: '#/components/responses/RecursoNoEncontrado'
+        '409':
+          description: La sala ya tiene butacas o hay coordenadas duplicadas.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuesta'
 
   # =========================================================================
   # 4. Funciones
@@ -953,10 +1077,10 @@ paths:
       summary: Procesa una nueva compra de entradas y servicios
       description: |
         Realiza la transacción de compra:
-        1. Valida que las butacas seleccionadas sigan libres en la función.
+        1. Valida que las butacas seleccionadas tengan un token de apartado vigente del cliente.
         2. Calcula el subtotal de entradas y servicios adicionales agregados.
         3. En entorno de desarrollo, simula la aprobación del pago (medio `TARJETA_SIMULADA` y ALLOW_SIMULATED_PAYMENTS=true). NO cobra tarjetas reales.
-        4. Guarda la compra y las entradas con transacción y control de butacas.
+        4. Guarda la compra y las entradas con transacción, consume los apartados temporales y controla conflictos.
         5. Genera un token QR y prepara el comprobante HTML con QR; el envío SMTP es opcional.
       operationId: procesarCompra
       security:
@@ -978,10 +1102,109 @@ paths:
           $ref: '#/components/responses/ErrorValidacion'
         '401':
           $ref: '#/components/responses/NoAutorizado'
+        '403':
+          description: El usuario autenticado no tiene rol CLIENTE.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuesta'
         '501':
           description: No hay pasarela de pago real; habilitar solo el modo simulado de desarrollo.
         '409':
           description: Una o más butacas seleccionadas ya fueron adquiridas o reservadas por otro usuario.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuesta'
+
+  /compras/reservas:
+    post:
+      tags:
+        - Compras y Entradas
+      summary: Aparta temporalmente butacas para el checkout
+      description: Aparta en forma atómica las butacas solicitadas durante el tiempo restante de compra, hasta un máximo de 10 minutos.
+      operationId: reservarButacasTemporalmente
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id_funcion, butacas_ids, token_reserva, duracion_segundos]
+              properties:
+                id_funcion:
+                  type: integer
+                  minimum: 1
+                butacas_ids:
+                  type: array
+                  minItems: 1
+                  maxItems: 20
+                  items:
+                    type: integer
+                    minimum: 1
+                token_reserva:
+                  type: string
+                  minLength: 32
+                  maxLength: 64
+                duracion_segundos:
+                  type: integer
+                  minimum: 1
+                  maximum: 600
+      responses:
+        '201':
+          description: Butacas apartadas para el cliente.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token_reserva:
+                    type: string
+                  estado:
+                    type: string
+                    example: RESERVADA
+        '400':
+          $ref: '#/components/responses/ErrorValidacion'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '403':
+          description: El usuario autenticado no tiene rol CLIENTE.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuesta'
+        '409':
+          description: Una o más butacas ya están ocupadas o apartadas por otro cliente.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuesta'
+
+  /compras/reservas/{token_reserva}:
+    delete:
+      tags:
+        - Compras y Entradas
+      summary: Libera un apartado temporal de butacas
+      operationId: liberarReservaTemporal
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: token_reserva
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 32
+            maxLength: 64
+      responses:
+        '200':
+          description: Apartado liberado.
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '403':
+          description: El usuario autenticado no tiene rol CLIENTE.
           content:
             application/json:
               schema:
@@ -1875,15 +2098,71 @@ components:
           type: boolean
           example: true
 
+    SalaAdminItem:
+      allOf:
+        - $ref: '#/components/schemas/SalaResumen'
+        - type: object
+          properties:
+            nombre_local:
+              type: string
+              example: 'Cine Paradiso Palermo'
+
+    SalaCrearRequest:
+      type: object
+      required:
+        - numero
+        - filas
+        - asientos_por_fila
+      properties:
+        numero:
+          type: integer
+          minimum: 1
+          maximum: 32767
+          example: 3
+        filas:
+          type: integer
+          minimum: 1
+          maximum: 26
+          description: Cantidad de filas (A=1 ... Z=26).
+          example: 4
+        asientos_por_fila:
+          type: integer
+          minimum: 1
+          maximum: 30
+          example: 8
+        activa:
+          type: boolean
+          default: true
+          example: true
+
     SalaActualizarRequest:
       type: object
       properties:
         numero:
           type: integer
+          minimum: 1
+          maximum: 32767
           example: 2
         activa:
           type: boolean
           example: true
+
+    ButacasGenerarRequest:
+      type: object
+      required:
+        - filas
+        - asientos_por_fila
+      properties:
+        filas:
+          type: integer
+          minimum: 1
+          maximum: 26
+          example: 3
+        asientos_por_fila:
+          type: integer
+          minimum: 1
+          maximum: 30
+          example: 6
 
     Butaca:
       type: object
@@ -2164,6 +2443,7 @@ components:
       required:
         - id_funcion
         - butacas_ids
+        - token_reserva
         - medio_pago
       properties:
         id_funcion:
@@ -2175,6 +2455,10 @@ components:
             type: integer
           minItems: 1
           example: [15, 16]
+        token_reserva:
+          type: string
+          minLength: 32
+          maxLength: 64
         servicios:
           type: array
           items:
