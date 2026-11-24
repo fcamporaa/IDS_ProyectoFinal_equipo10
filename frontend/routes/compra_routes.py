@@ -1,6 +1,10 @@
+import base64
+import io
 import json
 import secrets
-from datetime import datetime
+from datetime import datetime, timedelta
+
+import qrcode
 
 from flask import (
     Blueprint,
@@ -23,24 +27,38 @@ from services.servicios_service import (
     formatear_monto,
     obtener_servicios_disponibles,
 )
-from services.compras_service import reservar_butacas_en_backend, liberar_reserva_en_backend
+from services.compras_service import (
+    cancelar_compra_al_backend,
+    enviar_compra_al_backend,
+    liberar_reserva_en_backend,
+    obtener_compra_del_backend,
+    reenviar_comprobante_al_backend,
+    reservar_butacas_en_backend,
+)
 from utils.csrf import crear_token_csrf, validar_token_csrf
 from utils.formatos import (
     formatear_duracion,
     formatear_fecha_corta,
     formatear_hora,
+    formatear_precio,
     formatear_fecha_hora,
     parsear_datetime_seguro,
 )
 from utils.temporizador_compra import (
     contexto_temporizador_compra,
     iniciar_temporizador_compra,
+    limpiar_compra_temporal,
     redirigir_compra_expirada,
     temporizador_compra_vencido,
 )
-from validators.compras_validators import validar_servicios_seleccionados
+from validators.compras_validators import (
+    validar_formulario_compra,
+    validar_servicios_seleccionados,
+)
 
 compra_bp = Blueprint("compra", __name__, url_prefix="/compra")
+# Mantener el namespace de los endpoints existentes del comprobante.
+compras_bp = Blueprint("compras", __name__)
 
 
 def _armar_filas_butacas(
@@ -810,4 +828,284 @@ def seleccion_checkout():
         c=datos_compra,
         csrf_token=crear_token_csrf(),
         temporizador=temporizador,
+    )
+
+
+def _extraer_mensaje_error_backend(respuesta, fallback: str) -> str:
+    if isinstance(respuesta, dict):
+        errores = respuesta.get("errors")
+        if isinstance(errores, list) and errores:
+            primero = errores[0] if isinstance(errores[0], dict) else {}
+            mensaje = primero.get("description") or primero.get("message")
+            if mensaje:
+                return str(mensaje)
+        mensaje = respuesta.get("error") or respuesta.get("mensaje")
+        if mensaje:
+            return str(mensaje)
+    return fallback
+
+
+@compras_bp.route("/compra/confirmar", methods=["POST"])
+def confirmar_compra():
+    if temporizador_compra_vencido():
+        return redirigir_compra_expirada()
+    if not validar_token_csrf(request.form.get("csrf_token", "")):
+        return "La sesión del formulario venció. Volvé a intentarlo.", 400
+    token = session.get("access_token")
+    if not token:
+        flash("Necesitás iniciar sesión para realizar la compra.", "error")
+        return redirect(url_for("home.index"))
+    try:
+        datos = validar_formulario_compra(
+            request.form,
+            session.get("servicios_seleccionados", []),
+        )
+    except ValueError as error:
+        flash(str(error), "error")
+        return redirect(url_for("compra.seleccion_checkout"))
+    compra, estado = enviar_compra_al_backend(datos, token)
+    if estado == 201 and isinstance(compra, dict) and type(compra.get("id_compra")) is int:
+        limpiar_compra_temporal()
+        return redirect(url_for("compras.compra_exitosa", id_compra=compra["id_compra"]))
+    flash(
+        _extraer_mensaje_error_backend(
+            compra,
+            "No se pudo confirmar la compra. Revisá la función, las butacas y la sesión.",
+        ),
+        "error",
+    )
+    return redirect(url_for("compra.seleccion_checkout"))
+
+
+@compras_bp.route("/compras/<int:id_compra>/confirmacion", methods=["GET"])
+def compra_exitosa(id_compra: int):
+
+    token = session.get("access_token")
+
+    if not token:
+        flash("Debés iniciar sesión.", "error")
+        return redirect(url_for("auth.login"))
+
+    # Obtener la compra real desde MySQL
+    compra, estado = obtener_compra_del_backend(id_compra, token)
+
+    if estado != 200 or not isinstance(compra, dict):
+        flash("No se pudo obtener el comprobante.", "error")
+        return redirect(url_for("home.index"))
+
+    funcion = compra["funcion"]
+    entradas = compra.get("entradas", [])
+    servicios = compra.get("servicios", [])
+
+    # Obtener información adicional de la película
+    pelicula, estado_pelicula = obtener_detalle_pelicula(funcion["id_pelicula"])
+    if estado_pelicula != 200 or not isinstance(pelicula, dict):
+        pelicula = {}
+
+    # Interpretar fecha y horario de la función
+    inicio_texto = str(funcion.get("inicio") or "")
+    fecha_funcion = parsear_datetime_seguro(inicio_texto)
+
+    fecha = formatear_fecha_corta(fecha_funcion) if fecha_funcion else inicio_texto
+    horario = formatear_hora(fecha_funcion) if fecha_funcion else ""
+    limite_dt = (fecha_funcion - timedelta(hours=24)) if fecha_funcion else None
+    limite_cancelacion = (
+        formatear_fecha_hora(limite_dt)
+        if limite_dt
+        else "24 horas antes de la función"
+    )
+
+    puede_cancelar = (
+    compra.get("estado") == "PAGADA"
+    and not compra.get("qr_validado_en")
+    and fecha_funcion is not None
+    and fecha_funcion > (
+        datetime.now(fecha_funcion.tzinfo)
+        + timedelta(hours=24)
+    )
+    )
+
+    # Construir descripción de las butacas
+    butacas = ", ".join(
+        f"{entrada['fila']}-{entrada['numero']}"
+        for entrada in entradas
+    )
+
+    # Construir el detalle de la compra
+    items = [
+        {
+            "descripcion": f"{len(entradas)}x Entrada ({butacas})",
+            "monto": formatear_precio(compra["subtotal_entradas"]),
+        }
+    ]
+
+    for servicio in servicios:
+        items.append({
+            "descripcion": (
+                f"{servicio['cantidad']}x "
+                f"{servicio['nombre_servicio']}"
+            ),
+            "monto": formatear_precio(servicio["subtotal"]),
+        })
+
+    # Servicios adicionales para las tarjetas del voucher
+    adicionales = [
+        {
+            "tipo": "combo",
+            "nombre": (
+                f"{servicio['cantidad']}x "
+                f"{servicio['nombre_servicio']}"
+            ),
+            "detalle": (
+                "Precio unitario: "
+                + formatear_precio(servicio["precio_unitario"])
+            ),
+            "subdetalle": None,
+            "estado": "Incluido",
+            "icono": "combo",
+        }
+        for servicio in servicios
+    ]
+
+    # Crear imagen del QR usando el token real
+    qr_base64 = None
+
+    if (
+        compra.get("estado") == "PAGADA"
+        and compra.get("qr_token")
+        and not compra.get("qr_validado_en")
+    ):
+        imagen = qrcode.make(compra["qr_token"])
+        buffer = io.BytesIO()
+        imagen.save(buffer, format="PNG")
+
+        qr_base64 = base64.b64encode(
+            buffer.getvalue()
+        ).decode("utf-8")
+
+    duracion = pelicula.get("duracion_min")
+
+    datos_confirmacion = {
+
+        "id_compra": id_compra,
+        "id_transaccion": compra["codigo_reserva"],
+        "estado": compra["estado"],
+        "email_comprador": compra["email_comprobante"],
+        "codigo_reserva": compra["codigo_reserva"],
+        "qr_base64": qr_base64,
+
+        "pelicula": {
+            "id_pelicula": funcion["id_pelicula"],
+            "titulo": funcion["titulo_pelicula"],
+            "poster_url": pelicula.get("poster_url") or "",
+            "badge_poster": funcion.get("formato") or "",
+            "clasificacion": pelicula.get("clasificacion") or "",
+            "duracion": f"{duracion} MIN" if duracion else "",
+            "formato_sala": funcion.get("formato") or "",
+            "idioma": funcion.get("idioma") or "",
+            "direccion_sonido": "",
+            "fecha": fecha,
+            "horario": horario,
+            "complejo": funcion["nombre_local"],
+            "sala_nombre": f"Sala {funcion['numero_sala']}",
+            "butacas": butacas,
+            "badge_butacas": funcion.get("formato") or "",
+        },
+
+        "facturacion": {
+            "tipo": "COMPRA SIMULADA",
+            "items": items,
+            "cargo_servicio": "100% BONIFICADO",
+            "cargo_servicio_monto": formatear_precio(
+                compra.get("cargo_servicio", 0)
+            ),
+            "total": formatear_precio(compra["total"]),
+            "iva_discriminado": None,
+            "tarjeta_info": "Pago simulado",
+            "cuotas_info": "Sin transacción bancaria",
+            "cae": None,
+            "vto_cae": None,
+        },
+
+        "adicionales": adicionales,
+
+        "cancelacion": {
+            "limite_texto": limite_cancelacion,
+            "habilitada": puede_cancelar,
+        },
+    }
+
+    return render_template(
+        "confirmacion_compra.html",
+        c=datos_confirmacion,
+        csrf_token=crear_token_csrf()
+    )
+
+
+@compras_bp.route("/compras/<int:id_compra>/reenviar-email", methods=["POST"])
+def reenviar_email(id_compra: int):
+    if not validar_token_csrf(request.form.get("csrf_token", "")):
+        return "Solicitud inválida.", 400
+    token = session.get("access_token")
+    if not token:
+        flash("Necesitás iniciar sesión antes de comprar.", "error")
+        return redirect(url_for("home.index"))
+    respuesta, estado = reenviar_comprobante_al_backend(id_compra, token)
+    if estado == 200:
+        flash("Solicitud de reenvío procesada.", "success")
+    else:
+        flash("No se pudo enviar el comprobante.", "error")
+    return redirect(url_for("compras.compra_exitosa", id_compra=id_compra))
+
+
+@compras_bp.route("/compras/<int:id_compra>/cancelar", methods=["POST"])
+def cancelar_compra_web(id_compra: int):
+    """
+    Recibe la solicitud de cancelación del usuario
+    y la envía al backend mediante PUT.
+    """
+
+    # 1. Validar el token CSRF
+    if not validar_token_csrf(request.form.get("csrf_token", "")):
+        flash("La sesión del formulario venció. Volvé a intentarlo.", "error")
+        return redirect(
+            url_for("compras.compra_exitosa", id_compra=id_compra)
+        )
+
+    # 2. Verificar autenticación
+    token = session.get("access_token")
+
+    if not token:
+        flash("Debés iniciar sesión para cancelar la compra.", "error")
+        return redirect(url_for("auth.login"))
+
+    # 3. Solicitar la cancelación al backend
+    respuesta, estado = cancelar_compra_al_backend(id_compra, token)
+
+    # 4. Procesar el resultado
+    if (
+        estado == 200
+        and isinstance(respuesta, dict)
+        and respuesta.get("estado") == "CANCELADA"
+    ):
+        flash("La compra fue cancelada correctamente.", "success")
+
+    else:
+        mensaje = "No se pudo cancelar la compra."
+
+        if isinstance(respuesta, dict):
+            errores = respuesta.get("errors", [])
+
+            if errores:
+                mensaje = (
+                    errores[0].get("description")
+                    or errores[0].get("message")
+                    or mensaje
+                )
+
+        flash(mensaje, "error")
+
+    # 5. Volver al comprobante actualizado
+    return redirect(
+        url_for("compras.compra_exitosa", id_compra=id_compra)
     )
