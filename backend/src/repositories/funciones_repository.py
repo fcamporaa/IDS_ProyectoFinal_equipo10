@@ -19,8 +19,8 @@ def obtener_funciones_db(filtros: dict) -> list[dict]:
     con título de película, número de sala y nombre del local.
     Los filtros se agregan como condiciones fijas con valores parametrizados.
     """
-    condiciones = ["f.estado IN ('PROGRAMADA', 'EN_CURSO')", "f.fin > %s"]
-    parametros = [filtros["vigentes_desde"]]
+    condiciones = ["f.estado = 'PROGRAMADA'", "f.fin > %s", "f.inicio > %s"]
+    parametros = [filtros["vigentes_desde"], filtros["vigentes_desde"]]
 
     if "id_pelicula" in filtros:
         condiciones.append("f.id_pelicula = %s")

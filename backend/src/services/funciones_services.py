@@ -57,6 +57,7 @@ def _verificar_sala_libre(id_sala: int, inicio, fin, id_excluir: int | None = No
 
 def listar_funciones(filtros: dict) -> list[dict]:
     """Lista las funciones vigentes aplicando los filtros ya validados."""
+    sincronizar_estados_funciones_db()
     funciones = obtener_funciones_db({**filtros, "vigentes_desde": ahora_local()})
     return [formatear_funcion(funcion) for funcion in funciones]
 
@@ -157,8 +158,10 @@ def eliminar_funcion(id_funcion: int) -> dict:
 
 
 def obtener_mapa_butacas_funcion(id_funcion: int) -> dict:
-    """Devuelve el mapa de butacas de la sala con totales de libres y ocupadas."""
+    """Devuelve el mapa de butacas solo mientras la función siga disponible para compra."""
     funcion = _obtener_funcion_o_404(id_funcion)
+    if funcion["estado"] != "PROGRAMADA" or funcion["inicio"] <= ahora_local():
+        raise error_conflicto("La función ya comenzó y no permite comprar butacas.")
     butacas = obtener_estado_butacas_funcion_db(id_funcion)
     libres = sum(1 for butaca in butacas if butaca["estado"] == "DISPONIBLE")
     return {
