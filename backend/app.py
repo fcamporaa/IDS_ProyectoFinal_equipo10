@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from werkzeug.exceptions import HTTPException
 
 from src.utils import construir_error_api
@@ -28,6 +28,10 @@ def handle_unexpected_error(error):
             )
         ), error.code
 
+    # Se registra el traceback para no ocultar errores de programación al cliente.
+    app.logger.exception(
+        "Error no controlado en %s %s", request.method, request.path
+    )
     return jsonify(
         construir_error_api(
             code="internal.server.error",
