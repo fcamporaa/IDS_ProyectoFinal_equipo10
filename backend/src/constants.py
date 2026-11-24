@@ -32,9 +32,8 @@ PATRON_FECHA_HORA_ISO = r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(-03:00|Z)
 # ==========================================
 # Constantes de Dominio - Cine Paradiso
 # ==========================================
-ROLES_USUARIOS = {"CLIENTE", "ADMINISTRADOR"}
-ROL_ADMINISTRADOR = "ADMINISTRADOR" 
-#Segun la ia, esto era la manera más intuitiva y simple de revisar el administrador, pero, como verán, parece un duplicado innecesario de roles_usuarios = ADMINISTRADOR. Si les desagrada o les parece mala practica, diganme y veo como lo cambio.
+ROL_ADMINISTRADOR = "ADMINISTRADOR"
+ROLES_USUARIOS = {"CLIENTE", ROL_ADMINISTRADOR}
 ESTADOS_COMPRA = {"PENDIENTE", "PAGADA", "CANCELADA"}
 PUNTUACION_RESENA_MIN = 1
 PUNTUACION_RESENA_MAX = 5
@@ -42,6 +41,10 @@ LARGO_MAX_COMENTARIO_RESENA = 1000
 ESTADOS_ENTRADA = {"DISPONIBLE", "RESERVADA", "OCUPADA", "CANCELADA"}
 ESTADOS_FUNCION = {"PROGRAMADA", "EN_CURSO", "CANCELADA", "FINALIZADA"}
 FORMATOS_SALA = {"2D", "3D", "4D"}
+# Layout físico de butacas al crear una sala (filas A..Z, asientos por fila).
+MAX_FILAS_SALA = 26
+MAX_ASIENTOS_POR_FILA = 30
+MAX_NUMERO_SALA = 32767
 TIPOS_SERVICIO = {"COMIDA", "BEBIDA", "OBJETO", "PROMOCION", "COMBO"}
 ORIGENES_API_PELICULAS = {"OMDB", "TMDB", "CUSTOM"}
 RESULTADOS_VALIDACION_QR = {"EXITO", "FALLIDO", "REUTILIZADO"}
