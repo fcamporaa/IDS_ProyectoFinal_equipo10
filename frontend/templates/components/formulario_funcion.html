@@ -48,21 +48,18 @@
         <label for="id_sala" class="form-label">Sala *</label>
         <select id="id_sala" name="id_sala" class="form-control" required data-selector-sala>
           <option value="">Seleccioná una sala</option>
-          {% for local in locales %}
-            {% set _salas_local = salas | selectattr('id_local', 'equalto', local.id_local) | list %}
-            {% if _salas_local %}
-              <optgroup label="{{ local.nombre }}" data-local="{{ local.id_local }}">
-                {% for sala in _salas_local %}
-                <option value="{{ sala.id_sala }}"
-                        data-local="{{ local.id_local }}"
-                        {% if not sala.activa %} data-deshabilitado="true"{% endif %}
-                        {% if (borrador.id_sala | string) == (sala.id_sala | string) %}selected{% endif %}>
-                  Sala {{ sala.numero }}{% if not sala.activa %} (inactiva){% endif %}
-                </option>
-                {% endfor %}
-              </optgroup>
+          {% if id_local_funcion is not none %}
+            <!-- Mostrar solo las salas activas del complejo seleccionado -->
+            {% set _salas = salas | selectattr('id_local', 'equalto', id_local_funcion) | list | selectattr('activa', 'equalto', True) | list %}
+            {% if _salas %}
+              {% for sala in _salas %}
+              <option value="{{ sala.id_sala }}"
+                      {% if (borrador.id_sala | string) == (sala.id_sala | string) %}selected{% endif %}>
+                Sala {{ sala.numero }}
+              </option>
+              {% endfor %}
             {% endif %}
-          {% endfor %}
+          {% endif %}
         </select>
       </div>
 
