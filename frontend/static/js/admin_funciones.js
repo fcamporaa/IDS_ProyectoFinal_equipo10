@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', function () {
         return grupo.cloneNode(true);
     });
     const opcionesSueltas = Array.from(
-        selectorSala.querySelectorAll('option[data-local]')
+        selectorSala.querySelectorAll(':scope > option[data-local]')
     ).map(function (opcion) {
         return opcion.cloneNode(true);
     });
