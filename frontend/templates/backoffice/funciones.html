@@ -146,11 +146,11 @@
               <div class="modal__backdrop" data-modal-close></div>
               <div class="modal__dialog">
                 <div class="modal__header">
-                  <h3 id="modal-reactivar-{{ funcion.id_funcion }}-title" class="modal__title">{{ _('Confirmar reactivación de función') }}</h3>
+                  <h3 id="modal-reactivar-{{ funcion.id_funcion }}-title" class="modal__title">Confirmar reactivación de función</h3>
                   <button type="button" class="modal__close" data-modal-close aria-label="Cerrar modal">&times;</button>
                 </div>
                 <div class="modal__body">
-                  <p>{{ _('¿Querés reactivar la función de "') ~ funcion.titulo_pelicula ~ _('" del ') ~ funcion.fecha_legible ~ _(' a las ') ~ funcion.hora_inicio ~ _('? La función volverá a estar disponible para vender entradas.') }}</p>
+                  <p>¿Querés reactivar la función de "{{ funcion.titulo_pelicula }}" del {{ funcion.fecha_legible }} a las {{ funcion.hora_inicio }}? La función volverá a estar disponible para vender entradas.</p>
                 </div>
                 <div class="modal__actions">
                   {% with texto='Sí, reactivar función', variante='danger', tipo='submit', atributos='data-modal-close' %}
@@ -175,11 +175,11 @@
               <div class="modal__backdrop" data-modal-close></div>
               <div class="modal__dialog">
                 <div class="modal__header">
-                  <h3 id="modal-baja-{{ funcion.id_funcion }}-title" class="modal__title">{{ _('Confirmar baja de función') }}</h3>
+                  <h3 id="modal-baja-{{ funcion.id_funcion }}-title" class="modal__title">Confirmar baja de función</h3>
                   <button type="button" class="modal__close" data-modal-close aria-label="Cerrar modal">&times;</button>
                 </div>
                 <div class="modal__body">
-                  <p>{{ _('¿Querés cancelar la función de "') ~ funcion.titulo_pelicula ~ _('" del ') ~ funcion.fecha_legible ~ _(' a las ') ~ funcion.hora_inicio ~ _('? La función quedará cancelada y no se podrá reactivar.') }}</p>
+                  <p>¿Querés cancelar la función de "{{ funcion.titulo_pelicula }}" del {{ funcion.fecha_legible }} a las {{ funcion.hora_inicio }}? La función quedará cancelada y no se podrá reactivar.</p>
                 </div>
                 <div class="modal__actions">
                   {% with texto='Sí, cancelar función', variante='danger', tipo='submit', atributos='data-modal-close' %}
