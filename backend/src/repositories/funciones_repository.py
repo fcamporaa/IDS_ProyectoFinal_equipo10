@@ -164,6 +164,12 @@ def cancelar_funcion_db(id_funcion: int) -> int:
     return ejecutar_mutacion(query, (id_funcion,))
 
 
+def reactivar_funcion_db(id_funcion: int) -> int:
+    """Reactiva una función dado de baja (CANCELADA -> PROGRAMADA)."""
+    query = "UPDATE funciones SET estado = 'PROGRAMADA' WHERE id_funcion = %s AND estado = 'CANCELADA';"
+    return ejecutar_mutacion(query, (id_funcion,))
+
+
 def obtener_estado_butacas_funcion_db(id_funcion: int) -> list[dict]:
     """
     Butacas activas de la sala de la función con su estado para esa función.

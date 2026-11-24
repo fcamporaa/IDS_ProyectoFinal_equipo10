@@ -98,14 +98,25 @@
                   {% endif %}
 
                   {% if funcion.puede_baja %}
-                  <form method="POST"
-                        action="{{ url_for('admin_funciones.eliminar', id_funcion=funcion.id_funcion) }}"
-                        data-confirmar-baja
-                        data-modal-destino="modal-baja-{{ funcion.id_funcion }}">
-                    {% with texto='Dar de baja', tipo='submit', variante='danger', clase_extra='admin-funciones__action' %}
-                      {% include 'components/button.html' %}
-                    {% endwith %}
-                  </form>
+                  {% if funcion.estado == 'CANCELADA' %}
+                    <form method="POST"
+                          action="{{ url_for('admin_funciones.reactivar', id_funcion=funcion.id_funcion) }}"
+                          data-confirmar-baja
+                          data-modal-destino="modal-reactivar-{{ funcion.id_funcion }}">
+                      {% with texto='Reactivar', tipo='submit', variante='success', clase_extra='admin-funciones__action' %}
+                        {% include 'components/button.html' %}
+                      {% endwith %}
+                    </form>
+                  {% else %}
+                    <form method="POST"
+                          action="{{ url_for('admin_funciones.eliminar', id_funcion=funcion.id_funcion) }}"
+                          data-confirmar-baja
+                          data-modal-destino="modal-baja-{{ funcion.id_funcion }}">
+                      {% with texto='Dar de baja', tipo='submit', variante='danger', clase_extra='admin-funciones__action' %}
+                        {% include 'components/button.html' %}
+                      {% endwith %}
+                    </form>
+                  {% endif %}
                   {% endif %}
 
                   {% if not funcion.puede_editar and not funcion.puede_baja %}
@@ -121,14 +132,66 @@
 
       {% for funcion in funciones %}
         {% if funcion.puede_baja %}
-          {% with id_modal='modal-baja-' ~ funcion.id_funcion,
-                  titulo='Confirmar baja de función',
-                  mensaje='¿Querés cancelar la función de "' ~ funcion.titulo_pelicula ~ '" del ' ~ funcion.fecha_legible ~ ' a las ' ~ funcion.hora_inicio ~ '? La función quedará cancelada y no se podrá reactivar.',
-                  accion=url_for('admin_funciones.eliminar', id_funcion=funcion.id_funcion),
-                  texto_confirmar='Sí, cancelar función',
-                  texto_cancelar='Volver' %}
-            {% include 'components/modal_confirmacion.html' %}
-          {% endwith %}
+          {% set _es_cancelada = funcion.estado == 'CANCELADA' %}
+          {% if _es_cancelada %}
+            <form method="POST"
+                  action="{{ url_for('admin_funciones.reactivar', id_funcion=funcion.id_funcion) }}"
+                  data-confirmar-baja
+                  data-modal-destino="modal-reactivar-{{ funcion.id_funcion }}">
+              {% with texto='Reactivar', tipo='submit', variante='success', clase_extra='admin-funciones__action' %}
+                {% include 'components/button.html' %}
+              {% endwith %}
+            </form>
+            <div id="modal-reactivar-{{ funcion.id_funcion }}" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-reactivar-{{ funcion.id_funcion }}-title" hidden>
+              <div class="modal__backdrop" data-modal-close></div>
+              <div class="modal__dialog">
+                <div class="modal__header">
+                  <h3 id="modal-reactivar-{{ funcion.id_funcion }}-title" class="modal__title">{{ _('Confirmar reactivación de función') }}</h3>
+                  <button type="button" class="modal__close" data-modal-close aria-label="Cerrar modal">&times;</button>
+                </div>
+                <div class="modal__body">
+                  <p>{{ _('¿Querés reactivar la función de "') ~ funcion.titulo_pelicula ~ _('" del ') ~ funcion.fecha_legible ~ _(' a las ') ~ funcion.hora_inicio ~ _('? La función volverá a estar disponible para vender entradas.') }}</p>
+                </div>
+                <div class="modal__actions">
+                  {% with texto='Sí, reactivar función', variante='danger', tipo='submit', atributos='data-modal-close' %}
+                    {% include 'components/button.html' %}
+                  {% endwith %}
+                  {% with texto='Volver', variante='secondary', tipo='button', atributos='data-modal-close' %}
+                    {% include 'components/button.html' %}
+                  {% endwith %}
+                </div>
+              </div>
+            </div>
+          {% else %}
+            <form method="POST"
+                  action="{{ url_for('admin_funciones.eliminar', id_funcion=funcion.id_funcion) }}"
+                  data-confirmar-baja
+                  data-modal-destino="modal-baja-{{ funcion.id_funcion }}">
+              {% with texto='Dar de baja', tipo='submit', variante='danger', clase_extra='admin-funciones__action' %}
+                {% include 'components/button.html' %}
+              {% endwith %}
+            </form>
+            <div id="modal-baja-{{ funcion.id_funcion }}" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-baja-{{ funcion.id_funcion }}-title" hidden>
+              <div class="modal__backdrop" data-modal-close></div>
+              <div class="modal__dialog">
+                <div class="modal__header">
+                  <h3 id="modal-baja-{{ funcion.id_funcion }}-title" class="modal__title">{{ _('Confirmar baja de función') }}</h3>
+                  <button type="button" class="modal__close" data-modal-close aria-label="Cerrar modal">&times;</button>
+                </div>
+                <div class="modal__body">
+                  <p>{{ _('¿Querés cancelar la función de "') ~ funcion.titulo_pelicula ~ _('" del ') ~ funcion.fecha_legible ~ _(' a las ') ~ funcion.hora_inicio ~ _('? La función quedará cancelada y no se podrá reactivar.') }}</p>
+                </div>
+                <div class="modal__actions">
+                  {% with texto='Sí, cancelar función', variante='danger', tipo='submit', atributos='data-modal-close' %}
+                    {% include 'components/button.html' %}
+                  {% endwith %}
+                  {% with texto='Volver', variante='secondary', tipo='button', atributos='data-modal-close' %}
+                    {% include 'components/button.html' %}
+                  {% endwith %}
+                </div>
+              </div>
+            </div>
+          {% endif %}
         {% endif %}
       {% endfor %}
       {% else %}

@@ -7,6 +7,7 @@ from services.admin_funciones_service import (
     actualizar_funcion,
     crear_funcion,
     dar_de_baja_funcion,
+    reactivar_funcion,
     listar_funciones_admin,
     listar_locales,
     listar_peliculas_admin,
@@ -211,12 +212,27 @@ def _renderizar_pagina(
     if redireccion is not None:
         return redireccion
 
-    if not borrador.get("id_local") and borrador.get("id_sala"):
+    # Determinar el id_local de la función que se está editando (para filtrar salas)
+    id_local_funcion = None
+    local_match = None
+    if borrador.get("id_sala"):
+        # Buscar la función raw para obtener su id_local
+        funciones_raw, _ = listar_funciones_admin(token) if token else ([], 200)
+        if isinstance(funciones_raw, list):
+            func = next((f for f in funciones_raw if str(f.get("id_funcion", "")) == str(borrador.get("id_sala"))), None)
+            if func:
+                id_local_funcion = func.get("id_local")
+                local_match = func  # Pasar la función completa para usarla en el template
+        # Fallback: si no se encontró la función raw, intentar desde el borrador
+        if not id_local_funcion and borrador.get("id_sala"):
+            id_local_funcion = borrador.get("id_local")
+
+    if not borrador.get("id_local") and borrador.get("id_sala") and id_local_funcion:
         sala_actual = next(
             (
                 sala
                 for sala in salas
-                if str(sala["id_sala"]) == str(borrador["id_sala"])
+                if str(sala.get("id_local")) == str(id_local_funcion) and str(sala.get("id_sala")) == str(borrador["id_sala"])
             ),
             None,
         )
@@ -243,6 +259,8 @@ def _renderizar_pagina(
         formatos=FORMATOS_FUNCION,
         fecha_minima=fecha_minima,
         error_backend=error_backend,
+        id_local_funcion=id_local_funcion,
+        local_match=local_match,
     )
 
 
@@ -391,6 +409,22 @@ def eliminar(id_funcion):
         return _redirigir_sesion_expirada()
     if estado == 200:
         flash("Función cancelada correctamente.", "success")
+        return redirect(url_for("admin_funciones.index"))
+
+    flash(extraer_mensaje_error(respuesta), "error")
+    return redirect(url_for("admin_funciones.index"))
+
+
+@admin_funciones_bp.route("/<int:id_funcion>/reactivar", methods=["POST"])
+@admin_required
+def reactivar(id_funcion):
+    """Reactive una función dado de baja."""
+    token = session["access_token"]
+    respuesta, estado = reactivar_funcion(token, id_funcion)
+    if estado in (401, 403):
+        return _redirigir_sesion_expirada()
+    if estado == 200:
+        flash("Función reactivada correctamente.", "success")
         return redirect(url_for("admin_funciones.index"))
 
     flash(extraer_mensaje_error(respuesta), "error")

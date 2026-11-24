@@ -7,6 +7,7 @@ from src.repositories.funciones_repository import (
     buscar_pelicula_para_funcion_db,
     buscar_sala_para_funcion_db,
     cancelar_funcion_db,
+    reactivar_funcion_db,
     hay_solapamiento_horario_db,
     insertar_funcion_db,
     obtener_estado_butacas_funcion_db,
@@ -154,6 +155,18 @@ def eliminar_funcion(id_funcion: int) -> dict:
             )
         cancelar_funcion_db(id_funcion)
     return {"mensaje": "Función dada de baja con éxito."}
+
+
+def reactivar_funcion(id_funcion: int) -> dict:
+    """Reactiva una función dado de baja (CANCELADA -> PROGRAMADA), si no tiene entradas activas."""
+    actual = _obtener_funcion_o_404(id_funcion)
+    if actual["estado"] == "CANCELADA":
+        if tiene_entradas_activas_db(id_funcion):
+            raise error_conflicto(
+                "No es posible reactivar una función con entradas vendidas o reservadas."
+            )
+        reactivar_funcion_db(id_funcion)
+    return {"mensaje": "Función reactivada con éxito."}
 
 
 def obtener_mapa_butacas_funcion(id_funcion: int) -> dict:
