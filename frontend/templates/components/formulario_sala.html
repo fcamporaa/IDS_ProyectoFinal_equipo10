@@ -1,0 +1,77 @@
+<div class="formulario-sala-card {% if abrir_formulario %}formulario-sala-card--abierto{% endif %}" id="seccion-formulario-sala">
+  <div class="formulario-sala-card__header">
+    <h2>
+      {% if modo_formulario == 'editar' %}
+        Editar Sala #{{ id_sala_editando }}
+      {% else %}
+        Nueva sala
+      {% endif %}
+    </h2>
+    <a href="{{ url_for('admin_salas.index') }}" class="formulario-sala-card__cerrar" aria-label="Cerrar">&times;</a>
+  </div>
+
+  <form method="POST" action="{{ accion_formulario }}" class="formulario-sala">
+    <div class="formulario-sala__grid">
+
+      <div class="formulario-sala__campo">
+        <label for="id_local" class="form-label">Complejo *</label>
+        <select id="id_local" name="id_local" class="form-control" required {% if modo_formulario == 'editar' %}disabled{% endif %}>
+          <option value="">Seleccioná un complejo</option>
+          {% for local in locales %}
+            <option value="{{ local.id_local }}" {% if borrador.id_local|string == local.id_local|string %}selected{% endif %}>
+              {{ local.nombre }}
+            </option>
+          {% endfor %}
+        </select>
+        {% if modo_formulario == 'editar' %}
+          <input type="hidden" name="id_local" value="{{ borrador.id_local }}">
+        {% endif %}
+      </div>
+
+      <div class="formulario-sala__campo">
+        <label for="numero" class="form-label">Número de sala *</label>
+        <input type="number" id="numero" name="numero" class="form-control"
+               value="{{ borrador.numero }}" required min="1" max="32767" step="1"
+               placeholder="Ej: 2">
+      </div>
+
+      {% if modo_formulario == 'crear' %}
+        <div class="formulario-sala__campo">
+          <label for="filas" class="form-label">Filas (A-Z) *</label>
+          <input type="number" id="filas" name="filas" class="form-control"
+                 value="{{ borrador.filas }}" required min="1" max="{{ max_filas }}" step="1"
+                 placeholder="Ej: 4">
+          <p class="formulario-sala__ayuda">Máximo {{ max_filas }} filas (letras A a Z).</p>
+        </div>
+
+        <div class="formulario-sala__campo">
+          <label for="asientos_por_fila" class="form-label">Asientos por fila *</label>
+          <input type="number" id="asientos_por_fila" name="asientos_por_fila" class="form-control"
+                 value="{{ borrador.asientos_por_fila }}" required min="1" max="{{ max_asientos }}" step="1"
+                 placeholder="Ej: 8">
+          <p class="formulario-sala__ayuda">Máximo {{ max_asientos }} asientos por fila.</p>
+        </div>
+      {% endif %}
+
+      {% if modo_formulario == 'editar' %}
+        <div class="formulario-sala__campo formulario-sala__campo--checkbox">
+          <label class="form-checkbox-label">
+            <input type="checkbox" name="activa" {% if borrador.activa %}checked{% endif %}>
+            Sala activa y disponible para programar funciones
+          </label>
+        </div>
+      {% endif %}
+
+    </div>
+
+    <div class="formulario-sala__actions">
+      {% with url_destino=url_for('admin_salas.index'), texto='Cancelar', variante='secondary' %}
+        {% include 'components/button.html' %}
+      {% endwith %}
+
+      {% with texto=('Guardar cambios' if modo_formulario == 'editar' else 'Crear sala'), variante='primary', tipo='submit' %}
+        {% include 'components/button.html' %}
+      {% endwith %}
+    </div>
+  </form>
+</div>
