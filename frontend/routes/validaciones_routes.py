@@ -29,11 +29,11 @@ def _redirigir_sesion_expirada():
 
 
 def _validar_qr_token_formulario(valor: str) -> str:
-    """Valida el formato del token QR antes de consultar al backend."""
+    """Valida el token QR o código de reserva para el ingreso manual."""
     token_limpio = (valor or "").strip()
     if not token_limpio or not PATRON_QR_TOKEN.fullmatch(token_limpio):
         raise ValueError(
-            "El código QR debe tener entre 8 y 160 caracteres alfanuméricos, guiones o guiones bajos."
+            "Ingresá un token QR o código de reserva válido (entre 8 y 160 caracteres, sin espacios)."
         )
     return token_limpio
 

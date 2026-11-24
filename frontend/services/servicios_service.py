@@ -1,5 +1,14 @@
 from services.api_client import consultar_backend
 
+# Tipos de servicio soportados (valor del backend -> etiqueta para mostrar).
+TIPOS_SERVICIO = {
+    "COMIDA": "Comida",
+    "BEBIDA": "Bebida",
+    "OBJETO": "Objeto",
+    "PROMOCION": "Promoción",
+    "COMBO": "Combo",
+}
+
 
 def obtener_servicios_del_backend():
     """
@@ -27,7 +36,7 @@ def _adaptar_servicio(servicio: dict) -> dict | None:
         or id_servicio <= 0
         or not isinstance(nombre, str)
         or not nombre.strip()
-        or tipo not in ("COMIDA", "BEBIDA")
+        or tipo not in TIPOS_SERVICIO
         or isinstance(precio, bool)
         or not isinstance(precio, (int, float))
         or precio < 0

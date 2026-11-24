@@ -7,12 +7,7 @@ from routes.home_routes import home_bp
 
 from routes.peliculas_routes import peliculas_bp 
 from routes.admin_funciones_routes import admin_funciones_bp
-from routes.compras_routes import compras_bp
-
-
-
-
-from routes.compra_routes import compra_bp
+from routes.compra_routes import compra_bp, compras_bp
 from routes.auth_routes import auth_bp
 from routes.perfil_routes import perfil_bp
 from routes.admin_peliculas_routes import admin_peliculas_bp

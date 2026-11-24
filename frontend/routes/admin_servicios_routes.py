@@ -9,14 +9,13 @@ from services.admin_servicios_service import (
     listar_servicios_admin,
     reactivar_servicio,
 )
+from services.servicios_service import TIPOS_SERVICIO
 from utils.auth import admin_required
 from utils.errores import extraer_mensaje_error
 
 admin_servicios_bp = Blueprint(
     "admin_servicios", __name__, url_prefix="/admin/servicios"
 )
-
-TIPOS_SERVICIO = ("COMIDA", "BEBIDA", "OBJETO")
 
 
 def _redirigir_sesion_expirada():

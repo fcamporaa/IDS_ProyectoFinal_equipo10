@@ -156,8 +156,3 @@ def obtener_metricas_cancelaciones_db(filtros: dict = None) -> dict:
     ] + parametros
     resultados = ejecutar_consulta(query, tuple(parametros_consulta))
     return resultados[0] if resultados else {}
-
-
-def obtener_consolidado_ventas_db(filtros: dict = None) -> list[dict]:
-    """Consulta de ranking de películas con más recaudación y espectadores."""
-    pass
