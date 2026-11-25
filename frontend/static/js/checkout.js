@@ -47,6 +47,10 @@ document.addEventListener("DOMContentLoaded", function () {
             .getElementById("inputDni")
             .value.trim();
 
+        const telefono = document
+            .getElementById("inputTelefono")
+            value;
+
         const email = document
             .getElementById("inputEmail")
             .value.trim();
@@ -112,11 +116,26 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
+        // Validar teléfono: únicamente dígitos, si se ingresó.
+        if (telefono !== "" && !/^[0-9]+$/.test(telefono)) {
+            event.preventDefault();
+            alert("Ingresá un número de teléfono que contenga únicamente dígitos.");
+            return;
+        }
+
+
         // Verificar que coincidan los correos
         if (email !== confirmarEmail) {
             event.preventDefault();
             alert("Los correos electrónicos no coinciden.");
             return;
+        }
+
+        // Deshabilitar botón para evitar envíos múltiples o doble clic
+        const btnSubmit = document.querySelector(".btn-confirm-payment");
+        if (btnSubmit) {
+            btnSubmit.disabled = true;
+            btnSubmit.innerHTML = "<span>PROCESANDO COMPRA...</span>";
         }
     });
 });

@@ -8,62 +8,70 @@ Sistema integral de gestión de cines, reserva de entradas y control de acceso d
 
 El proyecto se divide en dos aplicaciones independientes en Python (Flask):
 - **`/backend`**: API REST en Flask conectada a MySQL. Estructurada estrictamente en 4 capas (`routes` -> `validators` -> `services` -> `repositories`).
-- **`/frontend`**: Servidor Web con renderizado del lado del servidor (SSR con Jinja2). Prohibido el uso de `fetch()`/AJAX; consume el backend mediante `requests` en Python.
+- **`/frontend`**: Servidor Web con renderizado del lado del servidor (SSR con Jinja2). Consume el backend mediante `requests` en Python.
 
 ---
 
-## 2. Requisitos Previos
+## 2. Puesta en Marcha con Docker
 
-- **Python 3.10 a 3.12**
-- **Docker** y **Docker Compose** (para la base de datos MySQL)
+### Paso 1: Configurar el archivo de entorno
+```bash
+cp .env.example .env
+```
+
+### Paso 2: Iniciar los servicios
+```bash
+docker compose up --build -d
+```
+
+Una vez levantados los contenedores:
+- **Frontend (Web):** `http://localhost:5001`
+- **Backend (API REST):** `http://localhost:5000`
+- **Base de Datos (MySQL):** `localhost:3307`
 
 ---
 
-## 3. Puesta en Marcha Rápida
+## 3. Reinicio de Base de Datos (Init y Seeds)
 
-### Paso 1: Levantar la Base de Datos (MySQL)
-La base de datos se inicializa automáticamente con el esquema de tablas y datos semilla de prueba:
+Para reiniciar la base de datos a su estado inicial y recargar el esquema (`init_db.sql`) junto con los datos de prueba (`seed_data.sql`):
 
+```bash
+docker compose down -v
+docker compose up -d
+```
+
+---
+
+## 4. Puesta en Marcha Local (Manual)
+
+### Paso 1: Base de Datos
 ```bash
 cd backend
 docker compose up -d
 cd ..
 ```
 
-*(El contenedor creará la base `proyecto_integrador` en el puerto `3307` con usuario `root` y contraseña `root`).*
-
-> **Nota para bases de datos preexistentes:** Si tu entorno utiliza una BD creada con una versión anterior de `backend/db/init_db.sql` (local o volumen Docker ya inicializado), aplicá los scripts incrementales en `backend/db/migrations/` sobre la BD configurada en `backend/.env` sin recrear el volumen para preservar los datos existentes.
-
-### Paso 2: Levantar el Backend (API REST en :5000)
+### Paso 2: Backend
 ```bash
-# 1. Asegurar el archivo de entorno
 cp backend/.env.example backend/.env
-
-# 2. Iniciar el servidor
 cd backend
-source .venv/bin/activate   # En Linux / Mac
+./init.sh
+source .venv/bin/activate
 python app.py
 ```
-La API estará disponible en `http://127.0.0.1:5000`.
 
-### Paso 3: Levantar el Frontend (Servidor Web en :5001)
-En una nueva terminal:
+### Paso 3: Frontend
 ```bash
-# 1. Asegurar el archivo de entorno
 cp frontend/.env.example frontend/.env
-
-# 2. Iniciar el servidor
 cd frontend
-source .venv/bin/activate   # En Linux / Mac
+./init.sh
+source .venv/bin/activate
 python app.py
 ```
-Abrí tu navegador en `http://127.0.0.1:5001`.
 
 ---
 
-## 4. Credenciales de Prueba (Semillas de BD)
-
-Al iniciar la base de datos con Docker, ya quedan disponibles los siguientes usuarios:
+## 5. Usuarios de Prueba
 
 | Rol | Correo Electrónico | Contraseña |
 | :--- | :--- | :--- |
@@ -72,52 +80,8 @@ Al iniciar la base de datos con Docker, ya quedan disponibles los siguientes usu
 
 ---
 
-## 5. Pruebas de API con Postman
+## 6. Pruebas de API con Postman
 
-En la carpeta [`docs/postman/`](docs/postman) disponés de:
-- `Cine_Paradiso_API.postman_collection.json`: Los 28 endpoints documentados y organizados por módulo.
-- `Cine_Paradiso_Local.postman_environment.json`: Entorno con variables locales y captura automática de tokens al iniciar sesión.
-
-## 6. Configuración del Correo Emisor (SMTP)
-
-Para habilitar el envío automático de comprobantes de compra con código QR:
-
-**Paso 1. Configurar el archivo de entorno**
-
-Desde la raíz del repositorio, ejecutar (solo si el archivo no existe):
-
-```bash
-cp backend/.env.example backend/.env
-```
-
-Abrir `backend/.env` y configurar:
-
-```dotenv
-EMAIL_MODE=smtp
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=cineparadiso15@gmail.com
-SMTP_PASSWORD=189u49sjhit
-SMTP_FROM=cineparadiso15@gmail.com
-SMTP_STARTTLS=true
-```
-
-> **Nota:** La contraseña indicada es de ejemplo. Reemplazarla por la contraseña de aplicación válida de la cuenta Gmail compartida.
-
-**Paso 2. Instalar las dependencias**
-
-En una terminal:
-
-```bash
-cd backend
-source .venv/bin/activate
-pip install -r requirements.txt
-pip install "qrcode[pil]"
-```
-
-**Paso 3. Reiniciar el backend**
-
-```bash
-python app.py
-```
-
+En la carpeta [`docs/postman/`](docs/postman) se encuentran:
+- `Cine_Paradiso_API.postman_collection.json`: Endpoints documentados y clasificados por módulo.
+- `Cine_Paradiso_Local.postman_environment.json`: Entorno con variables locales y captura automática de tokens.
