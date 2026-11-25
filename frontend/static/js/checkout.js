@@ -47,6 +47,10 @@ document.addEventListener("DOMContentLoaded", function () {
             .getElementById("inputDni")
             .value.trim();
 
+        const telefono = document
+            .getElementById("inputTelefono")
+            value;
+
         const email = document
             .getElementById("inputEmail")
             .value.trim();
@@ -111,6 +115,14 @@ document.addEventListener("DOMContentLoaded", function () {
             alert("Ingresá un DNI válido de 7 u 8 dígitos, sin puntos ni espacios.");
             return;
         }
+
+        // Validar teléfono: únicamente dígitos, si se ingresó.
+        if (telefono !== "" && !/^[0-9]+$/.test(telefono)) {
+            event.preventDefault();
+            alert("Ingresá un número de teléfono que contenga únicamente dígitos.");
+            return;
+        }
+
 
         // Verificar que coincidan los correos
         if (email !== confirmarEmail) {
