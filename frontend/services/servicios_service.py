@@ -49,7 +49,7 @@ def _adaptar_servicio(servicio: dict) -> dict | None:
         "nombre": nombre,
         "tipo": tipo,
         "categoria": tipo.lower(),
-        "descripcion": tipo,
+        "descripcion": TIPOS_SERVICIO[tipo],
         "precio": precio,
         "precio_formato": formatear_monto(precio),
         "imagen_url": servicio.get("imagen_url"),
