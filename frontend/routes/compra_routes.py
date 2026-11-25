@@ -310,6 +310,14 @@ def seleccion_butacas():
         return redirect(url_for("peliculas.detalle_pelicula", id_pelicula=func_resp["id_pelicula"]))
 
     id_pelicula = func_resp.get("id_pelicula")
+    compra_previa = session.get("compra") or {}
+    funcion_previa = session.get("compra_id_funcion") or compra_previa.get("id_funcion")
+    cambio_de_funcion = funcion_previa is not None and funcion_previa != id_funcion
+    token_reserva = session.get("token_reserva_butacas")
+    access_token = session.get("access_token")
+    if cambio_de_funcion and token_reserva and access_token:
+        liberar_reserva_en_backend(token_reserva, access_token)
+
     registrar_contexto_compra(id_funcion=id_funcion, id_pelicula=id_pelicula)
     if temporizador_compra_iniciado() and temporizador_compra_vencido():
         return redirigir_compra_expirada()
