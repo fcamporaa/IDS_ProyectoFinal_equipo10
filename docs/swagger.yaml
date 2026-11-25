@@ -4,13 +4,19 @@ info:
   description: |
     API REST para el sistema de venta de entradas y gestión de cines de Cine Paradiso.
     Cátedra Lanzillotta - Introducción al Desarrollo de Software (2do cuatrimestre 2026).
-    Documentación generada en base a `Listado de endpoints.pdf`, `Proyecto integrador IDS 2026.pdf`
-    y el esquema relacional de base de datos MySQL (`init_db.sql`).
+    Documentación actualizada exhaustivamente en base al código fuente real, esquema relacional MySQL (`init_db.sql`) y contratos OpenAPI 3.0.3.
 
-    **Notas de diseño y convenciones REST:**
-    - Se utilizan identificadores de ruta sin tildes ni caracteres especiales (`/generos`, `/dashboard/ocupacion`, `/resenas`) para mantener compatibilidad universal con clientes HTTP.
-    - Las fechas y horas se manejan unificadas en formato ISO 8601 / DATETIME (`YYYY-MM-DDTHH:MM:SS`), cumpliendo con la restricción de diseño de base de datos.
-    - La estructura de error sigue el estándar unificado `construir_error_api` con un array `errors`.
+    **Principios y Políticas de Negocio Clave:**
+    - **Paradigma Procedural Multicapa:** Rutas (`routes`) -> Validadores (`validators`) -> Servicios (`services`) -> Repositorios SQL (`repositories`). Prohibido uso de clases y ORMs.
+    - **Fechas y Horas Unificadas:** Campos `DATETIME` en MySQL sin partición artificial, formateados como cadenas ISO 8601 (`YYYY-MM-DDTHH:MM:SS`) en la zona horaria local (`America/Argentina/Buenos_Aires`).
+    - **Identificadores y Rutas REST:** Sin tildes ni caracteres especiales (`/generos`, `/dashboard/ocupacion`, `/resenas`) para máxima compatibilidad HTTP.
+    - **Apartado Temporal de Butacas (Checkout):** Bloqueo atómico con `SELECT ... FOR UPDATE` en MySQL, token de reserva UUID (32-64 caracteres), vigencia de hasta 600 segundos (10 minutos) y liberación automática por vencimiento o voluntaria vía `DELETE /compras/reservas/{token_reserva}`.
+    - **Recargo por Butaca VIP:** Las butacas ubicadas en las filas centrales `E`, `F` y `G` aplican automáticamente un recargo del 25% sobre el `precio_base` de la entrada de la función.
+    - **Cancelación Estricta:** Las compras solo pueden cancelarse por el cliente titular, en estado `PAGADA`, con QR no validado previamente y con un límite de hasta 24 horas antes del horario de inicio de la función (`f.inicio > NOW() + 24 horas`).
+    - **Validación de Acceso por QR en Puerta:** Proceso atómico de 6 reglas estrictas evaluadas secuencialmente: rechazo por QR reutilizado (400), compra no pagada o cancelada (400), función no vigente o finalizada (400), sala incorrecta (400), franja horaria fuera de ventana (solo habilitado desde 30 min antes del inicio hasta el fin de la función, 400), o falta de entradas activas (400); resultando en `EXITO` (200) y sellado de `qr_validado_en = NOW()`.
+    - **Servicios Adicionales (Candy Bar) e Imágenes:** Cada servicio admite `imagen_url` opcional (URL válida HTTP/HTTPS de hasta 2048 caracteres). Permite limpiarse enviando `null` o texto vacío. La baja es lógica (`activo = 0`).
+    - **Reactivación de Funciones:** Solo funciones en estado `CANCELADA` cuyo horario de inicio sea futuro y no genere solapamiento horario en la misma sala pueden reactivarse vía `PUT /funciones/{id}/reactivar`.
+    - **Estándar de Errores Unificado:** Todos los errores devuelven el esquema `ErrorRespuesta` con código HTTP apropiado (400, 401, 403, 404, 409, 500) y un array `errors` con campos `code`, `message`, `level` y `description`.
   version: 1.0.0
 
 servers:
@@ -132,11 +138,17 @@ paths:
               $ref: '#/components/schemas/ActualizarPerfilRequest'
       responses:
         '200':
-          description: Perfil actualizado correctamente.
+          description: Perfil o contraseña actualizados correctamente.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UsuarioPerfil'
+                oneOf:
+                  - $ref: '#/components/schemas/UsuarioPerfil'
+                  - type: object
+                    properties:
+                      mensaje:
+                        type: string
+                        example: 'Perfil actualizado correctamente.'
         '400':
           $ref: '#/components/responses/ErrorValidacion'
         '401':
@@ -2600,7 +2612,7 @@ components:
           example: 1042
         codigo_reserva:
           type: string
-          example: 'RES-2026-F101-B15'
+          example: 'CP-A1B2C3D4E5F60718'
         estado:
           type: string
           example: 'PAGADA'
@@ -2608,15 +2620,15 @@ components:
           type: number
           format: float
           example: 15400.00
-        qr_token:
-          type: string
-          example: 'c1f8e6a2-921b-4df2-a1f9-8c9e543b1234'
         email_estado:
           type: string
-          enum: [PENDIENTE, ENVIADO, SIMULADO, ERROR]
+          description: Estado del envío del comprobante y QR por correo electrónico (hilo asíncrono en background tras confirmar compra).
+          enum: [PENDIENTE, EN_COLA, ENVIADO, SIMULADO, ERROR]
+          example: 'EN_COLA'
         email_enviado_a:
           type: string
-          example: 'comprador@gmail.com'
+          format: email
+          example: 'comprador@test.com'
 
     CompraResumen:
       type: object
