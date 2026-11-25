@@ -32,6 +32,8 @@ cd ..
 
 *(El contenedor creará la base `proyecto_integrador` en el puerto `3307` con usuario `root` y contraseña `root`).*
 
+> **Nota para bases de datos preexistentes:** Si tu entorno utiliza una BD creada con una versión anterior de `backend/db/init_db.sql` (local o volumen Docker ya inicializado), aplicá los scripts incrementales en `backend/db/migrations/` sobre la BD configurada en `backend/.env` sin recrear el volumen para preservar los datos existentes.
+
 ### Paso 2: Levantar el Backend (API REST en :5000)
 ```bash
 # 1. Asegurar el archivo de entorno

@@ -22,73 +22,40 @@ document.addEventListener('DOMContentLoaded', function () {
     const selectorSala = document.getElementById('id_sala');
     if (!selectorLocal || !selectorSala) return;
 
-    const gruposOriginales = Array.from(
-        selectorSala.querySelectorAll('optgroup')
-    ).map(function (grupo) {
-        return grupo.cloneNode(true);
-    });
-    const opcionesSueltas = Array.from(
-        selectorSala.querySelectorAll(':scope > option[data-local]')
+    const opcionesSala = Array.from(
+        selectorSala.querySelectorAll('option[data-local]')
     ).map(function (opcion) {
         return opcion.cloneNode(true);
     });
-    const opcionVacia = selectorSala.querySelector('option[value=""]');
 
-    function filtrarSalas(seleccionarPrimera) {
+    function filtrarSalas() {
         const localId = selectorLocal.value;
         const salaActual = selectorSala.value;
-        let primeraVisible = null;
-        let salaActualSigueVisible = false;
 
-        selectorSala.replaceChildren(
-            opcionVacia
-                ? opcionVacia.cloneNode(true)
-                : new Option('Seleccioná una sala', '')
-        );
+        selectorSala.replaceChildren(new Option('Seleccioná una sala', ''));
+        selectorSala.value = '';
 
-        function agregarOpcion(origen, destino) {
-            const copia = origen.cloneNode(true);
+        if (!localId) {
+            selectorSala.disabled = true;
+            return;
+        }
+
+        const opcionesLocal = opcionesSala.filter(function (opcion) {
+            return opcion.dataset.local === localId;
+        });
+        opcionesLocal.forEach(function (opcion) {
+            const copia = opcion.cloneNode(true);
             copia.selected = false;
-            destino.appendChild(copia);
-            if (copia.value === salaActual) salaActualSigueVisible = true;
-            if (!primeraVisible) primeraVisible = copia;
-        }
-
-        gruposOriginales.forEach(function (grupo) {
-            const opcionesVisibles = Array.from(
-                grupo.querySelectorAll('option[data-local]')
-            ).filter(function (opcion) {
-                return !localId || opcion.dataset.local === localId;
-            });
-            if (!opcionesVisibles.length) return;
-
-            const nuevoGrupo = grupo.cloneNode(false);
-            opcionesVisibles.forEach(function (opcion) {
-                agregarOpcion(opcion, nuevoGrupo);
-            });
-            selectorSala.appendChild(nuevoGrupo);
+            selectorSala.appendChild(copia);
         });
 
-        opcionesSueltas.forEach(function (opcion) {
-            if (!localId || opcion.dataset.local === localId) {
-                agregarOpcion(opcion, selectorSala);
-            }
+        selectorSala.disabled = opcionesLocal.length === 0;
+        const salaSigueDisponible = opcionesLocal.some(function (opcion) {
+            return opcion.value === salaActual;
         });
-
-        if (salaActualSigueVisible) {
-            selectorSala.value = salaActual;
-        } else if (seleccionarPrimera && primeraVisible) {
-            selectorSala.value = primeraVisible.value;
-        } else {
-            selectorSala.value = '';
-        }
+        if (salaSigueDisponible) selectorSala.value = salaActual;
     }
 
-    selectorLocal.addEventListener('change', function () {
-        filtrarSalas(true);
-    });
-
-    if (selectorLocal.value) {
-        filtrarSalas(true);
-    }
+    selectorLocal.addEventListener('change', filtrarSalas);
+    filtrarSalas();
 });

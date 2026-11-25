@@ -1,12 +1,13 @@
 from datetime import timedelta
 
-from src.constants import DURACION_FUNCION_POR_DEFECTO_MIN, ESTADOS_FUNCION_TERMINALES
+from src.constants import DURACION_FUNCION_POR_DEFECTO_MIN, ESTADOS_FUNCION_NO_EDITABLES
 from src.repositories.funciones_repository import (
     actualizar_funcion_db,
     buscar_funcion_por_id_db,
     buscar_pelicula_para_funcion_db,
     buscar_sala_para_funcion_db,
     cancelar_funcion_db,
+    reactivar_funcion_db,
     hay_solapamiento_horario_db,
     insertar_funcion_db,
     obtener_estado_butacas_funcion_db,
@@ -38,10 +39,14 @@ def _obtener_pelicula_activa(id_pelicula: int) -> dict:
     return pelicula
 
 
-def _obtener_sala_activa(id_sala: int) -> dict:
+def _obtener_sala_activa(id_sala: int, id_local: int | None = None) -> dict:
     sala = buscar_sala_para_funcion_db(id_sala)
     if sala is None or not sala["activa"]:
         raise error_validacion("La sala indicada no existe o está deshabilitada.")
+    if not sala["local_activo"]:
+        raise error_validacion("El complejo de la sala indicada está deshabilitado.")
+    if id_local is not None and sala["id_local"] != id_local:
+        raise error_validacion("La sala indicada no pertenece al complejo seleccionado.")
     return sala
 
 
@@ -63,15 +68,23 @@ def listar_funciones(filtros: dict) -> list[dict]:
 
 
 def listar_funciones_admin() -> list[dict]:
-    """Lista todas las funciones para el ABM, sin filtrar por estado ni vigencia."""
+    """Lista todas las funciones del ABM y marca las canceladas que pueden reactivarse."""
     sincronizar_estados_funciones_db()
-    return [formatear_funcion(f) for f in obtener_funciones_admin_db()]
+    ahora = ahora_local()
+    funciones = []
+    for funcion in obtener_funciones_admin_db():
+        datos = formatear_funcion(funcion)
+        datos["puede_reactivar"] = (
+            datos["estado"] == "CANCELADA" and funcion["inicio"] > ahora
+        )
+        funciones.append(datos)
+    return funciones
 
 
 def crear_funcion(datos: dict) -> dict:
     """Programa una función: fin = inicio + duración de la película, sin solapar la sala."""
     pelicula = _obtener_pelicula_activa(datos["id_pelicula"])
-    _obtener_sala_activa(datos["id_sala"])
+    _obtener_sala_activa(datos["id_sala"], datos.get("id_local"))
     fin = _calcular_fin(datos["inicio"], pelicula["duracion_min"])
     _verificar_sala_libre(datos["id_sala"], datos["inicio"], fin)
 
@@ -82,20 +95,7 @@ def crear_funcion(datos: dict) -> dict:
 def actualizar_funcion(id_funcion: int, cambios: dict) -> dict:
     """Modifica película, sala, horario, formato, idioma, subtítulos, precio o estado."""
     actual = _obtener_funcion_o_404(id_funcion)
-    if actual["estado"] == "CANCELADA" and cambios == {"estado": "PROGRAMADA"}:
-        if actual["inicio"] <= ahora_local():
-            raise error_conflicto(
-                "No se puede reactivar una función cuyo horario de inicio ya pasó."
-            )
-        _obtener_pelicula_activa(actual["id_pelicula"])
-        _obtener_sala_activa(actual["id_sala"])
-        _verificar_sala_libre(
-            actual["id_sala"], actual["inicio"], actual["fin"], id_funcion
-        )
-        actualizar_funcion_db(id_funcion, {**actual, "estado": "PROGRAMADA"})
-        return formatear_funcion(buscar_funcion_por_id_db(id_funcion))
-
-    if actual["estado"] in ESTADOS_FUNCION_TERMINALES:
+    if actual["estado"] in ESTADOS_FUNCION_NO_EDITABLES:
         raise error_conflicto(f"No se puede modificar una función {actual['estado']}.")
     
     id_pelicula = cambios.get("id_pelicula", actual["id_pelicula"])
@@ -133,8 +133,8 @@ def actualizar_funcion(id_funcion: int, cambios: dict) -> dict:
             else inicio + (actual["fin"] - actual["inicio"])
         )
 
-    if sala_cambio:
-        _obtener_sala_activa(id_sala)
+    if sala_cambio or "id_local" in cambios:
+        _obtener_sala_activa(id_sala, cambios.get("id_local"))
 
     if cambia_programacion:
         _verificar_sala_libre(id_sala, inicio, fin, id_funcion)
@@ -168,6 +168,36 @@ def eliminar_funcion(id_funcion: int) -> dict:
             )
         cancelar_funcion_db(id_funcion)
     return {"mensaje": "Función dada de baja con éxito."}
+
+
+def reactivar_funcion(id_funcion: int) -> dict:
+    """Reactiva una función cancelada que aún no comenzó y mantiene su sala libre."""
+    actual = _obtener_funcion_o_404(id_funcion)
+    if actual["estado"] == "FINALIZADA":
+        raise error_conflicto("No se puede reactivar una función finalizada.")
+    if actual["estado"] != "CANCELADA":
+        return {"mensaje": "La función ya se encuentra activa."}
+
+    if actual["inicio"] <= ahora_local():
+        raise error_conflicto(
+            "No se puede reactivar una función que ya comenzó o finalizó."
+        )
+
+    _obtener_pelicula_activa(actual["id_pelicula"])
+    _obtener_sala_activa(actual["id_sala"], actual["id_local"])
+    if tiene_entradas_activas_db(id_funcion):
+        raise error_conflicto(
+            "No es posible reactivar una función con entradas vendidas o reservadas."
+        )
+    if hay_solapamiento_horario_db(
+        actual["id_sala"], actual["inicio"], actual["fin"], id_funcion
+    ):
+        raise error_conflicto(
+            "Otra función ocupa la sala en esa franja horaria; no se puede reactivar."
+        )
+
+    reactivar_funcion_db(id_funcion)
+    return {"mensaje": "Función reactivada con éxito."}
 
 
 def obtener_mapa_butacas_funcion(id_funcion: int) -> dict:
