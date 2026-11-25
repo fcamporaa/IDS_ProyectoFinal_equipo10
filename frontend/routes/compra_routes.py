@@ -586,7 +586,8 @@ def seleccion_servicios():
             },
             "categorias_filtro": [
                 {"id": "todos", "nombre": "Todos los Servicios"},
-                *({"id": tipo.lower(), "nombre": tipo} for tipo in TIPOS_SERVICIO),
+                *({"id": tipo.lower(), "nombre": etiqueta} for tipo, etiqueta in TIPOS_SERVICIO.items()),
+            ],
             ],
             "servicios": servicios,
             "servicios_seleccionados": [
