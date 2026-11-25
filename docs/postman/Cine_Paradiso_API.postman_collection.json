@@ -576,6 +576,81 @@
           },
           "response": [],
           "event": []
+        },
+        {
+          "name": "Listar Películas para ABM (Solo Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/peliculas/admin",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "peliculas",
+                "admin"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Detalle de Película Externa OMDb (Solo Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/peliculas/externas/tt0088763",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "peliculas",
+                "externas",
+                "tt0088763"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
@@ -713,6 +788,147 @@
           },
           "response": [],
           "event": []
+        },
+        {
+          "name": "Listar Salas para ABM (Solo Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/salas/admin",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "salas",
+                "admin"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear Sala con Butacas (Solo Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/locales/{{id_local_demo}}/salas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "locales",
+                "{{id_local_demo}}",
+                "salas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"numero\": 4,\n  \"filas\": 6,\n  \"asientos_por_fila\": 10\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Generar Butacas en Sala Vacía (Solo Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/salas/{{id_sala_demo}}/butacas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "salas",
+                "{{id_sala_demo}}",
+                "butacas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filas\": 5,\n  \"asientos_por_fila\": 8\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
@@ -922,6 +1138,81 @@
           },
           "response": [],
           "event": []
+        },
+        {
+          "name": "Listar Funciones para ABM (Solo Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/funciones/admin",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "funciones",
+                "admin"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reactivar Función Cancelada (Solo Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/funciones/{{id_funcion_demo}}/reactivar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "funciones",
+                "{{id_funcion_demo}}",
+                "reactivar"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
@@ -1095,12 +1386,220 @@
           },
           "response": [],
           "event": []
+        },
+        {
+          "name": "Detalle de Servicio Activo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/servicios/{{id_servicio_demo}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "servicios",
+                "{{id_servicio_demo}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar Servicios para ABM (Solo Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/servicios/admin",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "servicios",
+                "admin"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Actualizar Parcialmente Servicio (Solo Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/servicios/{{id_servicio_demo}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "servicios",
+                "{{id_servicio_demo}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"precio\": 4500.0,\n  \"imagen_url\": \"https://images.unsplash.com/photo-1572177812156-58036aae439c?w=600\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
     {
       "name": "6. Compras y Entradas",
       "item": [
+        {
+          "name": "Apartar Butacas Temporalmente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_cliente}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/compras/reservas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "compras",
+                "reservas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_funcion\": 1,\n  \"butacas_ids\": [\n    1,\n    2\n  ],\n  \"token_reserva\": \"a1b2c3d4e5f60718293a4b5c6d7e8f90\",\n  \"duracion_segundos\": 600\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Liberar Reserva Temporal de Butacas",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_cliente}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/compras/reservas/a1b2c3d4e5f60718293a4b5c6d7e8f90",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "compras",
+                "reservas",
+                "a1b2c3d4e5f60718293a4b5c6d7e8f90"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
         {
           "name": "Crear Transacción de Compra",
           "request": {
@@ -1320,7 +1819,7 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/validaciones-qr?limite=20",
+              "raw": "{{base_url}}/validaciones-qr?resultado=EXITO",
               "host": [
                 "{{base_url}}"
               ],
@@ -1329,8 +1828,8 @@
               ],
               "query": [
                 {
-                  "key": "limite",
-                  "value": "20"
+                  "key": "resultado",
+                  "value": "EXITO"
                 }
               ]
             }
