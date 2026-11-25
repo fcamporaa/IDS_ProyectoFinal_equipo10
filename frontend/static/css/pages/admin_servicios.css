@@ -307,6 +307,16 @@
   color: #c084fc;
 }
 
+.badge-tipo--promocion {
+  background-color: rgba(236, 72, 153, 0.15);
+  color: #f472b6;
+}
+
+.badge-tipo--combo {
+  background-color: rgba(20, 184, 166, 0.15);
+  color: #2dd4bf;
+}
+
 .badge-estado--activo {
   background-color: rgba(16, 185, 129, 0.15);
   color: #34d399;

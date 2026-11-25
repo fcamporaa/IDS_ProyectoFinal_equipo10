@@ -11,7 +11,7 @@ from services.validaciones_service import (
 )
 from utils.auth import admin_required
 from utils.errores import extraer_mensaje_error
-from utils.formatos import formatear_fecha_corta, formatear_hora
+from utils.formatos import formatear_fecha_hora
 from utils.validaciones import validar_entero_positivo
 
 validaciones_bp = Blueprint("validaciones", __name__, url_prefix="/admin")
@@ -29,11 +29,11 @@ def _redirigir_sesion_expirada():
 
 
 def _validar_qr_token_formulario(valor: str) -> str:
-    """Valida el formato del token QR antes de consultar al backend."""
+    """Valida el token QR o código de reserva para el ingreso manual."""
     token_limpio = (valor or "").strip()
     if not token_limpio or not PATRON_QR_TOKEN.fullmatch(token_limpio):
         raise ValueError(
-            "El código QR debe tener entre 8 y 160 caracteres alfanuméricos, guiones o guiones bajos."
+            "Ingresá un token QR o código de reserva válido (entre 8 y 160 caracteres, sin espacios)."
         )
     return token_limpio
 
@@ -66,11 +66,7 @@ def _formatear_fecha_hora(valor_iso: str | None) -> str:
     """Convierte un timestamp ISO en texto legible para la tabla e indicador de resultado."""
     if not valor_iso:
         return "—"
-    try:
-        momento = datetime.fromisoformat(valor_iso)
-    except ValueError:
-        return valor_iso
-    return f"{formatear_fecha_corta(momento.date())} · {formatear_hora(momento)}"
+    return formatear_fecha_hora(valor_iso) or valor_iso
 
 
 def _cargar_salas_activas(token: str) -> list[dict]:

@@ -7,6 +7,7 @@ from services.admin_funciones_service import (
     actualizar_funcion,
     crear_funcion,
     dar_de_baja_funcion,
+    reactivar_funcion,
     listar_funciones_admin,
     listar_locales,
     listar_peliculas_admin,
@@ -15,7 +16,7 @@ from services.admin_funciones_service import (
 from utils.auth import admin_required
 from utils.errores import extraer_mensaje_error
 from utils.funciones import (
-    ESTADOS_FUNCION_TERMINALES,
+    ESTADOS_FUNCION_NO_EDITABLES,
     armar_inicio_iso,
     borrador_desde_funcion,
     combinar_salas,
@@ -80,6 +81,11 @@ def _leer_formulario(form) -> dict:
         raise ValueError("La sala seleccionada no es válida.") from None
 
     try:
+        id_local = int(borrador["id_local"]) if borrador["id_local"] else None
+    except ValueError:
+        raise ValueError("El complejo seleccionado no es válido.") from None
+
+    try:
         precio_entrada = (
             float(borrador["precio_entrada"]) if borrador["precio_entrada"] else None
         )
@@ -94,6 +100,7 @@ def _leer_formulario(form) -> dict:
         **borrador,
         "id_pelicula": id_pelicula,
         "id_sala": id_sala,
+        "id_local": id_local,
         "inicio": inicio,
         "idioma": borrador["idioma"] or None,
         "precio_entrada": precio_entrada,
@@ -142,7 +149,9 @@ def _cargar_contexto(token: str):
             if s_estado in (401, 403):
                 return None, None, None, None, None, _redirigir_sesion_expirada()
             if s_estado == 200 and isinstance(s_list, list):
-                salas_por_local[id_local] = s_list
+                salas_por_local[id_local] = [
+                    sala for sala in s_list if sala.get("activa", True)
+                ]
             else:
                 salas_por_local[id_local] = []
                 errores.append(f"No se pudieron cargar las salas del complejo {id_local}.")
@@ -173,6 +182,7 @@ def _payload_actualizacion(datos: dict, funcion_actual: dict) -> dict:
     comparaciones = {
         "id_pelicula": funcion_actual.get("id_pelicula"),
         "id_sala": funcion_actual.get("id_sala"),
+        "id_local": funcion_actual.get("id_local"),
         "inicio": funcion_actual.get("inicio"),
         "formato": funcion_actual.get("formato"),
         "idioma": funcion_actual.get("idioma"),
@@ -191,7 +201,7 @@ def _payload_actualizacion(datos: dict, funcion_actual: dict) -> dict:
         if cambia:
             payload[campo] = valor_nuevo
 
-    if funcion_actual.get("estado") in ESTADOS_FUNCION_TERMINALES:
+    if funcion_actual.get("estado") in ESTADOS_FUNCION_NO_EDITABLES:
         payload["estado"] = funcion_actual["estado"]
 
     return payload
@@ -210,18 +220,6 @@ def _renderizar_pagina(
     funciones, peliculas, locales, salas, error_backend, redireccion = _cargar_contexto(token)
     if redireccion is not None:
         return redireccion
-
-    if not borrador.get("id_local") and borrador.get("id_sala"):
-        sala_actual = next(
-            (
-                sala
-                for sala in salas
-                if str(sala["id_sala"]) == str(borrador["id_sala"])
-            ),
-            None,
-        )
-        if sala_actual:
-            borrador = {**borrador, "id_local": sala_actual["id_local"]}
 
     fecha_minima = datetime.now().strftime("%Y-%m-%d")
     if modo_formulario == "editar" and borrador.get("fecha"):
@@ -278,6 +276,7 @@ def crear():
     payload = {
         "id_pelicula": datos_form["id_pelicula"],
         "id_sala": datos_form["id_sala"],
+        "id_local": datos_form["id_local"],
         "inicio": datos_form["inicio"],
         "formato": datos_form["formato"],
         "idioma": datos_form["idioma"],
@@ -391,6 +390,21 @@ def eliminar(id_funcion):
         return _redirigir_sesion_expirada()
     if estado == 200:
         flash("Función cancelada correctamente.", "success")
+        return redirect(url_for("admin_funciones.index"))
+
+    flash(extraer_mensaje_error(respuesta), "error")
+    return redirect(url_for("admin_funciones.index"))
+
+@admin_funciones_bp.route("/<int:id_funcion>/reactivar", methods=["POST"])
+@admin_required
+def reactivar(id_funcion):
+    """Reactiva una función cancelada que todavía no comenzó."""
+    token = session["access_token"]
+    respuesta, estado = reactivar_funcion(token, id_funcion)
+    if estado in (401, 403):
+        return _redirigir_sesion_expirada()
+    if estado == 200:
+        flash("Función reactivada correctamente.", "success")
         return redirect(url_for("admin_funciones.index"))
 
     flash(extraer_mensaje_error(respuesta), "error")

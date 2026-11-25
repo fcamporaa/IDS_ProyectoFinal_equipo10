@@ -1,7 +1,7 @@
 from decimal import Decimal, InvalidOperation
 
 from src.constants import TIPOS_SERVICIO
-from src.utils import construir_error_api, validar_url_opcional
+from src.utils import construir_error_api, validar_opcion, validar_url_opcional
 
 
 def validar_id_servicio(id_servicio: int) -> int:
@@ -88,6 +88,7 @@ def validar_crear_servicio(datos: dict) -> dict:
             "Tipo de servicio inválido",
             "El tipo de servicio es obligatorio y debe tener hasta 50 caracteres.",
         )
+    tipo = validar_opcion(tipo.strip().upper(), TIPOS_SERVICIO, "tipo")
 
     precio = validar_precio_servicio(datos.get("precio"))
     if isinstance(precio, dict):
@@ -96,7 +97,7 @@ def validar_crear_servicio(datos: dict) -> dict:
     imagen_url = validar_url_opcional(datos.get("imagen_url"), "imagen_url")
     return {
         "nombre": nombre.strip(),
-        "tipo": tipo.strip().upper(),
+        "tipo": tipo,
         "precio": precio,
         "activo": 1,
         "imagen_url": imagen_url,
@@ -147,7 +148,7 @@ def validar_actualizar_servicio(datos: dict) -> dict:
                 "Tipo de servicio inválido",
                 "El tipo de servicio es obligatorio y debe tener hasta 50 caracteres.",
             )
-        datos_validados["tipo"] = tipo.strip().upper()
+        datos_validados["tipo"] = validar_opcion(tipo.strip().upper(), TIPOS_SERVICIO, "tipo")
 
     if "precio" in datos:
         precio = validar_precio_servicio(datos["precio"])

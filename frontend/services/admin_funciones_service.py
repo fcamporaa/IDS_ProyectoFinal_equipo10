@@ -37,3 +37,10 @@ def actualizar_funcion(token: str, id_funcion: int, datos: dict):
 def dar_de_baja_funcion(token: str, id_funcion: int):
     """Cancela lógicamente una función."""
     return consultar_backend(f"/funciones/{id_funcion}", token, metodo="DELETE")
+
+
+def reactivar_funcion(token: str, id_funcion: int):
+    """Reactiva una función cancelada mediante su transición de estado explícita."""
+    return consultar_backend(
+        f"/funciones/{id_funcion}/reactivar", token, metodo="PUT"
+    )

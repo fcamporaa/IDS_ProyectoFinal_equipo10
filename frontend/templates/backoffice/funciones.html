@@ -106,9 +106,18 @@
                       {% include 'components/button.html' %}
                     {% endwith %}
                   </form>
+                  {% elif funcion.puede_reactivar %}
+                  <form method="POST"
+                        action="{{ url_for('admin_funciones.reactivar', id_funcion=funcion.id_funcion) }}"
+                        data-confirmar-baja
+                        data-modal-destino="modal-reactivar-{{ funcion.id_funcion }}">
+                    {% with texto='Reactivar', tipo='submit', variante='secondary', clase_extra='admin-funciones__action' %}
+                      {% include 'components/button.html' %}
+                    {% endwith %}
+                  </form>
                   {% endif %}
 
-                  {% if not funcion.puede_editar and not funcion.puede_baja %}
+                  {% if not funcion.puede_editar and not funcion.puede_baja and not funcion.puede_reactivar %}
                   <span class="admin-funciones__sin-acciones">—</span>
                   {% endif %}
                 </div>
@@ -123,10 +132,20 @@
         {% if funcion.puede_baja %}
           {% with id_modal='modal-baja-' ~ funcion.id_funcion,
                   titulo='Confirmar baja de función',
-                  mensaje='¿Querés cancelar la función de "' ~ funcion.titulo_pelicula ~ '" del ' ~ funcion.fecha_legible ~ ' a las ' ~ funcion.hora_inicio ~ '? La función quedará cancelada y no se podrá reactivar.',
+                  mensaje='¿Querés cancelar la función de "' ~ funcion.titulo_pelicula ~ '" del ' ~ funcion.fecha_legible ~ ' a las ' ~ funcion.hora_inicio ~ '? Quedará cancelada y podrá reactivarse si no tiene entradas vendidas.',
                   accion=url_for('admin_funciones.eliminar', id_funcion=funcion.id_funcion),
                   texto_confirmar='Sí, cancelar función',
                   texto_cancelar='Volver' %}
+            {% include 'components/modal_confirmacion.html' %}
+          {% endwith %}
+        {% elif funcion.puede_reactivar %}
+          {% with id_modal='modal-reactivar-' ~ funcion.id_funcion,
+                  titulo='Confirmar reactivación de función',
+                  mensaje='¿Querés reactivar la función de "' ~ funcion.titulo_pelicula ~ '" del ' ~ funcion.fecha_legible ~ ' a las ' ~ funcion.hora_inicio ~ '? Volverá a estar disponible para vender entradas.',
+                  accion=url_for('admin_funciones.reactivar', id_funcion=funcion.id_funcion),
+                  texto_confirmar='Sí, reactivar función',
+                  texto_cancelar='Volver',
+                  variante_confirmar='primary' %}
             {% include 'components/modal_confirmacion.html' %}
           {% endwith %}
         {% endif %}

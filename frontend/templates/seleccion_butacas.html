@@ -44,6 +44,7 @@
             </div>
 
             <!-- Temporizador de Reserva -->
+            {% if temporizador %}
             <div class="session-timer-card" title="Tiempo de reserva asignado">
                 <div class="timer-icon-circle">
                     <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
@@ -57,9 +58,11 @@
                           data-expira-en-ms="{{ temporizador.expira_en_ms }}"
                           data-ahora-servidor-ms="{{ temporizador.ahora_servidor_ms }}"
                           data-url-expiracion="{{ url_for('compra.compra_expirada') }}"
-                          data-sufijo=" min">{{ c.funcion.tiempo_restante }}</span>
+                          data-sufijo=" min">{{ temporizador.tiempo_restante }} min
+                    </span>
                 </div>
             </div>
+            {% endif %}
         </header>
 
         <!-- 3. Grid Principal: Sala (Izq) y Resumen (Der) -->
@@ -173,11 +176,11 @@
                 <div class="seats-legend-row">
                     <div class="legend-pill-item">
                         <span class="legend-sample-seat sample-free"></span>
-                        <span>Libre ($8.500)</span>
+                        <span>Libre ({{ c.funcion.precio_general_formato }})</span>
                     </div>
                     <div class="legend-pill-item">
                         <span class="legend-sample-seat sample-selected">7</span>
-                        <span>Tu Selección ($8.500)</span>
+                        <span>Tu Selección</span>
                     </div>
                     <div class="legend-pill-item">
                         <span class="legend-sample-seat sample-occupied">✕</span>
@@ -185,7 +188,7 @@
                     </div>
                     <div class="legend-pill-item legend-vip-text">
                         <span class="legend-sample-seat sample-vip"></span>
-                        <span>Butaca VIP D-BOX ($10.500)</span>
+                        <span>Butaca VIP D-BOX ({{ c.funcion.precio_vip_formato }})</span>
                     </div>
                 </div>
 

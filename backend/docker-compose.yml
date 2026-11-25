@@ -3,7 +3,7 @@ services:
     image: mysql:8.0
     container_name: cine_paradiso_db
     restart: unless-stopped
-    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_general_ci
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_general_ci --default-time-zone='-03:00'
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: proyecto_integrador

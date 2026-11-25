@@ -1,6 +1,10 @@
+import base64
+import io
 import json
 import secrets
-from datetime import datetime
+from datetime import datetime, timedelta
+
+import qrcode
 
 from flask import (
     Blueprint,
@@ -19,22 +23,46 @@ from services.funciones_service import (
 )
 from services.peliculas_service import obtener_detalle_pelicula
 from services.servicios_service import (
+    TIPOS_SERVICIO,
     obtener_servicios_del_backend,
     formatear_monto,
     obtener_servicios_disponibles,
 )
-from services.compras_service import reservar_butacas_en_backend, liberar_reserva_en_backend
+from services.compras_service import (
+    cancelar_compra_al_backend,
+    enviar_compra_al_backend,
+    liberar_reserva_en_backend,
+    obtener_compra_del_backend,
+    reenviar_comprobante_al_backend,
+    reservar_butacas_en_backend,
+)
 from utils.csrf import crear_token_csrf, validar_token_csrf
-from utils.formatos import formatear_duracion, formatear_fecha_corta, formatear_hora
+from utils.formatos import (
+    formatear_duracion,
+    formatear_fecha_corta,
+    formatear_hora,
+    formatear_precio,
+    formatear_fecha_hora,
+    parsear_datetime_seguro,
+)
 from utils.temporizador_compra import (
+    DURACION_COMPRA_SEGUNDOS,
     contexto_temporizador_compra,
     iniciar_temporizador_compra,
+    limpiar_compra_temporal,
+    registrar_contexto_compra,
     redirigir_compra_expirada,
+    temporizador_compra_iniciado,
     temporizador_compra_vencido,
 )
-from validators.compras_validators import validar_servicios_seleccionados
+from validators.compras_validators import (
+    validar_formulario_compra,
+    validar_servicios_seleccionados,
+)
 
 compra_bp = Blueprint("compra", __name__, url_prefix="/compra")
+# Mantener el namespace de los endpoints existentes del comprobante.
+compras_bp = Blueprint("compras", __name__)
 
 
 def _armar_filas_butacas(
@@ -132,7 +160,7 @@ def seleccion_butacas():
     POST: Recibe la selección del usuario, valida disponibilidad y persiste en session.
     """
     if request.method == "POST":
-        if temporizador_compra_vencido():
+        if temporizador_compra_iniciado() and temporizador_compra_vencido():
             return redirigir_compra_expirada()
         id_funcion = request.form.get("id_funcion", type=int)
         raw_butacas = request.form.get("butacas_seleccionadas", "")
@@ -186,13 +214,17 @@ def seleccion_butacas():
         token_acceso = session.get("access_token")
         if token_acceso:
             token_reserva = token_previo or secrets.token_hex(32)
-            temporizador = contexto_temporizador_compra()
+            duracion_segundos = (
+                contexto_temporizador_compra()["duracion_restante_segundos"]
+                if temporizador_compra_iniciado()
+                else DURACION_COMPRA_SEGUNDOS
+            )
             respuesta_reserva, estado_reserva = reservar_butacas_en_backend(
                 {
                     "id_funcion": id_funcion,
                     "butacas_ids": ids_butacas,
                     "token_reserva": token_reserva,
-                    "duracion_segundos": temporizador["duracion_restante_segundos"],
+                    "duracion_segundos": duracion_segundos,
                 },
                 token_acceso,
             )
@@ -209,6 +241,11 @@ def seleccion_butacas():
                 )
             session["token_reserva_butacas"] = token_reserva
 
+        iniciar_temporizador_compra(
+            id_funcion=id_funcion,
+            id_pelicula=session.get("compra_id_pelicula"),
+        )
+
         # Obtener detalle de función para precio y datos de la orden
         func_detalle, _ = obtener_detalle_funcion_del_backend(id_funcion)
         precio_unitario = (
@@ -216,7 +253,19 @@ def seleccion_butacas():
             if isinstance(func_detalle, dict)
             else 8500.0
         )
-        subtotal = precio_unitario * len(butacas_elegidas)
+        precio_vip = round(precio_unitario * 1.25, 2)
+        butacas_guardadas = []
+        for b in butacas_elegidas:
+            es_vip = b.get("fila") in ("E", "F", "G")
+            pr = precio_vip if es_vip else precio_unitario
+            butacas_guardadas.append({
+                "id_butaca": b["id_butaca"],
+                "fila": b["fila"],
+                "numero": b["numero"],
+                "es_vip": es_vip,
+                "precio": pr,
+            })
+        subtotal = sum(b["precio"] for b in butacas_guardadas)
 
         # Guardar la selección en la sesión de Flask
         session["compra"] = {
@@ -228,16 +277,8 @@ def seleccion_butacas():
             "sala_completa": f"Sala {func_detalle.get('numero_sala', 1)} ({func_detalle.get('formato', '2D')})" if isinstance(func_detalle, dict) else "Sala 1",
             "horario": func_detalle.get("inicio", "") if isinstance(func_detalle, dict) else "",
             "precio_unitario": precio_unitario,
-            "butacas": [
-                {
-                    "id_butaca": b["id_butaca"],
-                    "fila": b["fila"],
-                    "numero": b["numero"],
-                    "precio": precio_unitario,
-                }
-                for b in butacas_elegidas
-            ],
-            "total_butacas": len(butacas_elegidas),
+            "butacas": butacas_guardadas,
+            "total_butacas": len(butacas_guardadas),
             "subtotal_entradas": subtotal,
         }
 
@@ -269,10 +310,14 @@ def seleccion_butacas():
         return redirect(url_for("peliculas.detalle_pelicula", id_pelicula=func_resp["id_pelicula"]))
 
     id_pelicula = func_resp.get("id_pelicula")
-    iniciar_temporizador_compra(id_funcion=id_funcion, id_pelicula=id_pelicula)
-    if temporizador_compra_vencido():
+    registrar_contexto_compra(id_funcion=id_funcion, id_pelicula=id_pelicula)
+    if temporizador_compra_iniciado() and temporizador_compra_vencido():
         return redirigir_compra_expirada()
-    temporizador = contexto_temporizador_compra()
+    temporizador = (
+        contexto_temporizador_compra()
+        if temporizador_compra_iniciado()
+        else None
+    )
 
     # Obtener butacas de la sesión previa si corresponden a esta función
     compra_sesion = session.get("compra", {})
@@ -334,13 +379,7 @@ def seleccion_butacas():
 
     # Formato de horario
     inicio_raw = func_resp.get("inicio", "") if isinstance(func_resp, dict) else ""
-    horario_etiqueta = "Horario a confirmar"
-    if inicio_raw:
-        try:
-            dt = datetime.fromisoformat(inicio_raw)
-            horario_etiqueta = f"{formatear_fecha_corta(dt.date())} {formatear_hora(dt)}"
-        except Exception:
-            horario_etiqueta = inicio_raw
+    horario_etiqueta = formatear_fecha_hora(inicio_raw) or "Horario a confirmar"
 
     # Resumen lateral
     ubicaciones_resumen = []
@@ -375,9 +414,15 @@ def seleccion_butacas():
             "sala_completa": f"Sala {num_sala} ({formato})",
             "horario_etiqueta": horario_etiqueta,
             "pantalla_tipo": f"PANTALLA {formato}",
-            "tiempo_restante": f"{temporizador['tiempo_restante']} min",
+            "tiempo_restante": (
+                f"{temporizador['tiempo_restante']} min"
+                if temporizador
+                else "10:00 min"
+            ),
             "precio_general": int(precio_base),
             "precio_vip": int(precio_vip),
+            "precio_general_formato": formatear_precio(precio_base),
+            "precio_vip_formato": formatear_precio(precio_vip),
         },
         "sala": {
             "filas": filas_construidas,
@@ -447,9 +492,14 @@ def seleccion_servicios():
         sala_completa = compra_actual.get("sala_completa") or f"Sala {sala_numero} ({formato})"
         sala_badge = f"SALA {sala_numero} • {formato}".upper()
 
-        inicio_dt = _parsear_inicio(funcion.get("inicio") or compra_actual.get("horario", ""))
+        inicio_dt = parsear_datetime_seguro(
+            funcion.get("inicio") or compra_actual.get("horario", "")
+        )
         if inicio_dt:
-            horario_etiqueta = f"{formatear_fecha_corta(inicio_dt.date())} {formatear_hora(inicio_dt)} • {'Subtitulada' if subtitulada else 'Doblada'}"
+            horario_etiqueta = (
+                f"{formatear_fecha_hora(inicio_dt)} • "
+                f"{'Subtitulada' if subtitulada else 'Doblada'}"
+            )
         else:
             horario_etiqueta = compra_actual.get("horario") or "Horario a confirmar"
 
@@ -487,6 +537,36 @@ def seleccion_servicios():
         )
         total = subtotal_entradas + subtotal_candy
 
+        entradas_items = []
+        vip_butacas = [b for b in butacas if b.get("es_vip") or b.get("fila") in ("E", "F", "G")]
+        gen_butacas = [b for b in butacas if not (b.get("es_vip") or b.get("fila") in ("E", "F", "G"))]
+        if gen_butacas:
+            sub_gen = sum(float(b.get("precio", precio_unitario)) for b in gen_butacas)
+            txt_gen = ", ".join(f"{b.get('fila')}-{b.get('numero')}" for b in gen_butacas)
+            entradas_items.append({
+                "descripcion": f"{len(gen_butacas)}x Entrada {formato}",
+                "detalle": f"Butacas {txt_gen}",
+                "subtotal": sub_gen,
+                "subtotal_formato": formatear_monto(sub_gen),
+            })
+        if vip_butacas:
+            precio_vip = round(precio_unitario * 1.25, 2)
+            sub_vip = sum(float(b.get("precio", precio_vip)) for b in vip_butacas)
+            txt_vip = ", ".join(f"{b.get('fila')}-{b.get('numero')}" for b in vip_butacas)
+            entradas_items.append({
+                "descripcion": f"{len(vip_butacas)}x Entrada VIP ({formato})",
+                "detalle": f"Butacas {txt_vip}",
+                "subtotal": sub_vip,
+                "subtotal_formato": formatear_monto(sub_vip),
+            })
+        if not entradas_items:
+            entradas_items.append({
+                "descripcion": f"{len(butacas)}x Entrada {formato}",
+                "detalle": f"Butacas {butacas_texto}",
+                "subtotal": subtotal_entradas,
+                "subtotal_formato": formatear_monto(subtotal_entradas),
+            })
+
         return {
             "pelicula": {
                 "id_pelicula": id_pelicula,
@@ -500,21 +580,13 @@ def seleccion_servicios():
                 "complejo": complejo,
             },
             "entradas": {
-                "items": [
-                    {
-                        "descripcion": f"{len(butacas)}x Entrada {formato}",
-                        "detalle": f"Butacas {butacas_texto}",
-                        "subtotal": subtotal_entradas,
-                        "subtotal_formato": formatear_monto(subtotal_entradas),
-                    }
-                ],
+                "items": entradas_items,
                 "subtotal": subtotal_entradas,
                 "subtotal_formato": formatear_monto(subtotal_entradas),
             },
             "categorias_filtro": [
                 {"id": "todos", "nombre": "Todos los Servicios"},
-                {"id": "comida", "nombre": "COMIDA"},
-                {"id": "bebida", "nombre": "BEBIDA"},
+                *({"id": tipo.lower(), "nombre": tipo} for tipo in TIPOS_SERVICIO),
             ],
             "servicios": servicios,
             "servicios_seleccionados": [
@@ -657,17 +729,37 @@ def seleccion_checkout():
     cantidad_entradas = len(compra["butacas"])
 
     precio_unitario = float(funcion["precio_entrada"])
+    precio_vip = round(precio_unitario * 1.25, 2)
 
-    subtotal_entradas = precio_unitario * cantidad_entradas
+    # 6. Construir el desglose de las entradas considerando butacas VIP
+    desglose = []
+    vip_butacas = [b for b in compra["butacas"] if b.get("es_vip") or b.get("fila") in ("E", "F", "G")]
+    gen_butacas = [b for b in compra["butacas"] if not (b.get("es_vip") or b.get("fila") in ("E", "F", "G"))]
 
-    # 6. Construir el desglose de las entradas
-    desglose = [
-        {
+    subtotal_entradas = 0.0
+    if gen_butacas:
+        sub_gen = sum(float(b.get("precio", precio_unitario)) for b in gen_butacas)
+        subtotal_entradas += sub_gen
+        desglose.append({
+            "titulo": f"{len(gen_butacas)}x Entrada {funcion.get('formato', '2D')}",
+            "subtexto": compra["pelicula_titulo"],
+            "precio": f"${sub_gen:,.0f}".replace(",", "."),
+        })
+    if vip_butacas:
+        sub_vip = sum(float(b.get("precio", precio_vip)) for b in vip_butacas)
+        subtotal_entradas += sub_vip
+        desglose.append({
+            "titulo": f"{len(vip_butacas)}x Entrada VIP ({funcion.get('formato', '2D')})",
+            "subtexto": compra["pelicula_titulo"],
+            "precio": f"${sub_vip:,.0f}".replace(",", "."),
+        })
+    if not desglose:
+        subtotal_entradas = float(compra.get("subtotal_entradas") or (precio_unitario * cantidad_entradas))
+        desglose.append({
             "titulo": f"{cantidad_entradas}x Entrada",
             "subtexto": compra["pelicula_titulo"],
             "precio": f"${subtotal_entradas:,.0f}".replace(",", "."),
-        }
-    ]
+        })
 
     # 7. Recuperar los servicios seleccionados (si existen)
     servicios_seleccionados = session.get("servicios_seleccionados", [])
@@ -743,17 +835,8 @@ def seleccion_checkout():
         dato for dato in [idioma, subtitulos, duracion] if dato
     )
 
-    horario = funcion.get("inicio", compra.get("horario", ""))
-
-    try:
-        fecha_funcion = datetime.fromisoformat(horario)
-
-        horario = (
-            f"{formatear_fecha_corta(fecha_funcion.date())} "
-            f"{formatear_hora(fecha_funcion)}"
-        )
-    except (ValueError, TypeError):
-        pass
+    horario_raw = funcion.get("inicio", compra.get("horario", ""))
+    horario = formatear_fecha_hora(horario_raw) or horario_raw
 
     # 10. Preparar el diccionario que utiliza checkout.html
     datos_compra = {
@@ -814,4 +897,284 @@ def seleccion_checkout():
         c=datos_compra,
         csrf_token=crear_token_csrf(),
         temporizador=temporizador,
+    )
+
+
+def _extraer_mensaje_error_backend(respuesta, fallback: str) -> str:
+    if isinstance(respuesta, dict):
+        errores = respuesta.get("errors")
+        if isinstance(errores, list) and errores:
+            primero = errores[0] if isinstance(errores[0], dict) else {}
+            mensaje = primero.get("description") or primero.get("message")
+            if mensaje:
+                return str(mensaje)
+        mensaje = respuesta.get("error") or respuesta.get("mensaje")
+        if mensaje:
+            return str(mensaje)
+    return fallback
+
+
+@compras_bp.route("/compra/confirmar", methods=["POST"])
+def confirmar_compra():
+    if temporizador_compra_vencido():
+        return redirigir_compra_expirada()
+    if not validar_token_csrf(request.form.get("csrf_token", "")):
+        return "La sesión del formulario venció. Volvé a intentarlo.", 400
+    token = session.get("access_token")
+    if not token:
+        flash("Necesitás iniciar sesión para realizar la compra.", "error")
+        return redirect(url_for("home.index"))
+    try:
+        datos = validar_formulario_compra(
+            request.form,
+            session.get("servicios_seleccionados", []),
+        )
+    except ValueError as error:
+        flash(str(error), "error")
+        return redirect(url_for("compra.seleccion_checkout"))
+    compra, estado = enviar_compra_al_backend(datos, token)
+    if estado == 201 and isinstance(compra, dict) and type(compra.get("id_compra")) is int:
+        limpiar_compra_temporal()
+        return redirect(url_for("compras.compra_exitosa", id_compra=compra["id_compra"]))
+    flash(
+        _extraer_mensaje_error_backend(
+            compra,
+            "No se pudo confirmar la compra. Revisá la función, las butacas y la sesión.",
+        ),
+        "error",
+    )
+    return redirect(url_for("compra.seleccion_checkout"))
+
+
+@compras_bp.route("/compras/<int:id_compra>/confirmacion", methods=["GET"])
+def compra_exitosa(id_compra: int):
+
+    token = session.get("access_token")
+
+    if not token:
+        flash("Debés iniciar sesión.", "error")
+        return redirect(url_for("auth.login"))
+
+    # Obtener la compra real desde MySQL
+    compra, estado = obtener_compra_del_backend(id_compra, token)
+
+    if estado != 200 or not isinstance(compra, dict):
+        flash("No se pudo obtener el comprobante.", "error")
+        return redirect(url_for("home.index"))
+
+    funcion = compra["funcion"]
+    entradas = compra.get("entradas", [])
+    servicios = compra.get("servicios", [])
+
+    # Obtener información adicional de la película
+    pelicula, estado_pelicula = obtener_detalle_pelicula(funcion["id_pelicula"])
+    if estado_pelicula != 200 or not isinstance(pelicula, dict):
+        pelicula = {}
+
+    # Interpretar fecha y horario de la función
+    inicio_texto = str(funcion.get("inicio") or "")
+    fecha_funcion = parsear_datetime_seguro(inicio_texto)
+
+    fecha = formatear_fecha_corta(fecha_funcion) if fecha_funcion else inicio_texto
+    horario = formatear_hora(fecha_funcion) if fecha_funcion else ""
+    limite_dt = (fecha_funcion - timedelta(hours=24)) if fecha_funcion else None
+    limite_cancelacion = (
+        formatear_fecha_hora(limite_dt)
+        if limite_dt
+        else "24 horas antes de la función"
+    )
+
+    puede_cancelar = (
+    compra.get("estado") == "PAGADA"
+    and not compra.get("qr_validado_en")
+    and fecha_funcion is not None
+    and fecha_funcion > (
+        datetime.now(fecha_funcion.tzinfo)
+        + timedelta(hours=24)
+    )
+    )
+
+    # Construir descripción de las butacas
+    butacas = ", ".join(
+        f"{entrada['fila']}-{entrada['numero']}"
+        for entrada in entradas
+    )
+
+    # Construir el detalle de la compra
+    items = [
+        {
+            "descripcion": f"{len(entradas)}x Entrada ({butacas})",
+            "monto": formatear_precio(compra["subtotal_entradas"]),
+        }
+    ]
+
+    for servicio in servicios:
+        items.append({
+            "descripcion": (
+                f"{servicio['cantidad']}x "
+                f"{servicio['nombre_servicio']}"
+            ),
+            "monto": formatear_precio(servicio["subtotal"]),
+        })
+
+    # Servicios adicionales para las tarjetas del voucher
+    adicionales = [
+        {
+            "tipo": "combo",
+            "nombre": (
+                f"{servicio['cantidad']}x "
+                f"{servicio['nombre_servicio']}"
+            ),
+            "detalle": (
+                "Precio unitario: "
+                + formatear_precio(servicio["precio_unitario"])
+            ),
+            "subdetalle": None,
+            "estado": "Incluido",
+            "icono": "combo",
+        }
+        for servicio in servicios
+    ]
+
+    # Crear imagen del QR usando el token real
+    qr_base64 = None
+
+    if (
+        compra.get("estado") == "PAGADA"
+        and compra.get("qr_token")
+        and not compra.get("qr_validado_en")
+    ):
+        imagen = qrcode.make(compra["qr_token"])
+        buffer = io.BytesIO()
+        imagen.save(buffer, format="PNG")
+
+        qr_base64 = base64.b64encode(
+            buffer.getvalue()
+        ).decode("utf-8")
+
+    duracion = pelicula.get("duracion_min")
+
+    datos_confirmacion = {
+
+        "id_compra": id_compra,
+        "id_transaccion": compra["codigo_reserva"],
+        "estado": compra["estado"],
+        "email_comprador": compra["email_comprobante"],
+        "codigo_reserva": compra["codigo_reserva"],
+        "qr_base64": qr_base64,
+
+        "pelicula": {
+            "id_pelicula": funcion["id_pelicula"],
+            "titulo": funcion["titulo_pelicula"],
+            "poster_url": pelicula.get("poster_url") or "",
+            "badge_poster": funcion.get("formato") or "",
+            "clasificacion": pelicula.get("clasificacion") or "",
+            "duracion": f"{duracion} MIN" if duracion else "",
+            "formato_sala": funcion.get("formato") or "",
+            "idioma": funcion.get("idioma") or "",
+            "direccion_sonido": "",
+            "fecha": fecha,
+            "horario": horario,
+            "complejo": funcion["nombre_local"],
+            "sala_nombre": f"Sala {funcion['numero_sala']}",
+            "butacas": butacas,
+            "badge_butacas": funcion.get("formato") or "",
+        },
+
+        "facturacion": {
+            "tipo": "COMPRA SIMULADA",
+            "items": items,
+            "cargo_servicio": "100% BONIFICADO",
+            "cargo_servicio_monto": formatear_precio(
+                compra.get("cargo_servicio", 0)
+            ),
+            "total": formatear_precio(compra["total"]),
+            "iva_discriminado": None,
+            "tarjeta_info": "Pago simulado",
+            "cuotas_info": "Sin transacción bancaria",
+            "cae": None,
+            "vto_cae": None,
+        },
+
+        "adicionales": adicionales,
+
+        "cancelacion": {
+            "limite_texto": limite_cancelacion,
+            "habilitada": puede_cancelar,
+        },
+    }
+
+    return render_template(
+        "confirmacion_compra.html",
+        c=datos_confirmacion,
+        csrf_token=crear_token_csrf()
+    )
+
+
+@compras_bp.route("/compras/<int:id_compra>/reenviar-email", methods=["POST"])
+def reenviar_email(id_compra: int):
+    if not validar_token_csrf(request.form.get("csrf_token", "")):
+        return "Solicitud inválida.", 400
+    token = session.get("access_token")
+    if not token:
+        flash("Necesitás iniciar sesión antes de comprar.", "error")
+        return redirect(url_for("home.index"))
+    respuesta, estado = reenviar_comprobante_al_backend(id_compra, token)
+    if estado == 200:
+        flash("Solicitud de reenvío procesada.", "success")
+    else:
+        flash("No se pudo enviar el comprobante.", "error")
+    return redirect(url_for("compras.compra_exitosa", id_compra=id_compra))
+
+
+@compras_bp.route("/compras/<int:id_compra>/cancelar", methods=["POST"])
+def cancelar_compra_web(id_compra: int):
+    """
+    Recibe la solicitud de cancelación del usuario
+    y la envía al backend mediante PUT.
+    """
+
+    # 1. Validar el token CSRF
+    if not validar_token_csrf(request.form.get("csrf_token", "")):
+        flash("La sesión del formulario venció. Volvé a intentarlo.", "error")
+        return redirect(
+            url_for("compras.compra_exitosa", id_compra=id_compra)
+        )
+
+    # 2. Verificar autenticación
+    token = session.get("access_token")
+
+    if not token:
+        flash("Debés iniciar sesión para cancelar la compra.", "error")
+        return redirect(url_for("auth.login"))
+
+    # 3. Solicitar la cancelación al backend
+    respuesta, estado = cancelar_compra_al_backend(id_compra, token)
+
+    # 4. Procesar el resultado
+    if (
+        estado == 200
+        and isinstance(respuesta, dict)
+        and respuesta.get("estado") == "CANCELADA"
+    ):
+        flash("La compra fue cancelada correctamente.", "success")
+
+    else:
+        mensaje = "No se pudo cancelar la compra."
+
+        if isinstance(respuesta, dict):
+            errores = respuesta.get("errors", [])
+
+            if errores:
+                mensaje = (
+                    errores[0].get("description")
+                    or errores[0].get("message")
+                    or mensaje
+                )
+
+        flash(mensaje, "error")
+
+    # 5. Volver al comprobante actualizado
+    return redirect(
+        url_for("compras.compra_exitosa", id_compra=id_compra)
     )

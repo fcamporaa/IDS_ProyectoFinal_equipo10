@@ -1,9 +1,9 @@
 from src.db import ejecutar_consulta, ejecutar_mutacion, ejecutar_transaccion
 
-# Una función es vigente si está programada o en curso y todavía no terminó.
+# Una función es comprable solo si está programada, todavía no comenzó y no terminó.
 # El %s recibe la hora local actual (así coincide con el resto de la API, no con la del servidor MySQL)
 CONDICION_FUNCION_VIGENTE = (
-    "f.estado IN ('PROGRAMADA', 'EN_CURSO') AND f.fin > %s"
+    "f.estado = 'PROGRAMADA' AND f.inicio > %s AND f.fin > %s"
 )
 
 SQL_INSERTAR_PELICULA = """
@@ -55,7 +55,7 @@ def obtener_cartelera_vigente_db(filtros: dict) -> list[dict]:
         "EXISTS (SELECT 1 FROM funciones f "
         f"WHERE f.id_pelicula = p.id_pelicula AND {CONDICION_FUNCION_VIGENTE})",
     ]
-    parametros = [filtros["vigentes_desde"]]
+    parametros = [filtros["vigentes_desde"], filtros["vigentes_desde"]]
 
     if "id_genero" in filtros:
         condiciones.append(
@@ -134,7 +134,7 @@ def obtener_funciones_vigentes_por_pelicula_db(id_pelicula: int, vigentes_desde)
         WHERE f.id_pelicula = %s AND {CONDICION_FUNCION_VIGENTE}
         ORDER BY f.inicio;
     """
-    return ejecutar_consulta(query, (id_pelicula, vigentes_desde))
+    return ejecutar_consulta(query, (id_pelicula, vigentes_desde, vigentes_desde))
 
 
 def insertar_pelicula_db(datos: dict, ids_generos: list[int]) -> int:

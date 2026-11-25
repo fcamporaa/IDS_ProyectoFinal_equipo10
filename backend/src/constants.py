@@ -83,7 +83,8 @@ OMDB_ERROR_PELICULA_NO_ENCONTRADA = "Movie not found!"
 # ==========================================
 ZONA_HORARIA_LOCAL = timezone(timedelta(hours=-3))
 DURACION_FUNCION_POR_DEFECTO_MIN = 120
-ESTADOS_FUNCION_TERMINALES = {"CANCELADA", "FINALIZADA"}
+# Bloquean la edición genérica; CANCELADA se revierte por el endpoint de reactivación.
+ESTADOS_FUNCION_NO_EDITABLES = {"CANCELADA", "FINALIZADA"}
 
 
 # ==========================================

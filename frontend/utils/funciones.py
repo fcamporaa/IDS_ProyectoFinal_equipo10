@@ -3,7 +3,7 @@ from datetime import datetime
 
 from utils.formatos import formatear_fecha_corta, formatear_hora, formatear_precio
 
-ESTADOS_FUNCION_TERMINALES = {"CANCELADA", "FINALIZADA"}
+ESTADOS_FUNCION_NO_EDITABLES = {"CANCELADA", "FINALIZADA"}
 
 
 def combinar_salas(locales: list[dict], salas_por_local: dict) -> list[dict]:
@@ -27,8 +27,9 @@ def preparar_funcion_para_tabla(funcion: dict) -> dict:
     f_copy = dict(funcion)
     estado = (f_copy.get("estado") or "PROGRAMADA").upper()
     f_copy["estado"] = estado
-    f_copy["puede_editar"] = estado not in ESTADOS_FUNCION_TERMINALES
-    f_copy["puede_baja"] = estado not in ESTADOS_FUNCION_TERMINALES
+    f_copy["puede_editar"] = estado not in ESTADOS_FUNCION_NO_EDITABLES
+    f_copy["puede_baja"] = estado not in ESTADOS_FUNCION_NO_EDITABLES
+    f_copy["puede_reactivar"] = bool(funcion.get("puede_reactivar", False))
 
     inicio_raw = f_copy.get("inicio")
     fin_raw = f_copy.get("fin")

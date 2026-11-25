@@ -3,7 +3,7 @@
 -- Cátedra Lanzillotta - IDS 2026
 -- Compatible con MySQL 8.0, MariaDB y TiDB Cloud (DDL Directo con AUTO_INCREMENT)
 -- =============================================================================
-
+SET NAMES utf8mb4;
 CREATE DATABASE IF NOT EXISTS `proyecto_integrador`;
 USE `proyecto_integrador`;
 
@@ -120,7 +120,7 @@ DROP TABLE IF EXISTS `servicios`;
 CREATE TABLE `servicios` (
   `id_servicio` int(11) NOT NULL AUTO_INCREMENT,
   `nombre` varchar(50) NOT NULL,
-  `tipo` enum('COMIDA','BEBIDA') NOT NULL,
+  `tipo` enum('COMIDA','BEBIDA','OBJETO','PROMOCION','COMBO') NOT NULL,
   `precio` decimal(10,2) NOT NULL,
   `activo` tinyint(1) NOT NULL DEFAULT 1,
   `imagen_url` TEXT DEFAULT NULL,

@@ -32,6 +32,8 @@ cd ..
 
 *(El contenedor creará la base `proyecto_integrador` en el puerto `3307` con usuario `root` y contraseña `root`).*
 
+> **Nota para bases de datos preexistentes:** Si tu entorno utiliza una BD creada con una versión anterior de `backend/db/init_db.sql` (local o volumen Docker ya inicializado), aplicá los scripts incrementales en `backend/db/migrations/` sobre la BD configurada en `backend/.env` sin recrear el volumen para preservar los datos existentes.
+
 ### Paso 2: Levantar el Backend (API REST en :5000)
 ```bash
 # 1. Asegurar el archivo de entorno
@@ -75,4 +77,47 @@ Al iniciar la base de datos con Docker, ya quedan disponibles los siguientes usu
 En la carpeta [`docs/postman/`](docs/postman) disponés de:
 - `Cine_Paradiso_API.postman_collection.json`: Los 28 endpoints documentados y organizados por módulo.
 - `Cine_Paradiso_Local.postman_environment.json`: Entorno con variables locales y captura automática de tokens al iniciar sesión.
+
+## 6. Configuración del Correo Emisor (SMTP)
+
+Para habilitar el envío automático de comprobantes de compra con código QR:
+
+**Paso 1. Configurar el archivo de entorno**
+
+Desde la raíz del repositorio, ejecutar (solo si el archivo no existe):
+
+```bash
+cp backend/.env.example backend/.env
+```
+
+Abrir `backend/.env` y configurar:
+
+```dotenv
+EMAIL_MODE=smtp
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=cineparadiso15@gmail.com
+SMTP_PASSWORD=189u49sjhit
+SMTP_FROM=cineparadiso15@gmail.com
+SMTP_STARTTLS=true
+```
+
+> **Nota:** La contraseña indicada es de ejemplo. Reemplazarla por la contraseña de aplicación válida de la cuenta Gmail compartida.
+
+**Paso 2. Instalar las dependencias**
+
+En una terminal:
+
+```bash
+cd backend
+source .venv/bin/activate
+pip install -r requirements.txt
+pip install "qrcode[pil]"
+```
+
+**Paso 3. Reiniciar el backend**
+
+```bash
+python app.py
+```
 

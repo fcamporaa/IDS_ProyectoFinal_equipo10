@@ -17,11 +17,9 @@
       <div class="formulario-servicio__campo">
         <label for="tipo" class="form-label">Tipo *</label>
         <select id="tipo" name="tipo" class="form-control" required>
-          <option value="COMIDA" {% if borrador.tipo == "COMIDA" %}selected{% endif %}>Comida</option>
-          <option value="BEBIDA" {% if borrador.tipo == "BEBIDA" %}selected{% endif %}>Bebida</option>
-          <option value="COMBO" {% if borrador.tipo == "COMBO" %}selected{% endif %}>Combo</option>
-          <option value="OBJETO" {% if borrador.tipo == "OBJETO" %}selected{% endif %}>Objeto</option>
-          <option value="PROMOCION" {% if borrador.tipo == "PROMOCION" %}selected{% endif %}>Promoción</option>
+          {% for valor, etiqueta in tipos_servicio.items() %}
+          <option value="{{ valor }}" {% if borrador.tipo == valor %}selected{% endif %}>{{ etiqueta }}</option>
+          {% endfor %}
         </select>
       </div>
 
@@ -32,8 +30,8 @@
       </div>
 
       <div class="formulario-servicio__campo formulario-servicio__campo--imagen">
-        <label for="imagen_url" class="form-label">URL de la imagen *</label>
-        <input type="url" id="imagen_url" name="imagen_url" class="form-control" value="{{ borrador.imagen_url }}" required maxlength="2048" placeholder="https://ejemplo.com/imagen.jpg" aria-describedby="imagen-url-error">
+        <label for="imagen_url" class="form-label">URL de la imagen</label>
+        <input type="url" id="imagen_url" name="imagen_url" class="form-control" value="{{ borrador.imagen_url }}" maxlength="2048" placeholder="https://ejemplo.com/imagen.jpg" aria-describedby="imagen-url-error">
         <p id="imagen-url-error" class="formulario-servicio__error" role="alert" aria-live="polite"></p>
         <div class="formulario-servicio__preview" aria-live="polite">
           <img id="imagen-preview" alt="Vista previa de la imagen del servicio" hidden>
