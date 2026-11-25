@@ -16,16 +16,23 @@ document.addEventListener("DOMContentLoaded", () => {
       let url = null;
 
       if (!valor) {
-        mensaje = "El enlace de la imagen es obligatorio.";
-      } else {
-        try {
-          url = new URL(valor);
-          if (!["http:", "https:"].includes(url.protocol) || !url.hostname) {
-            mensaje = "Ingresá una URL válida que comience con http:// o https://.";
-          }
-        } catch {
+        imagenInput.setCustomValidity("");
+        imagenInput.setAttribute("aria-invalid", "false");
+        imagenError.textContent = "";
+        imagenPreview.hidden = true;
+        imagenPreview.removeAttribute("src");
+        previewMensaje.textContent = "La vista previa aparecerá cuando ingreses un enlace válido.";
+        previewMensaje.hidden = false;
+        return true;
+      }
+
+      try {
+        url = new URL(valor);
+        if (!["http:", "https:"].includes(url.protocol) || !url.hostname) {
           mensaje = "Ingresá una URL válida que comience con http:// o https://.";
         }
+      } catch {
+        mensaje = "Ingresá una URL válida que comience con http:// o https://.";
       }
 
       imagenInput.setCustomValidity(mensaje);

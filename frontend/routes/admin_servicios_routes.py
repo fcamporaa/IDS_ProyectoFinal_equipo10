@@ -56,20 +56,20 @@ def _leer_formulario(form, incluir_activo: bool = False) -> dict:
     tipo = (form.get("tipo") or "COMIDA").strip()
     imagen_url = (form.get("imagen_url") or "").strip()
 
-    try:
-        partes_url = urlsplit(imagen_url)
-        puerto = partes_url.port
-    except ValueError:
-        raise ValueError("Ingresá una URL válida para la imagen (http o https).") from None
-    if (
-        not imagen_url
-        or len(imagen_url) > 2048
-        or any(caracter.isspace() for caracter in imagen_url)
-        or partes_url.scheme.lower() not in ("http", "https")
-        or not partes_url.hostname
-        or puerto is not None and not 1 <= puerto <= 65535
-    ):
-        raise ValueError("Ingresá una URL válida para la imagen (http o https).")
+    if imagen_url:
+        try:
+            partes_url = urlsplit(imagen_url)
+            puerto = partes_url.port
+        except ValueError:
+            raise ValueError("Ingresá una URL válida para la imagen (http o https).") from None
+        if (
+            len(imagen_url) > 2048
+            or any(caracter.isspace() for caracter in imagen_url)
+            or partes_url.scheme.lower() not in ("http", "https")
+            or not partes_url.hostname
+            or puerto is not None and not 1 <= puerto <= 65535
+        ):
+            raise ValueError("Ingresá una URL válida para la imagen (http o https).")
     
     precio_raw = (form.get("precio") or "").strip()
     precio = None
