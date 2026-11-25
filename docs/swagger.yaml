@@ -818,7 +818,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/FuncionItem'
+                  $ref: '#/components/schemas/FuncionAdminItem'
         '401':
           $ref: '#/components/responses/NoAutorizado'
         '403':
@@ -829,7 +829,11 @@ paths:
       tags:
         - Funciones
       summary: Modifica la programación, el precio o el estado de una función (Solo Admin)
-      description: Actualiza los campos editables de una función programada, recalculando el fin según la película y validando que no colisione con otras funciones de la sala.
+      description: >
+        Actualiza los campos editables de una función activa, recalculando el fin
+        según la película y validando que no colisione con otras funciones de la sala.
+        No permite modificar funciones CANCELADA o FINALIZADA; una función cancelada
+        se reactiva con `PUT /funciones/{id}/reactivar`.
       operationId: actualizarFuncion
       security:
         - BearerAuth: []
@@ -896,6 +900,51 @@ paths:
           $ref: '#/components/responses/ProhibidoAdmin'
         '404':
           $ref: '#/components/responses/RecursoNoEncontrado'
+
+  /funciones/{id}/reactivar:
+    put:
+      tags:
+        - Funciones
+      summary: Reactiva una función cancelada (Solo Admin)
+      description: >
+        Vuelve a poner en estado PROGRAMADA una función CANCELADA. Solo se permite
+        si la función todavía no comenzó, su película y sala siguen activas, no tiene
+        entradas vendidas o reservadas y ninguna otra función activa ocupa la misma
+        sala en esa franja horaria.
+      operationId: reactivarFuncion
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/FuncionId'
+      responses:
+        '200':
+          description: Función reactivada o ya activa.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mensaje:
+                    type: string
+                    example: Función reactivada con éxito.
+        '400':
+          description: La sala o la película están deshabilitadas, o la sala no pertenece al complejo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuesta'
+        '401':
+          $ref: '#/components/responses/NoAutorizado'
+        '403':
+          $ref: '#/components/responses/ProhibidoAdmin'
+        '404':
+          $ref: '#/components/responses/RecursoNoEncontrado'
+        '409':
+          description: La función ya comenzó o finalizó, tiene entradas activas o su franja horaria ya está ocupada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorRespuesta'
 
   /funciones/{id}/butacas:
     get:
@@ -2254,6 +2303,11 @@ components:
         id_sala:
           type: integer
           example: 2
+        id_local:
+          type: integer
+          readOnly: true
+          description: Complejo derivado de la sala de la función.
+          example: 1
         numero_sala:
           type: integer
           example: 2
@@ -2287,6 +2341,17 @@ components:
           enum: ['PROGRAMADA', 'EN_CURSO', 'CANCELADA', 'FINALIZADA']
           example: 'PROGRAMADA'
 
+    FuncionAdminItem:
+      allOf:
+        - $ref: '#/components/schemas/FuncionItem'
+        - type: object
+          properties:
+            puede_reactivar:
+              type: boolean
+              readOnly: true
+              description: Indica si una función cancelada todavía puede reactivarse.
+              example: true
+
     FuncionCrearRequest:
       type: object
       required:
@@ -2302,6 +2367,10 @@ components:
         id_sala:
           type: integer
           example: 2
+        id_local:
+          type: integer
+          description: Complejo de la sala; si se informa, debe coincidir con la sala.
+          example: 1
         inicio:
           type: string
           format: date-time
@@ -2330,6 +2399,10 @@ components:
         id_sala:
           type: integer
           example: 2
+        id_local:
+          type: integer
+          description: Complejo de la sala; si se informa, debe coincidir con la sala.
+          example: 1
         inicio:
           type: string
           format: date-time

@@ -7,6 +7,7 @@ from src.services.funciones_services import (
     listar_funciones,
     listar_funciones_admin,
     obtener_mapa_butacas_funcion,
+    reactivar_funcion,
 )
 from src.utils import validar_admin
 from src.validators.funciones_validators import (
@@ -53,6 +54,15 @@ def register_funciones_routes(app):
         id_funcion = validar_id_funcion(id)
         cambios = validar_actualizar_funcion(request.get_json(silent=True))
         return jsonify(actualizar_funcion(id_funcion, cambios)), 200
+
+    @app.route("/funciones/<int:id>/reactivar", methods=["PUT"])
+    def put_reactivar_funcion(id):
+        """
+        PUT /funciones/{id}/reactivar: Reactiva una función cancelada si aún no comenzó
+        y su sala sigue disponible (Solo Admin).
+        """
+        validar_admin(request.headers.get("Authorization"))
+        return jsonify(reactivar_funcion(validar_id_funcion(id))), 200
 
     @app.route("/funciones/<int:id>", methods=["DELETE"])
     def delete_funcion(id):

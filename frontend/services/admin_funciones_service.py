@@ -40,5 +40,7 @@ def dar_de_baja_funcion(token: str, id_funcion: int):
 
 
 def reactivar_funcion(token: str, id_funcion: int):
-    """Reactiva una función dado de baja."""
-    return consultar_backend(f"/funciones/{id_funcion}", token, metodo="PUT", datos={"estado": "PROGRAMADA"})
+    """Reactiva una función cancelada mediante su transición de estado explícita."""
+    return consultar_backend(
+        f"/funciones/{id_funcion}/reactivar", token, metodo="PUT"
+    )

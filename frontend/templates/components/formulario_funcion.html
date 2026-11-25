@@ -31,9 +31,9 @@
       </div>
 
       <div class="formulario-funcion__campo">
-        <label for="id_local" class="form-label">Complejo</label>
-        <select id="id_local" name="id_local" class="form-control" data-selector-local>
-          <option value="">Todos los complejos</option>
+        <label for="id_local" class="form-label">Complejo *</label>
+        <select id="id_local" name="id_local" class="form-control" required data-selector-local>
+          <option value="" disabled {% if not borrador.id_local %}selected{% endif %}>Seleccioná un complejo</option>
           {% for local in locales %}
           <option value="{{ local.id_local }}"
                   {% if (borrador.id_local | string) == (local.id_local | string) %}selected{% endif %}>
@@ -41,26 +41,22 @@
           </option>
           {% endfor %}
         </select>
-        <span class="formulario-funcion__hint">Filtra las salas disponibles.</span>
+        <span class="formulario-funcion__hint">Determina las salas disponibles.</span>
       </div>
 
       <div class="formulario-funcion__campo">
         <label for="id_sala" class="form-label">Sala *</label>
         <select id="id_sala" name="id_sala" class="form-control" required data-selector-sala>
           <option value="">Seleccioná una sala</option>
-          {% if id_local_funcion is not none %}
-            <!-- Mostrar solo las salas activas del complejo seleccionado -->
-            {% set _salas = salas | selectattr('id_local', 'equalto', id_local_funcion) | list | selectattr('activa', 'equalto', True) | list %}
-            {% if _salas %}
-              {% for sala in _salas %}
-              <option value="{{ sala.id_sala }}"
-                      {% if (borrador.id_sala | string) == (sala.id_sala | string) %}selected{% endif %}>
-                Sala {{ sala.numero }}
-              </option>
-              {% endfor %}
-            {% endif %}
-          {% endif %}
+          {% for sala in salas %}
+          <option value="{{ sala.id_sala }}"
+                  data-local="{{ sala.id_local }}"
+                  {% if (borrador.id_sala | string) == (sala.id_sala | string) %}selected{% endif %}>
+            {{ sala.nombre_local }} · Sala {{ sala.numero }}{% if sala.capacidad %} ({{ sala.capacidad }} butacas){% endif %}
+          </option>
+          {% endfor %}
         </select>
+        <span class="formulario-funcion__hint">Solo se muestran salas activas del complejo elegido.</span>
       </div>
 
       <div class="formulario-funcion__campo">
