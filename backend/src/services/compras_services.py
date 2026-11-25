@@ -1,6 +1,9 @@
+from datetime import datetime, timedelta
+import logging
 from datetime import timedelta
 from decimal import Decimal
 import secrets
+import threading
 
 from src.config import pagos_simulados_habilitados
 from src.constants import (
@@ -196,11 +199,17 @@ def procesar_compra(id_usuario: int, datos: dict) -> dict:
     codigo_reserva = "CP-" + secrets.token_hex(8).upper()
     qr_token = crear_token_qr()
     compra = _registrar_compra_pagada(id_usuario, datos, codigo_reserva, qr_token)
-    try:
-        compra["email_estado"] = enviar_comprobante_compra(compra["id_compra"])
-    except Exception:
-        # El commit de la compra ya ocurrió: un fallo de SMTP no debe liberar las entradas.
-        compra["email_estado"] = "ERROR"
+    
+    # Enviar comprobante por correo en segundo plano para no demorar la respuesta HTTP
+    def _enviar_correo_background(id_compra_target):
+        try:
+            enviar_comprobante_compra(id_compra_target)
+        except Exception:
+            logging.exception("Fallo el envio en background del comprobante %s", id_compra_target)
+
+    hilo = threading.Thread(target=_enviar_correo_background, args=(compra["id_compra"],), daemon=True)
+    hilo.start()
+    compra["email_estado"] = "EN_COLA"
     return compra
 
 

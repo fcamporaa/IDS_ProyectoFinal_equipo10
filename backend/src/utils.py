@@ -133,14 +133,23 @@ def enviar_correo_html(
             png, maintype="image", subtype="png", cid=f"<{identificador}>"
         )
 
-    with smtplib.SMTP(host, puerto, timeout=15) as servidor:
-        if configuracion["starttls"]:
-            servidor.starttls()
-        usuario = configuracion["usuario"]
-        clave = configuracion["password"]
-        if usuario:
-            servidor.login(usuario, clave)
-        servidor.send_message(mensaje)
+    # Soporte para puerto 465 (SSL directo) o 587/25 (STARTTLS) con timeout controlado
+    if puerto == 465:
+        with smtplib.SMTP_SSL(host, puerto, timeout=10) as servidor:
+            usuario = configuracion["usuario"]
+            clave = configuracion["password"]
+            if usuario:
+                servidor.login(usuario, clave)
+            servidor.send_message(mensaje)
+    else:
+        with smtplib.SMTP(host, puerto, timeout=10) as servidor:
+            if configuracion["starttls"]:
+                servidor.starttls()
+            usuario = configuracion["usuario"]
+            clave = configuracion["password"]
+            if usuario:
+                servidor.login(usuario, clave)
+            servidor.send_message(mensaje)
     return "ENVIADO"
 
 #Evito tener funciones sueltas en [los validators y repository de [Peliculas]. Como son genéricas y se repiten, las dejó en utils

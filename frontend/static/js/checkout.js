@@ -118,5 +118,12 @@ document.addEventListener("DOMContentLoaded", function () {
             alert("Los correos electrónicos no coinciden.");
             return;
         }
+
+        // Deshabilitar botón para evitar envíos múltiples o doble clic
+        const btnSubmit = document.querySelector(".btn-confirm-payment");
+        if (btnSubmit) {
+            btnSubmit.disabled = true;
+            btnSubmit.innerHTML = "<span>PROCESANDO COMPRA...</span>";
+        }
     });
 });
