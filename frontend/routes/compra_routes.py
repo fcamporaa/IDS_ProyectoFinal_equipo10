@@ -588,7 +588,6 @@ def seleccion_servicios():
                 {"id": "todos", "nombre": "Todos los Servicios"},
                 *({"id": tipo.lower(), "nombre": etiqueta} for tipo, etiqueta in TIPOS_SERVICIO.items()),
             ],
-            ],
             "servicios": servicios,
             "servicios_seleccionados": [
                 {"id_servicio": sid, "cantidad": cant}
