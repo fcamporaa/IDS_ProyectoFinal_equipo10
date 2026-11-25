@@ -1,26 +1,17 @@
-from datetime import datetime, timedelta
+from pymysql.err import IntegrityError
 
-from src.db import ejecutar_consulta, ejecutar_mutacion, obtener_conexion
-
-
-def verificar_butacas_disponibles_db(id_funcion: int, ids_butacas: list[int]) -> bool:
-    """Verifica que ninguna de las butacas solicitadas esté ocupada/reservada en la función."""
-    pass
+from src.db import ejecutar_consulta, ejecutar_mutacion, ejecutar_transaccion
 
 
-def insertar_compra_db(datos: dict) -> int:
-    """Inserta registro en la tabla compras y retorna id_compra."""
-    pass
+def ejecutar_transaccion_compras_db(operacion):
+    return ejecutar_transaccion(operacion)
 
 
-def insertar_entradas_db(entradas: list[dict]) -> None:
-    """Inserta las entradas individuales para cada butaca de la compra."""
-    pass
-
-
-def insertar_servicios_compra_db(servicios: list[dict]) -> None:
-    """Inserta los ítems en la tabla compra_servicios."""
-    pass
+def ejecutar_registro_compra_db(operacion) -> dict | None:
+    try:
+        return ejecutar_transaccion_compras_db(operacion)
+    except IntegrityError:
+        return None
 
 
 def obtener_compras_por_usuario_db(id_usuario: int) -> list[dict]:
@@ -85,182 +76,232 @@ def obtener_servicios_por_compra_db(id_compra: int) -> list[dict]:
     return ejecutar_consulta(query, {"id_compra": id_compra})
 
 
-def actualizar_estado_compra_db(id_compra: int, estado: str, cancelada_en: str = None) -> int:
-    """Actualiza el estado de la compra."""
-    query = """
-        UPDATE compras
-        SET estado = %(estado)s, cancelada_en = %(cancelada_en)s
-        WHERE id_compra = %(id_compra)s
-    """
-    return ejecutar_mutacion(
-        query,
-        {"id_compra": id_compra, "estado": estado, "cancelada_en": cancelada_en},
+def bloquear_funcion_para_reserva_db(cursor, id_funcion: int) -> dict | None:
+    cursor.execute(
+        """SELECT id_sala, estado, inicio FROM funciones
+           WHERE id_funcion = %s FOR UPDATE""",
+        (id_funcion,),
+    )
+    return cursor.fetchone()
+
+
+def obtener_butacas_solicitadas_db(cursor, id_sala: int, ids_butacas: list[int]) -> list[dict]:
+    if not ids_butacas:
+        return []
+    marcadores = ",".join(["%s"] * len(ids_butacas))
+    cursor.execute(
+        f"""SELECT id_butaca, fila, activa FROM butacas
+            WHERE id_sala = %s
+              AND id_butaca IN ({marcadores}) FOR UPDATE""",
+        (id_sala, *ids_butacas),
+    )
+    return cursor.fetchall()
+
+
+def obtener_reservas_por_token_db(cursor, token_reserva: str) -> list[dict]:
+    cursor.execute(
+        """SELECT id_usuario, expira_en FROM reservas_temporales_butacas
+           WHERE token_reserva = %s FOR UPDATE""",
+        (token_reserva,),
+    )
+    return cursor.fetchall()
+
+
+def hay_entrada_ocupada_db(
+    cursor, id_funcion: int, ids_butacas: list[int], estados_ocupacion: tuple[str, ...]
+) -> bool:
+    if not ids_butacas or not estados_ocupacion:
+        return False
+    marcadores = ",".join(["%s"] * len(ids_butacas))
+    marcadores_estados = ",".join(["%s"] * len(estados_ocupacion))
+    cursor.execute(
+        f"""SELECT id_entrada FROM entradas
+            WHERE id_funcion = %s AND id_butaca IN ({marcadores})
+              AND estado IN ({marcadores_estados}) LIMIT 1""",
+        (id_funcion, *ids_butacas, *estados_ocupacion),
+    )
+    return cursor.fetchone() is not None
+
+
+def obtener_butacas_reservadas_por_usuario_db(
+    cursor, id_funcion: int, id_usuario: int, token_reserva: str,
+    ahora, ids_butacas: list[int],
+) -> list[dict]:
+    if not ids_butacas:
+        return []
+    marcadores = ",".join(["%s"] * len(ids_butacas))
+    cursor.execute(
+        f"""SELECT id_butaca FROM reservas_temporales_butacas
+            WHERE id_funcion = %s AND id_usuario = %s AND token_reserva = %s
+              AND expira_en > %s AND id_butaca IN ({marcadores}) FOR UPDATE""",
+        (id_funcion, id_usuario, token_reserva, ahora, *ids_butacas),
+    )
+    return cursor.fetchall()
+
+
+def hay_reserva_temporal_ajena_db(
+    cursor, id_funcion: int, ids_butacas: list[int], ahora, token_reserva: str,
+) -> bool:
+    if not ids_butacas:
+        return False
+    marcadores = ",".join(["%s"] * len(ids_butacas))
+    cursor.execute(
+        f"""SELECT id_butaca FROM reservas_temporales_butacas
+            WHERE id_funcion = %s AND id_butaca IN ({marcadores})
+              AND expira_en > %s AND token_reserva <> %s LIMIT 1""",
+        (id_funcion, *ids_butacas, ahora, token_reserva),
+    )
+    return cursor.fetchone() is not None
+
+
+def eliminar_reservas_temporales_usuario_db(cursor, id_usuario: int, token_reserva: str) -> None:
+    cursor.execute(
+        """DELETE FROM reservas_temporales_butacas
+           WHERE id_usuario = %s AND token_reserva = %s""",
+        (id_usuario, token_reserva),
     )
 
 
-def liberar_butacas_compra_db(id_compra: int) -> int:
-    """Actualiza el estado de las entradas a CANCELADA para liberar butacas."""
-    query = """
-        UPDATE entradas
-        SET estado = 'CANCELADA'
-        WHERE id_compra = %(id_compra)s AND estado IN ('RESERVADA', 'OCUPADA')
-    """
-    return ejecutar_mutacion(query, {"id_compra": id_compra})
+def eliminar_reservas_temporales_vencidas_db(
+    cursor, id_funcion: int, ids_butacas: list[int], ahora,
+) -> None:
+    if not ids_butacas:
+        return
+    marcadores = ",".join(["%s"] * len(ids_butacas))
+    cursor.execute(
+        f"""DELETE FROM reservas_temporales_butacas
+            WHERE id_funcion = %s AND id_butaca IN ({marcadores})
+              AND expira_en <= %s""",
+        (id_funcion, *ids_butacas, ahora),
+    )
 
 
-def cancelar_compra_atomica_db(id_compra: int, id_usuario: int, cancelada_en: str) -> bool:
-    """Cancela compra y entradas en una transacción con bloqueo y revalidación."""
-    conexion = obtener_conexion()
-    try:
-        with conexion.cursor() as cursor:
-            cursor.execute(
-                """
-                SELECT c.estado, c.qr_validado_en, f.inicio
-                FROM compras c
-                JOIN funciones f ON f.id_funcion = c.id_funcion
-                WHERE c.id_compra = %(id_compra)s AND c.id_usuario = %(id_usuario)s
-                FOR UPDATE
-                """,
-                {"id_compra": id_compra, "id_usuario": id_usuario},
+def insertar_reservas_temporales_db(cursor, reservas: list[tuple]) -> None:
+    cursor.executemany(
+        """INSERT INTO reservas_temporales_butacas
+           (id_funcion, id_butaca, id_usuario, token_reserva, expira_en)
+           VALUES (%s, %s, %s, %s, %s)""",
+        reservas,
+    )
+
+
+def liberar_reserva_temporal_db(id_usuario: int, token_reserva: str) -> None:
+    ejecutar_mutacion(
+        "DELETE FROM reservas_temporales_butacas WHERE id_usuario = %s AND token_reserva = %s",
+        (id_usuario, token_reserva),
+    )
+
+
+def obtener_compra_para_cancelar_db(cursor, id_compra: int, id_usuario: int) -> dict | None:
+    cursor.execute(
+        """SELECT c.estado, c.qr_validado_en, f.inicio
+           FROM compras c
+           JOIN funciones f ON f.id_funcion = c.id_funcion
+           WHERE c.id_compra = %s AND c.id_usuario = %s
+           FOR UPDATE""",
+        (id_compra, id_usuario),
+    )
+    return cursor.fetchone()
+
+
+def marcar_compra_cancelada_db(
+    cursor, id_compra: int, estado: str, cancelada_en: str
+) -> None:
+    cursor.execute(
+        """UPDATE compras SET estado = %s, cancelada_en = %s
+           WHERE id_compra = %s""",
+        (estado, cancelada_en, id_compra),
+    )
+
+
+def cancelar_entradas_de_compra_db(
+    cursor, id_compra: int, estado: str, estados_actuales: tuple[str, ...]
+) -> None:
+    if not estados_actuales:
+        return
+    marcadores_estados = ",".join(["%s"] * len(estados_actuales))
+    cursor.execute(
+        f"""UPDATE entradas SET estado = %s
+            WHERE id_compra = %s AND estado IN ({marcadores_estados})""",
+        (estado, id_compra, *estados_actuales),
+    )
+
+def obtener_funcion_para_compra_db(cursor, id_funcion: int) -> dict | None:
+    cursor.execute(
+          """SELECT id_funcion, id_sala, precio_entrada, estado, inicio
+           FROM funciones
+              WHERE id_funcion = %s FOR UPDATE""",
+          (id_funcion,),
+    )
+    return cursor.fetchone()
+
+
+def obtener_servicios_por_ids_db(cursor, ids_servicios: list[int]) -> list[dict]:
+    if not ids_servicios:
+        return []
+    marcadores = ",".join(["%s"] * len(ids_servicios))
+    cursor.execute(
+        f"""SELECT id_servicio, precio, activo FROM servicios
+            WHERE id_servicio IN ({marcadores})""",
+        tuple(ids_servicios),
+    )
+    return cursor.fetchall()
+
+
+def insertar_compra_db(cursor, datos: dict) -> int:
+    cursor.execute(
+        """INSERT INTO compras
+           (id_usuario, id_funcion, codigo_reserva, email_comprobante,
+            estado, medio_pago, subtotal_entradas, subtotal_servicios,
+            cargo_servicio, total, qr_token)
+           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+        (
+            datos["id_usuario"], datos["id_funcion"], datos["codigo_reserva"],
+            datos["email_comprobante"], datos["estado"], datos["medio_pago"],
+            datos["subtotal_entradas"], datos["subtotal_servicios"],
+            datos["cargo_servicio"], datos["total"], datos["qr_token"],
+        ),
+    )
+    return cursor.lastrowid
+
+
+def insertar_entradas_db(cursor, entradas: list[dict]) -> None:
+    cursor.executemany(
+        """INSERT INTO entradas
+           (id_compra, id_funcion, id_butaca, precio_unitario, estado)
+           VALUES (%s, %s, %s, %s, %s)""",
+        [
+            (
+                entrada["id_compra"], entrada["id_funcion"],
+                entrada["id_butaca"], entrada["precio_unitario"], entrada["estado"],
             )
-            compra = cursor.fetchone()
-            if (
-                not compra
-                or compra["estado"] != "PAGADA"
-                or compra["qr_validado_en"] is not None
-                or compra["inicio"] <= datetime.now() + timedelta(hours=24)
-            ):
-                conexion.rollback()
-                return False
-
-            cursor.execute(
-                "UPDATE compras SET estado = 'CANCELADA', cancelada_en = %(fecha)s WHERE id_compra = %(id_compra)s",
-                {"fecha": cancelada_en, "id_compra": id_compra},
-            )
-            cursor.execute(
-                "UPDATE entradas SET estado = 'CANCELADA' WHERE id_compra = %(id_compra)s AND estado IN ('RESERVADA', 'OCUPADA')",
-                {"id_compra": id_compra},
-            )
-        conexion.commit()
-        return True
-    except Exception:
-        conexion.rollback()
-        raise
-    finally:
-        conexion.close()
-
-from decimal import Decimal
-from pymysql.err import IntegrityError
-from src.constants import HTTP_SOLICITUD_INVALIDA, HTTP_CONFLICTO, HTTP_NO_ENCONTRADO
-from src.utils import error_de_negocio
+            for entrada in entradas
+        ],
+    )
 
 
-def registrar_compra_pagada_db(
-    id_usuario: int, datos: dict, codigo_reserva: str, qr_token: str
-) -> dict:
-    """Una sola transacción y bloqueo por función: evita vender la misma butaca dos veces."""
-    conexion = obtener_conexion()
-    try:
-        with conexion.cursor() as cursor:
-            cursor.execute(
-                """SELECT id_funcion, id_sala, precio_entrada
-                   FROM funciones
-                   WHERE id_funcion = %s AND estado = 'PROGRAMADA' AND inicio > NOW()
-                   FOR UPDATE""",
-                (datos["id_funcion"],),
-            )
-            funcion = cursor.fetchone()
-            if not funcion:
-                error_de_negocio("compras.funcion", "Función no disponible",
-                                 "La función no existe o ya comenzó.", HTTP_NO_ENCONTRADO)
+def eliminar_reserva_temporal_compra_db(cursor, id_usuario: int, token_reserva: str) -> None:
+    cursor.execute(
+        "DELETE FROM reservas_temporales_butacas WHERE id_usuario = %s AND token_reserva = %s",
+        (id_usuario, token_reserva),
+    )
 
-            butacas = datos["butacas_ids"]
-            marcadores_butacas = ",".join(["%s"] * len(butacas))
-            cursor.execute(
-                f"""SELECT id_butaca FROM butacas
-                    WHERE id_sala = %s AND activa = 1
-                      AND id_butaca IN ({marcadores_butacas})
-                    FOR UPDATE""",
-                (funcion["id_sala"], *butacas),
-            )
-            if len(cursor.fetchall()) != len(butacas):
-                error_de_negocio("compras.butacas", "Butacas inválidas",
-                                 "Alguna butaca no pertenece a la sala o está inactiva.", HTTP_SOLICITUD_INVALIDA)
-            cursor.execute(
-                f"""SELECT id_entrada FROM entradas
-                    WHERE id_funcion = %s AND id_butaca IN ({marcadores_butacas})
-                      AND estado IN ('RESERVADA', 'OCUPADA')
-                    LIMIT 1""",
-                (datos["id_funcion"], *butacas),
-            )
-            if cursor.fetchone():
-                error_de_negocio("compras.ocupacion", "Butacas ocupadas",
-                                 "Una de las butacas acaba de ser reservada.", HTTP_CONFLICTO)
 
-            servicios = datos["servicios"]
-            precios_servicios = {}
-            if servicios:
-                ids = [item["id_servicio"] for item in servicios]
-                marcadores = ",".join(["%s"] * len(ids))
-                cursor.execute(
-                    f"SELECT id_servicio, precio FROM servicios WHERE activo = 1 AND id_servicio IN ({marcadores})",
-                    tuple(ids),
-                )
-                precios_servicios = {s["id_servicio"]: s["precio"] for s in cursor.fetchall()}
-                if len(precios_servicios) != len(servicios):
-                    error_de_negocio("compras.servicios", "Servicio no disponible",
-                                     "Algún adicional no existe o está inactivo.", HTTP_SOLICITUD_INVALIDA)
-
-            subtotal_entradas = funcion["precio_entrada"] * len(butacas)
-            subtotal_servicios = sum((
-                precios_servicios[s["id_servicio"]] * s["cantidad"] for s in servicios
-            ), Decimal("0.00"))
-            cargo_servicio = Decimal("0.00")
-            total = subtotal_entradas + subtotal_servicios + cargo_servicio
-            cursor.execute(
-                """INSERT INTO compras
-                (id_usuario, id_funcion, codigo_reserva, email_comprobante,
-                 estado, medio_pago, subtotal_entradas, subtotal_servicios,
-                 cargo_servicio, total, qr_token)
-                VALUES (%s, %s, %s, %s, 'PAGADA', %s, %s, %s, %s, %s, %s)""",
-                (id_usuario, datos["id_funcion"], codigo_reserva,
-                 datos["email_comprobante"], datos["medio_pago"], subtotal_entradas,
-                 subtotal_servicios, cargo_servicio, total, qr_token),
+def insertar_servicios_compra_db(cursor, servicios: list[dict]) -> None:
+    if not servicios:
+        return
+    cursor.executemany(
+        """INSERT INTO compra_servicios
+           (id_compra, id_servicio, cantidad, precio_unitario)
+           VALUES (%s, %s, %s, %s)""",
+        [
+            (
+                servicio["id_compra"], servicio["id_servicio"],
+                servicio["cantidad"], servicio["precio_unitario"],
             )
-            id_compra = cursor.lastrowid
-            cursor.executemany(
-                """INSERT INTO entradas
-                   (id_compra, id_funcion, id_butaca, precio_unitario, estado)
-                   VALUES (%s, %s, %s, %s, 'OCUPADA')""",
-                [(id_compra, datos["id_funcion"], id_butaca, funcion["precio_entrada"])
-                 for id_butaca in butacas],
-            )
-            if servicios:
-                cursor.executemany(
-                    """INSERT INTO compra_servicios
-                       (id_compra, id_servicio, cantidad, precio_unitario)
-                       VALUES (%s, %s, %s, %s)""",
-                    [(id_compra, s["id_servicio"], s["cantidad"],
-                      precios_servicios[s["id_servicio"]]) for s in servicios],
-                )
-        conexion.commit()
-        return {
-            "id_compra": id_compra,
-            "codigo_reserva": codigo_reserva,
-            "estado": "PAGADA",
-            "total": float(total),
-            "email_estado": "PENDIENTE",
-            "email_enviado_a": datos["email_comprobante"],
-        }
-    except IntegrityError as error:
-        conexion.rollback()
-        error_de_negocio("compras.ocupacion", "No se pudo completar la compra",
-                         "Butaca o código ya utilizado. Actualizá la disponibilidad.", HTTP_CONFLICTO)
-    except Exception:
-        conexion.rollback()
-        raise
-    finally:
-        conexion.close()
+            for servicio in servicios
+        ],
+    )
 
 def obtener_detalle_comprobante_db(id_compra: int, id_usuario: int | None = None) -> dict | None:
     parametros = (id_compra,) if id_usuario is None else (id_compra, id_usuario)
@@ -281,27 +322,4 @@ def obtener_detalle_comprobante_db(id_compra: int, id_usuario: int | None = None
     )
     if not filas:
         return None
-    compra = filas[0]
-    compra["inicio"] = compra["inicio"].isoformat(timespec="minutes")
-    compra["creada_en"] = compra["creada_en"].isoformat(timespec="seconds")
-    for campo in ("total", "subtotal_entradas", "subtotal_servicios", "cargo_servicio"):
-        compra[campo] = float(compra[campo])
-    entradas = ejecutar_consulta(
-        """SELECT e.id_entrada, b.fila, b.numero, e.precio_unitario
-           FROM entradas e JOIN butacas b ON b.id_butaca = e.id_butaca
-           WHERE e.id_compra = %s ORDER BY b.fila, b.numero""",
-        (id_compra,),
-    )
-    for entrada in entradas:
-        entrada["precio_unitario"] = float(entrada["precio_unitario"])
-    compra["entradas"] = entradas
-    servicios = ejecutar_consulta(
-        """SELECT s.nombre AS nombre_servicio, cs.cantidad, cs.precio_unitario
-           FROM compra_servicios cs JOIN servicios s ON s.id_servicio = cs.id_servicio
-           WHERE cs.id_compra = %s ORDER BY s.nombre""",
-        (id_compra,),
-    )
-    for servicio in servicios:
-        servicio["precio_unitario"] = float(servicio["precio_unitario"])
-    compra["servicios"] = servicios
-    return compra
+    return filas[0]

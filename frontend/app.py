@@ -4,12 +4,16 @@ from flask import Flask, session
 
 from routes.dashboard_routes import dashboard_bp
 from routes.home_routes import home_bp
-from routes.compras_routes import compras_bp
-from routes.peliculas_routes import peliculas_bp
-from routes.compra_routes import compra_bp
+
+from routes.peliculas_routes import peliculas_bp 
+from routes.admin_funciones_routes import admin_funciones_bp
+from routes.compra_routes import compra_bp, compras_bp
 from routes.auth_routes import auth_bp
 from routes.perfil_routes import perfil_bp
 from routes.admin_peliculas_routes import admin_peliculas_bp
+from routes.admin_servicios_routes import admin_servicios_bp
+from routes.admin_salas_routes import admin_salas_bp
+from routes.validaciones_routes import validaciones_bp
 
 
 load_dotenv()
@@ -27,9 +31,14 @@ app.register_blueprint(compra_bp)
 app.register_blueprint(compras_bp)
 app.register_blueprint(peliculas_bp)
 app.register_blueprint(dashboard_bp)
+app.register_blueprint(admin_funciones_bp)
+
 app.register_blueprint(auth_bp)
 app.register_blueprint(perfil_bp)
 app.register_blueprint(admin_peliculas_bp)
+app.register_blueprint(admin_servicios_bp)
+app.register_blueprint(admin_salas_bp)
+app.register_blueprint(validaciones_bp)
 
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"

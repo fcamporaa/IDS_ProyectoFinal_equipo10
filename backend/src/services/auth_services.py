@@ -120,7 +120,7 @@ def obtener_perfil_usuario(id_usuario: int) -> dict:
         return construir_error_api(
             "error.auth.usuario_no_encontrado",
             "Usuario no encontrado",
-            "No existe un usuario asociado al token de autenticación.",
+            "No encontramos una cuenta asociada a esta sesión.",
         )
 
     if not usuario["activo"]:

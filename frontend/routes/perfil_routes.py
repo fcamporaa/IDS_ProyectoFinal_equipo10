@@ -15,23 +15,16 @@ from services.peliculas_service import (
 )
 from utils.csrf import crear_token_csrf, validar_token_csrf
 from utils.errores import extraer_mensaje_error
+from utils.formatos import formatear_fecha_hora, parsear_datetime_seguro
 
 perfil_bp = Blueprint("perfil", __name__)
 
 
 def _fecha_funcion(compra: dict) -> datetime | None:
     valor = compra.get("fecha_funcion")
-    if not isinstance(valor, str) or not valor:
+    fecha = parsear_datetime_seguro(valor)
+    if fecha is None:
         return None
-
-    try:
-        fecha = parsedate_to_datetime(valor)
-    except (TypeError, ValueError, OverflowError):
-        try:
-            fecha = datetime.fromisoformat(valor.replace("Z", "+00:00"))
-        except ValueError:
-            return None
-
     if fecha.tzinfo is None:
         return fecha.replace(tzinfo=timezone.utc)
     return fecha
@@ -82,7 +75,11 @@ def _cargar_peliculas_vistas(compras: list, usuario: dict, token: str) -> list[d
                 "id_pelicula": id_pelicula,
                 "id_compra": compra.get("id_compra"),
                 "titulo": funcion.get("titulo_pelicula", compra.get("pelicula")),
-                "fecha_funcion": compra.get("fecha_funcion"),
+                "fecha_funcion": (
+                    formatear_fecha_hora(fecha_funcion)
+                    if fecha_funcion
+                    else compra.get("fecha_funcion")
+                ),
                 "puntuacion": resena_propia.get("puntuacion") if resena_propia else None,
                 "comentario": resena_propia.get("comentario") if resena_propia else None,
                 "puede_resenar": puede_resenar,
@@ -129,10 +126,21 @@ def index():
         flash(extraer_mensaje_error(perfil, "No se pudo cargar tu perfil."), "error")
         return redirect(url_for("home.index"))
 
-    if perfil.get("rol") != "CLIENTE":
-        return redirect(url_for("dashboard.index"))
-
     session["usuario"] = perfil
+    es_cliente = perfil.get("rol") == "CLIENTE"
+    if not es_cliente:
+        return render_template(
+            "client/perfil_cliente.html",
+            usuario_activo=perfil,
+            reservas_activas=[],
+            compras_pasadas=[],
+            peliculas_vistas=[],
+            datos_facturacion={},
+            error_backend=None,
+            solo_datos=True,
+            csrf_token=crear_token_csrf(),
+        )
+
     compras, estado_compras = obtener_mis_compras(token)
     error_backend = None
     if estado_compras != 200 or not isinstance(compras, list):
@@ -147,12 +155,15 @@ def index():
     compras_pasadas = []
     for compra in compras:
         fecha_funcion = _fecha_funcion(compra)
+        compra_adaptada = dict(compra)
+        if fecha_funcion:
+            compra_adaptada["fecha_funcion"] = formatear_fecha_hora(fecha_funcion)
         es_futura = (
             compra.get("estado", "").upper() == "PAGADA"
             and fecha_funcion is not None
             and fecha_funcion > ahora
         )
-        (reservas_activas if es_futura else compras_pasadas).append(compra)
+        (reservas_activas if es_futura else compras_pasadas).append(compra_adaptada)
 
     _marcar_reservas_cancelables(reservas_activas, token)
     peliculas_vistas = _cargar_peliculas_vistas(compras, perfil, token)

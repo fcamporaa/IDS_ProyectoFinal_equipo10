@@ -424,7 +424,7 @@
 
 /* Servicios Adicionales Incluidos */
 .voucher-services-block {
-    margin-bottom: 20px;
+    margin-bottom: 0;
 }
 
 .services-block-header {
@@ -515,35 +515,6 @@
     font-size: 10px;
     color: #9ca3af;
     font-weight: 700;
-}
-
-/* Barra de Botones del Voucher */
-.voucher-actions-bar {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-}
-
-.btn-voucher-action {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    background: #181b24;
-    border: 1px solid #282d3c;
-    color: #d1d5db;
-    padding: 10px 12px;
-    border-radius: 7px;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.btn-voucher-action:hover {
-    background: #222634;
-    border-color: #3b4256;
-    color: #ffffff;
 }
 
 /* --------------------------------------------------------------------------
@@ -859,9 +830,6 @@
         grid-template-columns: 1fr;
     }
 
-    .voucher-actions-bar {
-        grid-template-columns: 1fr;
-    }
 }
 
 @media (max-width: 640px) {
@@ -893,5 +861,97 @@
     .nav-actions-right {
         width: 100%;
         justify-content: space-between;
+    }
+}
+
+/* ========================================
+   ESTILOS PARA IMPRESIÓN DEL COMPROBANTE
+   ======================================== */
+
+@page {
+    size: A4;
+    margin: 12mm;
+}
+
+@media print {
+
+    /* Ocultar elementos de navegación e interacción */
+    .main-header,
+    .main-footer,
+    .purchase-stepper,
+    .success-banner-actions,
+    .confirmation-bottom-nav,
+    .btn-cancel-reservation,
+    .flash-messages-container {
+        display: none !important;
+    }
+
+    /* Adaptar la página al papel */
+    html,
+    body,
+    .page-content,
+    .confirmation-page {
+        background: white !important;
+        color: black !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        min-height: 0 !important;
+    }
+
+    .confirmation-container {
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    /* Convertir el diseño de dos columnas en una */
+    .confirmation-main-grid {
+        display: block !important;
+    }
+
+    .voucher-column,
+    .details-column {
+        width: 100% !important;
+        margin: 0 !important;
+    }
+
+    /* Adaptar tarjetas */
+    .confirmation-success-banner,
+    .voucher-digital-card,
+    .confirmation-card-block {
+        background: white !important;
+        color: black !important;
+        border: 1px solid #ddd !important;
+        box-shadow: none !important;
+        margin-bottom: 12px !important;
+        padding: 12px !important;
+    }
+
+    /* Garantizar que los textos sean legibles */
+    .confirmation-page,
+    .confirmation-page * {
+        color: black !important;
+        text-shadow: none !important;
+    }
+
+    /* Mantener el código QR visible */
+    .qr-code-wrapper {
+        background: white !important;
+        box-shadow: none !important;
+    }
+
+    .qr-code-wrapper img {
+        width: 160px !important;
+        height: 160px !important;
+    }
+
+    /* Evitar cortes dentro de los comprobantes */
+    .voucher-top-bar,
+    .voucher-movie-block,
+    .qr-access-section,
+    .billing-items-list {
+        break-inside: avoid;
+        page-break-inside: avoid;
     }
 }

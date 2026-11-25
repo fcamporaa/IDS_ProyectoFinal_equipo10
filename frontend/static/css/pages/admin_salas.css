@@ -1,0 +1,318 @@
+/* Estilos de la página de gestión de salas */
+.admin-salas {
+  padding: 16px 1rem 4rem;
+  background-color: var(--color-background, #121216);
+  min-height: calc(100vh - 70px);
+  color: var(--color-text, #ffffff);
+}
+
+.admin-salas__container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.admin-salas__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--color-border, #2a2a35);
+}
+
+.admin-salas__eyebrow {
+  display: inline-block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-accent-gold, #f59e0b);
+  margin-bottom: 0.25rem;
+}
+
+.admin-salas__title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+}
+
+.admin-salas__subtitle {
+  color: var(--color-text-muted, #9ca3af);
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.admin-salas__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.admin-salas__back {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--color-text-muted, #9ca3af);
+  text-decoration: none;
+}
+
+.admin-salas__back:hover {
+  color: var(--color-accent-gold, #f59e0b);
+}
+
+.admin-salas__action {
+  font-size: 0.85rem;
+}
+
+.admin-salas__form-container {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.35s ease, opacity 0.35s ease, margin 0.35s ease;
+  margin-bottom: 0;
+}
+
+.admin-salas__form-container--activo {
+  max-height: 900px;
+  opacity: 1;
+  margin-bottom: 2rem;
+}
+
+.formulario-sala-card {
+  background-color: var(--color-surface, #1e1e24);
+  border: 1px solid var(--color-border, #2a2a35);
+  border-radius: var(--border-radius-lg, 12px);
+  padding: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.formulario-sala-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--color-border, #2a2a35);
+}
+
+.formulario-sala-card__header h2 {
+  font-size: 1.25rem;
+  margin: 0;
+}
+
+.formulario-sala-card__cerrar {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--color-text-muted, #9ca3af);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.formulario-sala-card__cerrar:hover {
+  color: var(--color-text, #ffffff);
+}
+
+.formulario-sala__intro {
+  color: var(--color-text-muted, #9ca3af);
+  margin: 0 0 1.25rem;
+  font-size: 0.95rem;
+}
+
+.formulario-sala__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.formulario-sala__campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.formulario-sala__campo--checkbox {
+  grid-column: 1 / -1;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
+}
+
+.formulario-sala__ayuda {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-text-muted, #9ca3af);
+}
+
+.formulario-sala .form-label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--color-text, #ffffff);
+}
+
+.formulario-sala .form-control {
+  background-color: var(--color-background, #121216);
+  border: 1px solid var(--color-border, #2a2a35);
+  border-radius: var(--border-radius-sm, 6px);
+  padding: 0.75rem 1rem;
+  color: var(--color-text, #ffffff);
+  font-size: 0.95rem;
+  width: 100%;
+}
+
+.formulario-sala .form-control:focus {
+  outline: none;
+  border-color: var(--color-primary, #e50914);
+}
+
+.formulario-sala .form-control:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.formulario-sala .form-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.formulario-sala__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border, #2a2a35);
+}
+
+.admin-salas__listado {
+  background-color: var(--color-surface, #1e1e24);
+  border: 1px solid var(--color-border, #2a2a35);
+  border-radius: var(--border-radius-lg, 12px);
+  overflow: hidden;
+}
+
+.admin-salas__table-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--color-border, #2a2a35);
+}
+
+.admin-salas__table-header h2 {
+  font-size: 1.25rem;
+  margin: 0;
+}
+
+.admin-salas__table-wrapper {
+  overflow-x: auto;
+}
+
+.admin-salas__table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.95rem;
+}
+
+.admin-salas__table th,
+.admin-salas__table td {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--color-border, #2a2a35);
+}
+
+.admin-salas__table th {
+  background-color: rgba(0, 0, 0, 0.2);
+  font-weight: 600;
+  color: var(--color-text-muted, #9ca3af);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.admin-salas__table tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.admin-salas__table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.admin-salas .text-right {
+  text-align: right;
+}
+
+.admin-salas .font-weight-bold {
+  font-weight: 600;
+}
+
+.admin-salas .badge {
+  display: inline-block;
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.admin-salas .badge-estado--activo {
+  background-color: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+}
+
+.admin-salas .badge-estado--inactivo {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+
+.admin-salas__actions-cell {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.admin-salas .btn-action {
+  background: none;
+  border: none;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--border-radius-sm, 4px);
+}
+
+.admin-salas .btn-action--reactivate {
+  color: #34d399;
+}
+
+.admin-salas .btn-action--reactivate:hover {
+  background-color: rgba(52, 211, 153, 0.1);
+}
+
+.admin-salas .inline-form,
+.admin-salas .confirm-baja-form {
+  display: inline;
+  margin: 0;
+}
+
+.admin-salas__empty {
+  padding: 3rem;
+  text-align: center;
+  color: var(--color-text-muted, #9ca3af);
+}
+
+@media (max-width: 768px) {
+  .admin-salas__header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-salas__header-actions {
+    justify-content: stretch;
+  }
+}

@@ -11,6 +11,7 @@ from src.utils import (
     validar_objeto_json,
     validar_opcion,
     validar_texto,
+    validar_texto_opcional,
 )
 
 
@@ -52,9 +53,13 @@ def validar_crear_funcion(datos) -> dict:
         raise error_validacion(f"Faltan campos obligatorios: {', '.join(faltantes)}.")
 
     idioma = datos.get("idioma")
+    id_local = datos.get("id_local")
     return {
         "id_pelicula": validar_entero_positivo(datos["id_pelicula"], "id_pelicula"),
         "id_sala": validar_entero_positivo(datos["id_sala"], "id_sala"),
+        "id_local": (
+            None if id_local is None else validar_entero_positivo(id_local, "id_local")
+        ),
         "inicio": _validar_inicio_futuro(datos["inicio"]),
         "formato": validar_opcion(datos["formato"], FORMATOS_SALA, "formato"),
         "idioma": None if idioma is None else validar_texto(idioma, "idioma", 50),
@@ -67,8 +72,20 @@ def validar_actualizar_funcion(datos) -> dict:
     """Valida el body de PUT /funciones/{id}; devuelve solo los campos enviados."""
     datos = validar_objeto_json(datos)
     cambios = {}
+    if "id_pelicula" in datos:
+        cambios["id_pelicula"] = validar_entero_positivo(datos["id_pelicula"], "id_pelicula")
+    if "id_sala" in datos:
+        cambios["id_sala"] = validar_entero_positivo(datos["id_sala"], "id_sala")
+    if "id_local" in datos:
+        cambios["id_local"] = validar_entero_positivo(datos["id_local"], "id_local")
     if "inicio" in datos:
         cambios["inicio"] = _validar_inicio_futuro(datos["inicio"])
+    if "formato" in datos:
+        cambios["formato"] = validar_opcion(datos["formato"], FORMATOS_SALA, "formato")
+    if "idioma" in datos:
+        cambios["idioma"] = validar_texto_opcional(datos["idioma"], "idioma", 50)
+    if "subtitulada" in datos:
+        cambios["subtitulada"] = validar_booleano(datos["subtitulada"], "subtitulada")
     if "precio_entrada" in datos:
         cambios["precio_entrada"] = validar_decimal_positivo(
             datos["precio_entrada"], "precio_entrada"
@@ -76,5 +93,8 @@ def validar_actualizar_funcion(datos) -> dict:
     if "estado" in datos:
         cambios["estado"] = validar_opcion(datos["estado"], ESTADOS_FUNCION, "estado")
     if not cambios:
-        raise error_validacion("Debe enviar al menos uno de: inicio, precio_entrada, estado.")
+        raise error_validacion(
+            "Debe enviar al menos uno de: id_pelicula, id_sala, id_local, inicio, "
+            "formato, idioma, subtitulada, precio_entrada o estado."
+        )
     return cambios

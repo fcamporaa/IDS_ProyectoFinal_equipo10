@@ -15,6 +15,7 @@ def obtener_conexion():
         "charset": "utf8mb4",
         "cursorclass": DictCursor,
         "autocommit": False,
+        "init_command": "SET time_zone = '-03:00'",
     }
     if os.getenv("DB_SSL", "false").lower() == "true":
         kwargs["ssl_verify_cert"] = True

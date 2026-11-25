@@ -133,14 +133,23 @@ def enviar_correo_html(
             png, maintype="image", subtype="png", cid=f"<{identificador}>"
         )
 
-    with smtplib.SMTP(host, puerto, timeout=15) as servidor:
-        if configuracion["starttls"]:
-            servidor.starttls()
-        usuario = configuracion["usuario"]
-        clave = configuracion["password"]
-        if usuario:
-            servidor.login(usuario, clave)
-        servidor.send_message(mensaje)
+    # Soporte para puerto 465 (SSL directo) o 587/25 (STARTTLS) con timeout controlado
+    if puerto == 465:
+        with smtplib.SMTP_SSL(host, puerto, timeout=10) as servidor:
+            usuario = configuracion["usuario"]
+            clave = configuracion["password"]
+            if usuario:
+                servidor.login(usuario, clave)
+            servidor.send_message(mensaje)
+    else:
+        with smtplib.SMTP(host, puerto, timeout=10) as servidor:
+            if configuracion["starttls"]:
+                servidor.starttls()
+            usuario = configuracion["usuario"]
+            clave = configuracion["password"]
+            if usuario:
+                servidor.login(usuario, clave)
+            servidor.send_message(mensaje)
     return "ENVIADO"
 
 #Evito tener funciones sueltas en [los validators y repository de [Peliculas]. Como son genéricas y se repiten, las dejó en utils
@@ -290,6 +299,28 @@ def validar_texto_opcional(valor, nombre: str, largo_max: int) -> str | None:
     if valor is None or (isinstance(valor, str) and not valor.strip()):
         return None
     return validar_texto(valor, nombre, largo_max)
+
+
+def validar_url_opcional(valor, nombre: str, largo_max: int = 2048) -> str | None:
+    """Valida una URL HTTP(S) opcional; None o texto vacío limpian el valor."""
+    url = validar_texto_opcional(valor, nombre, largo_max)
+    if url is None:
+        return None
+
+    try:
+        partes = urllib.parse.urlsplit(url)
+        puerto = partes.port
+    except ValueError:
+        raise error_validacion(f"El campo {nombre} debe ser una URL HTTP o HTTPS válida.")
+
+    if (
+        partes.scheme.lower() not in ("http", "https")
+        or not partes.hostname
+        or puerto is not None and not 1 <= puerto <= 65535
+        or any(caracter.isspace() for caracter in url)
+    ):
+        raise error_validacion(f"El campo {nombre} debe ser una URL HTTP o HTTPS válida.")
+    return url
 
 
 def validar_booleano(valor, nombre: str) -> bool:

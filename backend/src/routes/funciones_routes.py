@@ -5,8 +5,11 @@ from src.services.funciones_services import (
     crear_funcion,
     eliminar_funcion,
     listar_funciones,
+    listar_funciones_admin,
     obtener_mapa_butacas_funcion,
+    reactivar_funcion,
 )
+from src.utils import validar_admin
 from src.validators.funciones_validators import (
     validar_actualizar_funcion,
     validar_crear_funcion,
@@ -25,28 +28,48 @@ def register_funciones_routes(app):
         filtros = validar_filtros_funciones(request.args)
         return jsonify(listar_funciones(filtros)), 200
 
+    @app.route("/funciones/admin", methods=["GET"])
+    def get_funciones_admin():
+        """
+        GET /funciones/admin: Lista todas las funciones para el ABM (Solo Admin).
+        """
+        validar_admin(request.headers.get("Authorization"))
+        return jsonify(listar_funciones_admin()), 200
+
     @app.route("/funciones", methods=["POST"])
     def post_funcion():
         """
         POST /funciones: Programa una nueva función validando que esté disponible el horario en la misma sala (Solo Admin).
         """
+        validar_admin(request.headers.get("Authorization"))
         datos = validar_crear_funcion(request.get_json(silent=True))
         return jsonify(crear_funcion(datos)), 201
 
     @app.route("/funciones/<int:id>", methods=["PUT"])
     def put_funcion(id):
         """
-        PUT /funciones/{id}: Modifica el horario, precio o estado de una función programada (Solo Admin).
+        PUT /funciones/{id}: Modifica la programación, precio o estado de una función (Solo Admin).
         """
+        validar_admin(request.headers.get("Authorization"))
         id_funcion = validar_id_funcion(id)
         cambios = validar_actualizar_funcion(request.get_json(silent=True))
         return jsonify(actualizar_funcion(id_funcion, cambios)), 200
+
+    @app.route("/funciones/<int:id>/reactivar", methods=["PUT"])
+    def put_reactivar_funcion(id):
+        """
+        PUT /funciones/{id}/reactivar: Reactiva una función cancelada si aún no comenzó
+        y su sala sigue disponible (Solo Admin).
+        """
+        validar_admin(request.headers.get("Authorization"))
+        return jsonify(reactivar_funcion(validar_id_funcion(id))), 200
 
     @app.route("/funciones/<int:id>", methods=["DELETE"])
     def delete_funcion(id):
         """
         DELETE /funciones/{id}: Cancela o da de baja una función programada sin entradas activas (Solo Admin).
         """
+        validar_admin(request.headers.get("Authorization"))
         return jsonify(eliminar_funcion(validar_id_funcion(id))), 200
 
     @app.route("/funciones/<int:id>/butacas", methods=["GET"])

@@ -32,17 +32,21 @@ PATRON_FECHA_HORA_ISO = r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(-03:00|Z)
 # ==========================================
 # Constantes de Dominio - Cine Paradiso
 # ==========================================
-ROLES_USUARIOS = {"CLIENTE", "ADMINISTRADOR"}
-ROL_ADMINISTRADOR = "ADMINISTRADOR" 
-#Segun la ia, esto era la manera más intuitiva y simple de revisar el administrador, pero, como verán, parece un duplicado innecesario de roles_usuarios = ADMINISTRADOR. Si les desagrada o les parece mala practica, diganme y veo como lo cambio.
+ROL_ADMINISTRADOR = "ADMINISTRADOR"
+ROLES_USUARIOS = {"CLIENTE", ROL_ADMINISTRADOR}
 ESTADOS_COMPRA = {"PENDIENTE", "PAGADA", "CANCELADA"}
 PUNTUACION_RESENA_MIN = 1
 PUNTUACION_RESENA_MAX = 5
 LARGO_MAX_COMENTARIO_RESENA = 1000
 ESTADOS_ENTRADA = {"DISPONIBLE", "RESERVADA", "OCUPADA", "CANCELADA"}
 ESTADOS_FUNCION = {"PROGRAMADA", "EN_CURSO", "CANCELADA", "FINALIZADA"}
+ESTADO_FUNCION_PROGRAMADA = "PROGRAMADA"
 FORMATOS_SALA = {"2D", "3D", "4D"}
-TIPOS_SERVICIO = {"COMIDA", "BEBIDA"}
+# Layout físico de butacas al crear una sala (filas A..Z, asientos por fila).
+MAX_FILAS_SALA = 26
+MAX_ASIENTOS_POR_FILA = 30
+MAX_NUMERO_SALA = 32767
+TIPOS_SERVICIO = {"COMIDA", "BEBIDA", "OBJETO", "PROMOCION", "COMBO"}
 ORIGENES_API_PELICULAS = {"OMDB", "TMDB", "CUSTOM"}
 RESULTADOS_VALIDACION_QR = {"EXITO", "FALLIDO", "REUTILIZADO"}
 
@@ -51,6 +55,7 @@ MEDIO_PAGO_DEMO = "TARJETA_SIMULADA"
 ESTADOS_EMAIL = {"PENDIENTE", "ENVIADO", "ERROR", "SIMULADO"}
 MAX_BUTACAS_COMPRA = 20
 MAX_ITEMS_SERVICIOS = 20
+DURACION_RESERVA_BUTACAS_SEGUNDOS = 10 * 60
 HTTP_OK = 200
 HTTP_CREADO = 201
 HTTP_SOLICITUD_INVALIDA = 400
@@ -79,7 +84,8 @@ OMDB_ERROR_PELICULA_NO_ENCONTRADA = "Movie not found!"
 # ==========================================
 ZONA_HORARIA_LOCAL = timezone(timedelta(hours=-3))
 DURACION_FUNCION_POR_DEFECTO_MIN = 120
-ESTADOS_FUNCION_TERMINALES = {"CANCELADA", "FINALIZADA"}
+# Bloquean la edición genérica; CANCELADA se revierte por el endpoint de reactivación.
+ESTADOS_FUNCION_NO_EDITABLES = {"CANCELADA", "FINALIZADA"}
 
 
 # ==========================================
@@ -88,10 +94,13 @@ ESTADOS_FUNCION_TERMINALES = {"CANCELADA", "FINALIZADA"}
 # Una butaca reservada también reduce la disponibilidad real de la sala.
 ESTADOS_ENTRADA_OCUPACION = ("OCUPADA", "RESERVADA")
 ESTADOS_ENTRADA_VENDIDA = ("OCUPADA",)
+ESTADO_ENTRADA_OCUPADA = "OCUPADA"
+ESTADO_ENTRADA_CANCELADA = "CANCELADA"
 # Las compras PENDIENTES todavía no representan una venta ni una cancelación.
 ESTADOS_COMPRA_DASHBOARD = ("PAGADA", "CANCELADA")
 ESTADO_COMPRA_VENDIDA = "PAGADA"
 ESTADO_COMPRA_CANCELADA = "CANCELADA"
+ESTADO_COMPRA_PENDIENTE = "PENDIENTE"
 ESTADO_FUNCION_CANCELADA = "CANCELADA"
 FRANJAS_HORARIAS_DASHBOARD = (
     {"turno": "Mañana (06:00 - 11:59)", "horas": (6, 7, 8, 9, 10, 11)},

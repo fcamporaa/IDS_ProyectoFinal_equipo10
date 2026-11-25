@@ -22,7 +22,10 @@
                     <polyline points="12 6 12 12 16 14"></polyline>
                 </svg>
                 <span>TIEMPO RESTANTE PARA COMPLETAR LA COMPRA:</span>
-                <strong id="checkoutCountdown" class="timer-digits">{{ c.tiempo_restante }}</strong>
+                <strong id="checkoutCountdown" class="timer-digits"
+                        data-expira-en-ms="{{ temporizador.expira_en_ms }}"
+                        data-ahora-servidor-ms="{{ temporizador.ahora_servidor_ms }}"
+                        data-url-expiracion="{{ url_for('compra.compra_expirada') }}">{{ c.tiempo_restante }}</strong>
             </div>
         </header>
 
@@ -61,6 +64,10 @@
                     <input type="hidden"
                         name="medio_pago"
                         value="TARJETA_SIMULADA">
+
+                    <input type="hidden"
+                        name="token_reserva"
+                        value="{{ session['token_reserva_butacas'] }}">
 
 
                     <!-- Bloque 1: Datos del Comprador -->
@@ -129,13 +136,19 @@
                             <!-- DNI y Teléfono -->
                             <div class="form-group">
                                 <label for="inputDni" class="form-label">
-                                    DNI / CUIT (PARA FACTURACIÓN AFIP) <span class="required-star">*</span>
+                                    DNI (7 U 8 DÍGITOS) <span class="required-star">*</span>
                                 </label>
                                 <input type="text" 
                                        id="inputDni" 
                                        name="dni_cuit" 
                                        class="form-control" 
-                                       value="{{ c.comprador_default.dni }}" 
+                                       value="{{ c.comprador_default.dni }}"
+                                       inputmode="numeric"
+                                       minlength="7"
+                                       maxlength="8"
+                                       pattern="[1-9][0-9]{6,7}"
+                                       placeholder="12345678"
+                                       title="Ingresá un DNI de 7 u 8 dígitos, sin puntos ni espacios."
                                        required>
                             </div>
 
@@ -215,6 +228,8 @@
                                     class="form-control"
                                     placeholder="0000 0000 0000 0000"
                                     maxlength="23"
+                                    pattern="(?:[0-9][ -]?){12,18}[0-9]"
+                                    title="Ingresá entre 13 y 19 dígitos, con espacios o guiones opcionales."
                                     inputmode="numeric"
                                     autocomplete="off"
                                     required>
@@ -267,8 +282,6 @@
                                     autocomplete="off"
                                     required>
                             </div>
-                            
-                        </div>
 
                             <!-- Selector de Cuotas -->
                             <div class="form-group full-width">
@@ -295,7 +308,7 @@
                             <input type="checkbox" id="checkTerms" required checked>
                             <span class="checkbox-checkmark"></span>
                             <span class="checkbox-text">
-                                Acepto los <a href="#terminos" class="terms-link">Términos y Condiciones</a> y la <a href="#politica" class="terms-link">Política de Cancelación</a>. Entiendo que la cancelación o cambio de butacas está permitida hasta <strong>2 horas antes del inicio de la función</strong>.
+                                Acepto los <a href="#terminos" class="terms-link">Términos y Condiciones</a> y la <a href="#politica" class="terms-link">Política de Cancelación</a>. Entiendo que la cancelación o cambio de butacas está permitida hasta <strong>24 horas antes del inicio de la función</strong>.
                             </span>
                         </label>
                     </div>
@@ -391,9 +404,9 @@
                                 <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="20 6 9 17 4 12"></polyline>
                                 </svg>
-                                <span>Cargo por Servicio Web</span>
+                                <span>Cargo por servicio:</span>
                             </span>
-                            <span class="fee-badge-free">{{ c.cargo_servicio }}</span>
+                            <span class="fee-badge-free">$0</span>
                         </div>
                     </div>
 
@@ -401,7 +414,6 @@
                     <div class="total-to-pay-box">
                         <div class="total-pay-left">
                             <span class="total-pay-label">TOTAL A FACTURAR</span>
-                            <span class="total-pay-sub">IVA incluido (21%)</span>
                         </div>
                         <span class="total-pay-amount">{{ c.total }}</span>
                     </div>
@@ -451,5 +463,6 @@
 {% endblock %}
 
 {% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/temporizador_compra.js') }}"></script>
 <script src="{{ url_for('static', filename='js/checkout.js') }}"></script>
 {% endblock %}

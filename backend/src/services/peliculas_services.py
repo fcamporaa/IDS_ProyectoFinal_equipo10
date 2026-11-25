@@ -92,12 +92,9 @@ def _verificar_pelicula_no_duplicada(origen_api: str, id_api: str | None) -> Non
         return
 
     id_existente = existente["id_pelicula"]
-    descripcion = (
-        f"Ya existe una película con origen_api {origen_api} "
-        f"e id_api {id_api} (id {id_existente})."
-    )
+    descripcion = "Esta película ya fue agregada."
     if not existente["activa"]:
-        descripcion += f" Está dada de baja: reactivala con PUT /peliculas/{id_existente}."
+        descripcion += " La película está dada de baja y se puede reactivar desde el listado."
     raise crear_error_http(
         "error.validacion.pelicula_duplicada", "Dato inválido", descripcion, 400
     )
@@ -162,7 +159,7 @@ def _verificar_configuracion_omdb() -> None:
         raise crear_error_http(
             "error.configuracion.api_externa",
             "Configuración incompleta",
-            "Falta configurar OMDB_API_KEY en el servidor.",
+            "La búsqueda de películas externas no está disponible en este momento.",
             500,
         )
 

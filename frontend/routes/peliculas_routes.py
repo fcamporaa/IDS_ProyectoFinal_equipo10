@@ -1,181 +1,99 @@
-from flask import Blueprint, render_template
+from flask import Blueprint, abort, flash, redirect, render_template, request, session, url_for
+
+from services.peliculas_service import (
+    crear_resena_pelicula,
+    obtener_detalle_pelicula,
+    obtener_resenas_pelicula,
+)
+from utils.csrf import crear_token_csrf, validar_token_csrf
+from utils.errores import extraer_mensaje_error
+from utils.peliculas import (
+    armar_detalle_pelicula,
+    procesar_resenas,
+    verificar_usuario_puede_resenar,
+)
 
 peliculas_bp = Blueprint("peliculas", __name__, url_prefix="/peliculas")
 
 
 @peliculas_bp.route("/<int:id_pelicula>")
-@peliculas_bp.route("/dune-parte-dos")
-def detalle_pelicula(id_pelicula=1):
-    """
-    Renderiza la ficha y cartelera de funciones de una película.
-    Para este hito de templates SSR, provee el contexto completo estructurado.
-    """
-    datos_pelicula = {
-        "id_pelicula": id_pelicula or 1,
-        "titulo": "Dune: Parte Dos",
-        "titulo_original": "Dune: Part Two",
-        "puntuacion_imdb": "8.8 / 10 (IMDb)",
-        "porcentaje_critica": "95% Crítica Positiva",
-        "poster_url": "https://image.tmdb.org/t/p/w500/8b8R8l88Qje9dn9OE8PY05Nxl1X.jpg",
-        "banner_url": "/static/images/dune_trailer_banner.jpg",
-        "formato_destacado": "SALA 4D",
-        "clasificacion": "+16",
-        "duracion_min": 166,
-        "duracion_legible": "166 min (2h 46m)",
-        "idioma_formato": "Subtitulada",
-        "anio": 2024,
-        "sinopsis": (
-            "Paul Atreides se une a Chani y a los Fremen mientras busca venganza "
-            "contra los conspiradores que destruyeron a su familia, enfrentando la encrucijada "
-            "entre el amor de su vida y el destino del universo entero. La travesía mística y bélica "
-            "en las dunas de Arrakis alcanza su clímax definitivo con la profecía de Muad'Dib."
-        ),
-        "direccion": "Denis Villeneuve",
-        "reparto": "Timothée Chalamet, Zendaya, Rebecca Ferguson, Javier Bardem",
-        "generos": ["Ciencia Ficción", "Aventura"],
-        "distribuidora": "Warner Bros. Pictures",
-        "tecnologia_sala": "D-BOX Motion & Atmos",
-        "trailer_url": "https://www.youtube.com/embed/Way9Dexny3w?autoplay=1",
-        "trailer_duracion": "2:45 MIN",
-        "complejos": [
-            {
-                "id": "centro",
-                "etiqueta": "SEDE PRINCIPAL",
-                "nombre": "Cine Paradiso Centro",
-                "direccion": "Av. Corrientes 1240, CABA",
-                "badges": ["4D Atmos", "3D", "2D Láser"],
-                "seleccionado": True,
-            },
-            {
-                "id": "palermo",
-                "etiqueta": "COMPLEJO SOHO",
-                "nombre": "Cine Paradiso Palermo",
-                "direccion": "Humboldt 1920, Palermo Soho",
-                "badges": ["2D", "2D Láser", "Sala VIP"],
-                "seleccionado": False,
-            },
-            {
-                "id": "belgrano",
-                "etiqueta": "COMPLEJO NORTE",
-                "nombre": "Cine Paradiso Belgrano",
-                "direccion": "Av. Cabildo 2100, CABA",
-                "badges": ["4D Atmos", "2D Láser"],
-                "seleccionado": False,
-            },
-        ],
-        "fechas": [
-            {"id": "hoy", "etiqueta": "Hoy 24 Oct", "activa": True},
-            {"id": "manana", "etiqueta": "Mañana 25 Oct", "activa": False},
-            {"id": "sabado", "etiqueta": "Sábado 26 Oct", "activa": False},
-            {"id": "domingo", "etiqueta": "Domingo 27 Oct", "activa": False},
-        ],
-        "salas_funciones": [
-            {
-                "sala_id": 1,
-                "badge_tipo": "4D ATMOS",
-                "badge_clase": "badge-4d",
-                "nombre": "Sala 1 — Cinema Sensations 4D",
-                "descripcion": "Efectos de viento, vibración, agua, aromas y sonido Dolby Atmos • Subtitulada",
-                "precio": "$12.500",
-                "precio_numero": 12500,
-                "funciones": [
-                    {
-                        "id_funcion": 101,
-                        "hora": "16:30 hs",
-                        "idioma": "Subtitulada",
-                        "disponibilidad": "42 libres",
-                        "estado": "alta",
-                        "seleccionada": False,
-                    },
-                    {
-                        "id_funcion": 102,
-                        "hora": "19:30 hs",
-                        "idioma": "Subtitulada",
-                        "disponibilidad": "14 libres",
-                        "estado": "baja",
-                        "seleccionada": True,
-                    },
-                    {
-                        "id_funcion": 103,
-                        "hora": "22:45 hs",
-                        "idioma": "Subtitulada",
-                        "disponibilidad": "56 libres",
-                        "estado": "alta",
-                        "seleccionada": False,
-                    },
-                ],
-            },
-            {
-                "sala_id": 2,
-                "badge_tipo": "3D DIGITAL",
-                "badge_clase": "badge-3d",
-                "nombre": "Sala 2 — RealD 3D Grand Hall",
-                "descripcion": "Proyección Láser 4K de alto brillo con anteojos ergonómicos • Doblada al Castellano",
-                "precio": "$9.800",
-                "precio_numero": 9800,
-                "funciones": [
-                    {
-                        "id_funcion": 201,
-                        "hora": "17:15 hs",
-                        "idioma": "Castellano",
-                        "disponibilidad": "34 libres",
-                        "estado": "alta",
-                        "seleccionada": False,
-                    },
-                    {
-                        "id_funcion": 202,
-                        "hora": "20:15 hs",
-                        "idioma": "Castellano",
-                        "disponibilidad": "21 libres",
-                        "estado": "baja",
-                        "seleccionada": False,
-                    },
-                ],
-            },
-            {
-                "sala_id": 3,
-                "badge_tipo": "2D LÁSER",
-                "badge_clase": "badge-2d",
-                "nombre": "Sala 3 — Christie 4K Audio Surround 7.1",
-                "descripcion": "Resolución ultra nítida, audio original sin compresión • Subtitulada",
-                "precio": "$8.500",
-                "precio_numero": 8500,
-                "funciones": [
-                    {
-                        "id_funcion": 301,
-                        "hora": "18:00 hs",
-                        "idioma": "Subtitulada",
-                        "disponibilidad": "70 libres",
-                        "estado": "alta",
-                        "seleccionada": False,
-                    },
-                    {
-                        "id_funcion": 302,
-                        "hora": "21:00 hs",
-                        "idioma": "Subtitulada",
-                        "disponibilidad": "73 libres",
-                        "estado": "alta",
-                        "seleccionada": False,
-                    },
-                    {
-                        "id_funcion": 303,
-                        "hora": "23:30 hs",
-                        "idioma": "Trasnocha • 140 libres",
-                        "disponibilidad": "140 libres",
-                        "estado": "alta",
-                        "seleccionada": False,
-                    },
-                ],
-            },
-        ],
-        "seleccion_inicial": {
-            "complejo": "Cine Paradiso Centro",
-            "fecha": "Hoy 24 Oct",
-            "sala": "Sala 1 (4D Atmos)",
-            "hora": "19:30 hs",
-            "precio": "$12.500",
-            "id_funcion": 102,
-        },
-    }
+def detalle_pelicula(id_pelicula):
+    pelicula, estado = obtener_detalle_pelicula(id_pelicula)
+    if estado == 404:
+        abort(404)
+    if estado != 200 or not isinstance(pelicula, dict):
+        flash("No pudimos cargar la película. Intentá de nuevo en unos minutos.", "error")
+        return redirect(url_for("home.index"))
 
-    return render_template("pelicula_detalle.html", p=datos_pelicula)
+    token = session.get("access_token")
+    usuario = session.get("usuario")
+    id_usuario = usuario.get("id_usuario") if isinstance(usuario, dict) else None
+
+    # Obtener y estructurar reseñas de la película
+    resenas_resp, estado_resenas = obtener_resenas_pelicula(id_pelicula, token=token)
+    resenas_raw = resenas_resp if estado_resenas == 200 and isinstance(resenas_resp, list) else []
+    resenas_data = procesar_resenas(resenas_raw, id_usuario_actual=id_usuario)
+
+    # Verificar si el cliente logueado asistió y puede publicar una reseña
+    puede_resenar, id_compra_habilitada = verificar_usuario_puede_resenar(
+        id_pelicula=id_pelicula,
+        token=token,
+        resena_propia=resenas_data.get("resena_propia"),
+    )
+
+    csrf_token = crear_token_csrf()
+
+    return render_template(
+        "pelicula_detalle.html",
+        p=armar_detalle_pelicula(pelicula),
+        resenas_data=resenas_data,
+        puede_resenar=puede_resenar,
+        id_compra_habilitada=id_compra_habilitada,
+        csrf_token=csrf_token,
+    )
+
+
+@peliculas_bp.route("/<int:id_pelicula>/resenas", methods=["POST"])
+def crear_resena(id_pelicula: int):
+    if not validar_token_csrf(request.form.get("csrf_token", "")):
+        flash("Formulario vencido o inválido. Volvé a intentarlo.", "error")
+        return redirect(url_for("peliculas.detalle_pelicula", id_pelicula=id_pelicula) + "#seccion-resenas")
+
+    token = session.get("access_token")
+    if not token:
+        flash("Iniciá sesión para publicar una reseña.", "info")
+        return redirect(url_for("auth.login"))
+
+    try:
+        id_compra = int(request.form.get("id_compra", ""))
+        puntuacion = int(request.form.get("puntuacion", ""))
+    except (ValueError, TypeError):
+        flash("Seleccioná una puntuación válida para la reseña.", "error")
+        return redirect(url_for("peliculas.detalle_pelicula", id_pelicula=id_pelicula) + "#seccion-resenas")
+
+    comentario = request.form.get("comentario", "").strip()
+
+    respuesta, estado = crear_resena_pelicula(
+        id_pelicula,
+        token,
+        {
+            "id_compra": id_compra,
+            "puntuacion": puntuacion,
+            "comentario": comentario,
+        },
+    )
+
+    if estado == 201:
+        flash("¡Tu reseña se publicó exitosamente! Gracias por tu opinión.", "success")
+    elif estado == 401:
+        session.pop("access_token", None)
+        session.pop("usuario", None)
+        flash("Tu sesión venció. Volvé a iniciar sesión.", "error")
+        return redirect(url_for("auth.login"))
+    else:
+        flash(
+            extraer_mensaje_error(respuesta, "No se pudo publicar la reseña."),
+            "error",
+        )
+
+    return redirect(url_for("peliculas.detalle_pelicula", id_pelicula=id_pelicula) + "#seccion-resenas")

@@ -1,8 +1,9 @@
 from src.db import ejecutar_consulta, ejecutar_mutacion
+from src.utils import ahora_local
 
 SELECT_FUNCION_DETALLE = """
     SELECT f.id_funcion, f.id_pelicula, p.titulo AS titulo_pelicula,
-           f.id_sala, s.numero AS numero_sala, l.nombre AS nombre_local,
+           f.id_sala, s.id_local, s.numero AS numero_sala, l.nombre AS nombre_local,
            f.inicio, f.fin, f.formato, f.idioma, f.subtitulada,
            f.precio_entrada, f.estado
     FROM funciones f
@@ -18,8 +19,8 @@ def obtener_funciones_db(filtros: dict) -> list[dict]:
     con título de película, número de sala y nombre del local.
     Los filtros se agregan como condiciones fijas con valores parametrizados.
     """
-    condiciones = ["f.estado IN ('PROGRAMADA', 'EN_CURSO')", "f.fin > %s"]
-    parametros = [filtros["vigentes_desde"]]
+    condiciones = ["f.estado = 'PROGRAMADA'", "f.fin > %s", "f.inicio > %s"]
+    parametros = [filtros["vigentes_desde"], filtros["vigentes_desde"]]
 
     if "id_pelicula" in filtros:
         condiciones.append("f.id_pelicula = %s")
@@ -38,6 +39,33 @@ def obtener_funciones_db(filtros: dict) -> list[dict]:
     return ejecutar_consulta(query, tuple(parametros))
 
 
+def sincronizar_estados_funciones_db() -> None:
+    """Actualiza estados temporales usando la hora nativa de MySQL."""
+    ejecutar_mutacion(
+        """
+        UPDATE funciones
+        SET estado = 'FINALIZADA'
+        WHERE estado NOT IN ('CANCELADA', 'FINALIZADA')
+          AND fin <= NOW();
+        """
+    )
+    ejecutar_mutacion(
+        """
+        UPDATE funciones
+        SET estado = 'EN_CURSO'
+        WHERE estado NOT IN ('CANCELADA', 'EN_CURSO', 'FINALIZADA')
+          AND inicio <= NOW()
+          AND fin > NOW();
+        """
+    )
+
+
+def obtener_funciones_admin_db() -> list[dict]:
+    """Lista todas las funciones, incluyendo canceladas y finalizadas, para el ABM."""
+    query = SELECT_FUNCION_DETALLE + " ORDER BY f.inicio DESC;"
+    return ejecutar_consulta(query)
+
+
 def buscar_funcion_por_id_db(id_funcion: int) -> dict | None:
     """Busca una función por id con los mismos datos que el listado."""
     resultados = ejecutar_consulta(
@@ -54,8 +82,14 @@ def buscar_pelicula_para_funcion_db(id_pelicula: int) -> dict | None:
 
 
 def buscar_sala_para_funcion_db(id_sala: int) -> dict | None:
-    """Devuelve el campo activa de la sala, o None si no existe."""
-    resultados = ejecutar_consulta("SELECT activa FROM salas WHERE id_sala = %s;", (id_sala,))
+    """Devuelve el complejo y los estados de la sala y su local, o None si no existe."""
+    query = """
+        SELECT s.id_local, s.activa, l.activo AS local_activo
+        FROM salas s
+        JOIN locales l ON l.id_local = s.id_local
+        WHERE s.id_sala = %s;
+    """
+    resultados = ejecutar_consulta(query, (id_sala,))
     return resultados[0] if resultados else None
 
 
@@ -97,15 +131,22 @@ def insertar_funcion_db(datos: dict) -> int:
 
 
 def actualizar_funcion_db(id_funcion: int, datos: dict) -> int:
-    """Actualiza inicio, fin, precio y estado (los únicos campos editables)."""
+    """Actualiza película, sala, horario, formato, idioma, subtítulos, precio y estado."""
     query = """
         UPDATE funciones
-        SET inicio = %s, fin = %s, precio_entrada = %s, estado = %s
+        SET id_pelicula = %s, id_sala = %s, inicio = %s, fin = %s,
+            formato = %s, idioma = %s, subtitulada = %s,
+            precio_entrada = %s, estado = %s
         WHERE id_funcion = %s;
     """
     valores = (
+        datos["id_pelicula"],
+        datos["id_sala"],
         datos["inicio"],
         datos["fin"],
+        datos["formato"],
+        datos["idioma"],
+        datos["subtitulada"],
         datos["precio_entrada"],
         datos["estado"],
         id_funcion,
@@ -129,22 +170,34 @@ def cancelar_funcion_db(id_funcion: int) -> int:
     return ejecutar_mutacion(query, (id_funcion,))
 
 
+def reactivar_funcion_db(id_funcion: int) -> int:
+    """Reactiva una función dado de baja (CANCELADA -> PROGRAMADA)."""
+    query = "UPDATE funciones SET estado = 'PROGRAMADA' WHERE id_funcion = %s AND estado = 'CANCELADA';"
+    return ejecutar_mutacion(query, (id_funcion,))
+
+
 def obtener_estado_butacas_funcion_db(id_funcion: int) -> list[dict]:
     """
     Butacas activas de la sala de la función con su estado para esa función.
-    Solo cuentan entradas RESERVADA u OCUPADA: sin ellas la butaca está DISPONIBLE
-    (las entradas canceladas o ya liberadas no la bloquean ni duplican filas).
+    Considera entradas activas y apartados temporales vigentes; las canceladas,
+    liberadas o expiradas no bloquean la butaca.
     """
     query = """
-        SELECT b.id_butaca, b.fila, b.numero,
-               COALESCE(e.estado, 'DISPONIBLE') AS estado,
+         SELECT b.id_butaca, b.fila, b.numero,
+             COALESCE(e.estado, CASE
+                 WHEN r.id_reserva_temporal IS NOT NULL THEN 'RESERVADA'
+                 ELSE 'DISPONIBLE'
+             END) AS estado,
                e.id_entrada
         FROM funciones f
         JOIN butacas b ON b.id_sala = f.id_sala AND b.activa = 1
         LEFT JOIN entradas e ON e.id_funcion = f.id_funcion
                             AND e.id_butaca = b.id_butaca
                             AND e.estado IN ('RESERVADA', 'OCUPADA')
+                    LEFT JOIN reservas_temporales_butacas r ON r.id_funcion = f.id_funcion
+                                        AND r.id_butaca = b.id_butaca
+                                                AND r.expira_en > %s
         WHERE f.id_funcion = %s
         ORDER BY b.fila, b.numero;
     """
-    return ejecutar_consulta(query, (id_funcion,))
+    return ejecutar_consulta(query, (ahora_local(), id_funcion))

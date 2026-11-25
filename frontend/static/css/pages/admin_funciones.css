@@ -1,0 +1,393 @@
+/* ========================================================
+   Página: ABM de funciones del backoffice (.admin-funciones)
+   Solo usa los tokens definidos en tokens.css.
+   ======================================================== */
+
+.admin-funciones {
+    padding-top: 2.5rem;
+    padding-bottom: 3rem;
+}
+
+.admin-funciones__container {
+    max-width: 1300px;
+    margin: 0 auto;
+}
+
+.admin-funciones__header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.75rem;
+}
+
+.admin-funciones__eyebrow {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--color-accent-gold);
+}
+
+.admin-funciones__title {
+    margin-top: 0.25rem;
+    font-size: 1.9rem;
+    font-weight: 800;
+    color: var(--color-text-main);
+}
+
+.admin-funciones__subtitle {
+    margin-top: 0.4rem;
+    max-width: 62ch;
+    font-size: 0.92rem;
+    color: var(--color-text-muted);
+}
+
+.admin-funciones__header-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.admin-funciones__back {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+}
+
+.admin-funciones__back:hover {
+    color: var(--color-accent-gold);
+}
+
+.admin-funciones__alert {
+    background-color: var(--color-bg-surface-low);
+    border: 1px solid var(--color-danger);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-main);
+    font-size: 0.9rem;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Formulario desplegable */
+.admin-funciones__form-container {
+    max-height: 0;
+    margin-bottom: 0;
+    overflow: hidden;
+    opacity: 0;
+    visibility: hidden;
+    transition: max-height 0.35s ease, opacity 0.35s ease,
+        margin 0.35s ease, visibility 0.35s ease;
+}
+
+.admin-funciones__form-container--activo {
+    max-height: 2600px;
+    margin-bottom: 2rem;
+    opacity: 1;
+    visibility: visible;
+}
+
+.formulario-funcion-card {
+    padding: 1.5rem;
+    background-color: var(--color-bg-surface-low);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+}
+
+.formulario-funcion-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.formulario-funcion-card__header h2 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--color-text-main);
+}
+
+.formulario-funcion-card__cerrar {
+    border: none;
+    background: none;
+    color: var(--color-text-muted);
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.formulario-funcion-card__cerrar:hover {
+    color: var(--color-text-main);
+}
+
+.formulario-funcion__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.25rem;
+}
+
+.formulario-funcion__campo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    min-width: 0;
+}
+
+.formulario-funcion__campo--checkbox {
+    grid-column: 1 / -1;
+    padding-top: 0.25rem;
+}
+
+.formulario-funcion__hint {
+    font-size: 0.78rem;
+    color: var(--color-text-dim);
+}
+
+.form-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+}
+
+.form-control {
+    width: 100%;
+    padding: 0.7rem 0.8rem;
+    background-color: var(--color-bg-main);
+    border: 1px solid var(--color-border-card);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-main);
+    font-family: inherit;
+    font-size: 0.9rem;
+}
+
+.form-control:focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
+}
+
+.form-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--color-text-main);
+    cursor: pointer;
+}
+
+.formulario-funcion__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-border);
+}
+
+/* Listado */
+.admin-funciones__listado {
+    margin-top: 0.5rem;
+}
+
+.admin-funciones__table-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.admin-funciones__table-header h2 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--color-text-main);
+}
+
+.admin-funciones__table-wrapper {
+    overflow-x: auto;
+    background-color: var(--color-bg-surface-low);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+}
+
+.admin-funciones__table {
+    width: 100%;
+    min-width: 1100px;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.9rem;
+}
+
+.admin-funciones__table th,
+.admin-funciones__table td {
+    padding: 0.9rem 1rem;
+    border-bottom: 1px solid var(--color-border);
+    vertical-align: middle;
+}
+
+.admin-funciones__table th {
+    background-color: rgba(0, 0, 0, 0.18);
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+}
+
+.admin-funciones__table tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+.admin-funciones__table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.admin-funciones__pelicula {
+    font-weight: 600;
+    color: var(--color-text-main);
+}
+
+.admin-funciones__local {
+    display: block;
+    font-weight: 600;
+    color: var(--color-text-main);
+}
+
+.admin-funciones__detalle {
+    display: block;
+    margin-top: 0.15rem;
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
+}
+
+.admin-funciones__formato {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    border: 1px solid var(--color-border-card);
+    border-radius: var(--radius-sm);
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--color-accent-gold);
+}
+
+.admin-funciones__actions-header {
+    text-align: right;
+}
+
+.admin-funciones__actions-cell {
+    white-space: nowrap;
+}
+
+.admin-funciones__actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+.admin-funciones__actions form {
+    display: inline-flex;
+    margin: 0;
+}
+
+.admin-funciones__action {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.82rem;
+}
+
+.admin-funciones__sin-acciones {
+    color: var(--color-text-dim);
+}
+
+/* Badges de estado */
+.admin-funciones__badge {
+    display: inline-block;
+    padding: 0.25rem 0.65rem;
+    border: 1px solid transparent;
+    border-radius: var(--radius-full);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+}
+
+.admin-funciones__badge--programada {
+    background-color: rgba(59, 130, 246, 0.15);
+    border-color: rgba(59, 130, 246, 0.3);
+    color: #60a5fa;
+}
+
+.admin-funciones__badge--en-curso {
+    background-color: rgba(16, 185, 129, 0.15);
+    border-color: rgba(16, 185, 129, 0.3);
+    color: var(--color-success);
+}
+
+.admin-funciones__badge--cancelada {
+    background-color: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: var(--color-danger);
+}
+
+.admin-funciones__badge--finalizada {
+    background-color: rgba(107, 114, 128, 0.15);
+    border-color: rgba(107, 114, 128, 0.3);
+    color: var(--color-text-muted);
+}
+
+.admin-funciones__empty {
+    padding: 3rem 1.5rem;
+    background-color: var(--color-bg-surface-low);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    color: var(--color-text-muted);
+    text-align: center;
+}
+
+.admin-funciones__empty p {
+    margin: 0;
+}
+
+.admin-funciones__empty p + p {
+    margin-top: 0.4rem;
+    font-size: 0.9rem;
+    color: var(--color-text-dim);
+}
+
+@media (max-width: 768px) {
+    .admin-funciones {
+        padding-top: 1.5rem;
+    }
+
+    .admin-funciones__header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .admin-funciones__title {
+        font-size: 1.5rem;
+    }
+
+    .admin-funciones__header-actions {
+        width: 100%;
+    }
+
+    .formulario-funcion__grid {
+        grid-template-columns: 1fr;
+    }
+
+    .formulario-funcion__actions {
+        flex-direction: column-reverse;
+    }
+
+    .formulario-funcion__actions .btn {
+        width: 100%;
+    }
+}

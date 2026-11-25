@@ -1,0 +1,161 @@
+{# Componente Reutilizable: Sección Completa de Reseñas y Puntuaciones
+   Parámetros esperados:
+   - p: Diccionario con datos de la película (id_pelicula, titulo, etc.)
+   - resenas_data: Diccionario con { promedio, estrellas_promedio, total, resenas, resena_propia }
+   - puede_resenar: Booleano que indica si el usuario logueado tiene compra validada pendiente de reseña
+   - id_compra_habilitada: Identificador de la compra validada
+   - csrf_token: Token de seguridad contra CSRF
+#}
+<section class="movie-reviews-section" id="seccion-resenas" aria-labelledby="reviews-section-title">
+    <div class="container reviews-container">
+        <!-- Encabezado de la sección -->
+        <header class="reviews-header">
+            <div class="reviews-header__title-group">
+                <h2 id="reviews-section-title" class="reviews-headline">Reseñas y Puntuaciones</h2>
+                <p class="reviews-subheadline">Opiniones reales de espectadores que asistieron a las funciones de Cine Paradiso</p>
+            </div>
+
+            <!-- Resumen Estadístico de Valoración -->
+            <div class="reviews-summary-card">
+                {% if resenas_data and resenas_data.promedio %}
+                <div class="reviews-score-big">
+                    <span class="score-number">{{ resenas_data.promedio }}</span>
+                    <span class="score-scale">/ 5</span>
+                </div>
+                <div class="reviews-score-meta">
+                    <div class="review-stars review-stars--lg" aria-label="Promedio: {{ resenas_data.promedio }} de 5 estrellas">
+                        {% for i in range(1, 6) %}
+                            <span class="star-icon {% if i <= resenas_data.estrellas_promedio %}star-icon--filled{% else %}star-icon--empty{% endif %}">★</span>
+                        {% endfor %}
+                    </div>
+                    <span class="reviews-count-text">
+                        Basado en {{ resenas_data.total }} {{ 'opinión' if resenas_data.total == 1 else 'opiniones' }}
+                    </span>
+                </div>
+                {% else %}
+                <div class="reviews-score-meta reviews-score-meta--empty">
+                    <div class="review-stars review-stars--lg">
+                        {% for i in range(1, 6) %}
+                            <span class="star-icon star-icon--empty">★</span>
+                        {% endfor %}
+                    </div>
+                    <span class="reviews-count-text">Sin calificaciones aún</span>
+                </div>
+                {% endif %}
+            </div>
+        </header>
+
+        <!-- Bloque Interactivo de Publicación de Reseña -->
+        <div class="review-action-container">
+            {% if puede_resenar and id_compra_habilitada %}
+            <!-- Formulario SSR para usuario con asistencia verificada en sala -->
+            <div class="review-form-wrapper">
+                <h3 class="review-form-title">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                    </svg>
+                    ¡Contanos tu experiencia! Dejá tu reseña
+                </h3>
+                <p class="review-form-description">Validamos tu asistencia en sala. Tu valoración ayuda a otros cinéfilos a elegir qué ver.</p>
+
+                <form class="review-submission-form" method="POST" action="{{ url_for('peliculas.crear_resena', id_pelicula=p.id_pelicula) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <input type="hidden" name="id_compra" value="{{ id_compra_habilitada }}">
+
+                    <!-- Selector de Estrellas Accesible con Radio Buttons (Orden Inverso para CSS) -->
+                    <fieldset class="rating-fieldset">
+                        <legend class="rating-legend">Tu puntuación <span class="required-indicator">*</span></legend>
+                        <div class="star-rating-selector" role="radiogroup">
+                            {% for n in range(5, 0, -1) %}
+                            <input type="radio" id="star-rate-{{ n }}" name="puntuacion" value="{{ n }}" required {% if n == 5 %}checked{% endif %}>
+                            <label for="star-rate-{{ n }}" title="{{ n }} estrellas">
+                                <span class="star-label-symbol">★</span>
+                                <span class="sr-only">{{ n }} estrellas</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </fieldset>
+
+                    <!-- Campo de Comentario -->
+                    <div class="review-field-group">
+                        <label for="review-comentario" class="review-field-label">
+                            Comentario u opinión <span class="optional-hint">(opcional, máx. 1000 caracteres)</span>
+                        </label>
+                        <textarea 
+                            id="review-comentario" 
+                            name="comentario" 
+                            rows="3" 
+                            maxlength="1000" 
+                            class="review-textarea" 
+                            placeholder="¿Qué te pareció la película, las actuaciones o la proyección en sala?"
+                        ></textarea>
+                    </div>
+
+                    <div class="review-form-footer">
+                        <button type="submit" class="btn-primary-review">
+                            Publicar Reseña
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            {% elif resenas_data and resenas_data.resena_propia %}
+            <!-- El usuario ya calificó esta película -->
+            <div class="review-notice-box review-notice-box--success">
+                <div class="notice-icon" aria-hidden="true">✓</div>
+                <div class="notice-body">
+                    <h4>¡Ya dejaste tu reseña para esta película!</h4>
+                    <p>Puntuaste con <strong>{{ resenas_data.resena_propia.puntuacion }}/5 estrellas</strong>. Muchas gracias por ser parte de la comunidad de Cine Paradiso.</p>
+                </div>
+            </div>
+
+            {% elif not session.get('access_token') %}
+            <!-- Usuario Invitado / No logueado -->
+            <div class="review-notice-box review-notice-box--info">
+                <div class="notice-icon" aria-hidden="true">ℹ</div>
+                <div class="notice-body">
+                    <h4>¿Viste esta película en Cine Paradiso?</h4>
+                    <p>
+                        <a href="{{ url_for('auth.login') }}" class="notice-link">Iniciá sesión</a> 
+                        con la cuenta con la que compraste tu entrada para compartir tu opinión una vez validado tu ingreso en sala.
+                    </p>
+                </div>
+            </div>
+
+            {% else %}
+            <!-- Usuario logueado pero sin compra con QR validado para esta película -->
+            <div class="review-notice-box review-notice-box--muted">
+                <div class="notice-icon" aria-hidden="true">🎟</div>
+                <div class="notice-body">
+                    <h4>Solo espectadores verificados pueden calificar</h4>
+                    <p>Para garantizar opiniones auténticas, solo pueden opinar quienes hayan adquirido su entrada y su código QR haya sido escaneado en puerta.</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Listado de Reseñas -->
+        <div class="reviews-list-wrapper">
+            <h3 class="reviews-list-title">
+                Opiniones del público 
+                {% if resenas_data and resenas_data.total > 0 %}
+                <span class="reviews-count-badge">{{ resenas_data.total }}</span>
+                {% endif %}
+            </h3>
+
+            {% if resenas_data and resenas_data.resenas %}
+            <div class="reviews-grid">
+                {% for resena in resenas_data.resenas %}
+                    {% include 'components/card_resena.html' %}
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="reviews-empty-state">
+                <div class="empty-state-icon" aria-hidden="true">🎬</div>
+                <h4 class="empty-state-title">Aún no hay reseñas registradas</h4>
+                <p class="empty-state-text">Sé uno de los primeros espectadores en vivir la experiencia en sala y compartir tu opinión con la comunidad.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</section>

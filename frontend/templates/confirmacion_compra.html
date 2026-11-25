@@ -25,7 +25,13 @@
                 </div>
                 <div class="success-banner-texts">
                     <div class="success-title-line">
-                        <h1>¡Reserva Confirmada con Éxito!</h1>
+                        <h1>
+                        {% if c.estado == "CANCELADA" %}
+                            Compra cancelada
+                        {% else %}
+                            ¡Reserva Confirmada con Éxito!
+                        {% endif %}
+                        </h1>
                         <span class="badge-payment-approved">
                         {{ "PAGO APROBADO" if c.estado == "PAGADA" else c.estado }}
                         </span>
@@ -47,7 +53,8 @@
                     </svg>
                     <span>Imprimir</span>
                 </button>
-                <a href="#voucherQrArea" class="btn-banner-action btn-highlight-qr" title="Ver código QR de acceso">
+                {% if c.qr_base64 %}
+                <a href="#voucherQrArea" class="btn-banner-action btn-highlight-qr">
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="3" width="7" height="7"></rect>
                         <rect x="14" y="3" width="7" height="7"></rect>
@@ -60,6 +67,7 @@
                     </svg>
                     <span>Ver QR</span>
                 </a>
+                {% endif %}
             </div>
         </header>
 
@@ -88,10 +96,16 @@
                                 <span class="voucher-room-name">{{ c.pelicula.sala_nombre }}</span>
                             </div>
                         </div>
+                        {% if c.qr_base64 %}
                         <span class="direct-access-badge">
                             <span class="access-dot"></span>
                             <span>ACCESO DIRECTO HABILITADO</span>
                         </span>
+                        {% else %}
+                            <span class="direct-access-badge">
+                            <span>ACCESO NO DISPONIBLE</span>
+                        </span>
+                        {% endif %}
                     </div>
 
                     <!-- Ficha de Película y Metadatos de Función -->
@@ -159,13 +173,13 @@
                                     height="180">
                             </div>
 
+                            <p class="qr-hint-text">Código de reserva (para validación manual):</p>
                             <span class="qr-alphanumeric-code">
-                                {{ c.codigo_qr }}
+                                {{ c.codigo_reserva }}
                             </span>
 
                             <p class="qr-hint-text">
-                                Presentá este código al personal de sala
-                                para validar tu ingreso.
+                                Presentá el QR al personal de sala o ingresá el código de reserva en el validador manual.
                             </p>
 
                         {% else %}
@@ -213,42 +227,6 @@
                         </div>
                     </div>
 
-                    <!-- Botones de Acción Rápida del Voucher -->
-                    <div class="voucher-actions-bar">
-                        <button type="button" class="btn-voucher-action" onclick="window.print();">
-                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                <polyline points="7 10 12 15 17 10"></polyline>
-                                <line x1="12" y1="15" x2="12" y2="3"></line>
-                            </svg>
-                            <span>Descargar PDF</span>
-                        </button>
-                        <button type="button" class="btn-voucher-action" onclick="alert('Pase guardado en Apple Wallet / Google Wallet');">
-                            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                                <path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
-                            </svg>
-                            <span>Guardar en Wallet</span>
-                        </button>
-                        <form
-                        method="POST"
-                        action="{{ url_for('compras.reenviar_email', id_compra=c.id_compra) }}">
-
-                        <input
-                            type="hidden"
-                            name="csrf_token"
-                            value="{{ csrf_token }}">
-
-                        <button type="submit" class="btn-voucher-action">
-                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-                                <polyline points="22,6 12,13 2,6"></polyline>
-                            </svg>
-                            <span>Reenviar Email</span>
-                        </button>
-                        </form>
-    
-                    </div>
-
                 </div>
             </section>
 
@@ -264,7 +242,6 @@
                             </svg>
                             <h3>Detalle de Facturación</h3>
                         </div>
-                        <span class="afip-badge">{{ c.facturacion.tipo }}</span>
                     </div>
 
                     <div class="billing-items-list">
@@ -316,7 +293,15 @@
                                 <circle cx="12" cy="12" r="10"></circle>
                                 <polyline points="12 6 12 12 16 14"></polyline>
                             </svg>
-                            <span>Cancelación gratuita habilitada</span>
+                            <span>
+                                {% if c.estado == "CANCELADA" %}
+                                    Compra cancelada
+                                {% elif c.cancelacion.habilitada %}
+                                    Cancelación disponible
+                                {% else %}
+                                    Cancelación no disponible
+                                {% endif %}
+                            </span>
                         </div>
                         <p class="cancellation-desc">
                         Podés solicitar la cancelación de tu compra
@@ -326,14 +311,38 @@
                             Fecha límite: {{ c.cancelacion.limite_texto }}
                         </strong>
                         </p>
-                        <button type="button" class="btn-cancel-reservation" onclick="confirm('¿Estás seguro de que deseas gestionar o cancelar esta reserva?')">
-                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <line x1="15" y1="9" x2="9" y2="15"></line>
-                                <line x1="9" y1="9" x2="15" y2="15"></line>
-                            </svg>
-                            <span>Gestionar o Cancelar Reserva</span>
-                        </button>
+                        {% if c.cancelacion.habilitada %}
+
+                        <form
+                            method="POST"
+                            action="{{ url_for('compras.cancelar_compra_web', id_compra=c.id_compra) }}"
+                            onsubmit="return confirm('¿Estás seguro de que querés cancelar esta compra?');">
+
+                            <input
+                                type="hidden"
+                                name="csrf_token"
+                                value="{{ csrf_token }}">
+
+                            <button type="submit" class="btn-cancel-reservation">
+                                <svg viewBox="0 0 24 24"
+                                    width="14"
+                                    height="14"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2">
+
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="15" y1="9" x2="9" y2="15"></line>
+                                    <line x1="9" y1="9" x2="15" y2="15"></line>
+
+                                </svg>
+
+                                <span>Cancelar Compra</span>
+                            </button>
+
+                        </form>
+
+                    {% endif %}
                     </div>
                 </div>
 
@@ -354,7 +363,7 @@
                         <li>
                             <span class="step-num">1</span>
                             <div class="step-content">
-                                <strong>Llegada anticipada:</strong> Te recomendamos ingresar 15 minutos antes para retirar tus combos en el Tótem Express de Candy Bar sin filas.
+                                <strong>Llegada anticipada:</strong> Te recomendamos ingresar 15 minutos antes para retirar tus combos y servicios extras en el mostrador sin filas.
                             </div>
                         </li>
                         <li>
@@ -386,7 +395,6 @@
                 <span>Tu compra está respaldada por Cinema Paradiso Argentina bajo los estándares de defensa del consumidor.</span>
             </div>
             <div class="nav-actions-right">
-                <a href="#mis-compras" class="btn-nav-outline">Ir a Mis Compras</a>
                 <a href="{{ url_for('home.index') }}" class="btn-nav-primary">Volver a Cartelera</a>
             </div>
         </footer>

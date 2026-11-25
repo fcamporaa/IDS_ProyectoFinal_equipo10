@@ -1,44 +1,40 @@
-/* Interactividad de la Cartelera de Películas (Sin AJAX/fetch) */
+/* Filtros en vivo por título e ID de género, sin peticiones al backend. */
 document.addEventListener('DOMContentLoaded', function () {
     const searchInput = document.getElementById('movieSearchInput');
-    const genreChips = document.querySelectorAll('.genre-chip');
+    const genreFilterBar = document.getElementById('genreFilterBar');
     const movieCards = document.querySelectorAll('.movie-card');
+    let selectedGenreId = genreFilterBar
+        ? genreFilterBar.querySelector('.genre-chip.active')?.dataset.genreId || ''
+        : '';
 
-    let activeGenre = 'todos';
-    let searchQuery = '';
-
-    function updateFilter() {
+    function applyFilters() {
+        const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
         movieCards.forEach(function (card) {
             const title = card.getAttribute('data-title') || '';
-            const genres = card.getAttribute('data-genres') || '';
-
-            const matchesQuery = !searchQuery || title.includes(searchQuery);
-            const matchesGenre = activeGenre === 'todos' || genres.includes(activeGenre);
-
-            if (matchesQuery && matchesGenre) {
-                card.classList.remove('hidden');
-            } else {
-                card.classList.add('hidden');
-            }
+            const genreIds = (card.getAttribute('data-genre-ids') || '').split(',');
+            const matchesGenre = !selectedGenreId || genreIds.includes(selectedGenreId);
+            const matchesTitle = !query || title.includes(query);
+            card.classList.toggle('hidden', !matchesGenre || !matchesTitle);
         });
     }
 
-    // Búsqueda en vivo por título en la cartelera
     if (searchInput) {
-        searchInput.addEventListener('input', function (e) {
-            searchQuery = e.target.value.toLowerCase().trim();
-            updateFilter();
+        searchInput.addEventListener('input', applyFilters);
+    }
+
+    if (genreFilterBar) {
+        genreFilterBar.querySelectorAll('.genre-chip').forEach(function (button) {
+            button.addEventListener('click', function () {
+                selectedGenreId = button.dataset.genreId || '';
+                genreFilterBar.querySelectorAll('.genre-chip').forEach(function (chip) {
+                    const isActive = chip === button;
+                    chip.classList.toggle('active', isActive);
+                    chip.setAttribute('aria-pressed', String(isActive));
+                });
+                applyFilters();
+            });
         });
     }
 
-    // Filtrado por chip de género
-    genreChips.forEach(function (chip) {
-        chip.addEventListener('click', function () {
-            genreChips.forEach(function (c) { c.classList.remove('active'); });
-            chip.classList.add('active');
-            activeGenre = chip.getAttribute('data-genre') || 'todos';
-            updateFilter();
-        });
-    });
+    applyFilters();
 });
-

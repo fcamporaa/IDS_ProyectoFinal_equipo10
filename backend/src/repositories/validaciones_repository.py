@@ -16,10 +16,12 @@ def validar_y_registrar_qr_db(qr_token: str, id_administrador: int,
                 FROM compras c
                 JOIN funciones f ON f.id_funcion = c.id_funcion
                 JOIN peliculas p ON p.id_pelicula = f.id_pelicula
-                WHERE c.qr_token = %s
+                -- El QR escaneado contiene qr_token; el ingreso manual puede
+                -- utilizar el codigo_reserva visible en el comprobante.
+                WHERE c.qr_token = %s OR c.codigo_reserva = %s
                 FOR UPDATE
                 """,
-                (qr_token,),
+                (qr_token, qr_token),
             )
             compra = cursor.fetchone()
             if compra is None:
