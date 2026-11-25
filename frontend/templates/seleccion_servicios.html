@@ -31,7 +31,7 @@
                         <div class="badge-candy-bar-official">
                             <span class="badge-text-gold">SERVICIOS EXTRAS</span>
                             <span class="badge-status-dot"></span>
-                            <span class="badge-status-text">Retiro express con QR en mostrador</span>
+                            <span class="badge-status-text">QR de acceso de la compra</span>
                         </div>
                         <div class="catalog-header-actions">
                             <div class="checkout-timer-pill" title="Tiempo asignado para completar la compra">
@@ -177,8 +177,8 @@
                             <span class="totals-val" id="displaySubtotalCandy">{{ c.resumen.subtotal_candy_formato }}</span>
                         </div>
                         <div class="totals-line">
-                            <span class="totals-label">Cargos de servicio e IVA:</span>
-                            <span class="totals-val text-green">{{ c.resumen.cargos_servicio_texto }}</span>
+                            <span class="totals-label">Cargo por servicio:</span>
+                            <span class="totals-val text-green">$0</span>
                         </div>
 
                         <!-- Caja de Total Acumulado -->
@@ -219,7 +219,7 @@
 
                 </div>
 
-                <!-- Banner Informativo QR Exclusivo para Servicios Extras -->
+                <!-- Banner informativo sobre el QR de compra y los servicios asociados -->
                 <div class="candy-qr-info-card">
                     <div class="qr-info-icon">
                         <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -234,7 +234,7 @@
                         </svg>
                     </div>
                     <div class="qr-info-text">
-                        <p>Al completar la compra recibirás un <strong>QR exclusivo para tus servicios extras</strong> con retiro express en mostrador sin filas.</p>
+                        <p>El QR corresponde a tu compra. Los servicios extras que selecciones quedarán asociados a ella y aparecerán en el comprobante.</p>
                     </div>
                 </div>
 
